@@ -12,6 +12,7 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const livePhoneA = process.env.LIVE_SIGNUP_PHONE_A;
 const livePhoneB = process.env.LIVE_SIGNUP_PHONE_B;
+const unregisteredPhone = process.env.LIVE_UNREGISTERED_PHONE;
 const executablePath = process.env.BROWSER_EXECUTABLE || '/Users/b/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell';
 const expectedProjectUrl = 'https://bndguguarijmghnkenvt.supabase.co';
 
@@ -19,7 +20,10 @@ assert.equal(supabaseUrl, expectedProjectUrl, 'unexpected Supabase project');
 assert.match(publishableKey || '', /^sb_publishable_/, 'missing publishable key');
 assert.match(livePhoneA || '', /^010000000(?:0[1-9]|1\d|20)$/, 'set LIVE_SIGNUP_PHONE_A to an unused configured test number');
 assert.match(livePhoneB || '', /^010000000(?:0[1-9]|1\d|20)$/, 'set LIVE_SIGNUP_PHONE_B to a different unused configured test number');
+assert.match(unregisteredPhone || '', /^010000000(?:0[1-9]|1\d|20)$/, 'set LIVE_UNREGISTERED_PHONE to an unused configured test number');
 assert.notEqual(livePhoneA, livePhoneB, 'live test numbers must differ');
+assert.notEqual(unregisteredPhone, livePhoneA, 'unregistered login number must differ from signup numbers');
+assert.notEqual(unregisteredPhone, livePhoneB, 'unregistered login number must differ from signup numbers');
 
 function apiHeaders(accessToken) {
   return {
@@ -41,13 +45,34 @@ async function sessionFrom(page) {
   });
 }
 
-async function openSignup(page) {
+async function openSignup(page, { exerciseUnknownLogin = false } = {}) {
   await page.goto(appUrl, { waitUntil: 'networkidle' });
-  await page.locator('header').getByRole('button', { name: '회원가입', exact: true }).click();
+  await page.locator('header').getByRole('button', { name: '로그인', exact: true }).click();
+  const loginDialog = page.getByRole('dialog', { name: '로그인', exact: true });
+  await loginDialog.locator('#auth-phone').waitFor();
+  assert.equal(await loginDialog.getByRole('button', { name: '회원가입', exact: true }).isVisible(), true);
+  if (exerciseUnknownLogin) {
+    await loginDialog.locator('#auth-phone').fill(unregisteredPhone);
+    await loginDialog.getByRole('button', { name: '인증번호 요청', exact: true }).click();
+    await loginDialog.getByRole('alert').waitFor();
+    assert.match(await loginDialog.getByRole('alert').innerText(), /가입된 휴대폰 번호가 아니에요/);
+  }
+  await loginDialog.getByRole('button', { name: '회원가입', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '회원가입', exact: true });
   await dialog.getByText('전체 약관에 동의합니다', { exact: true }).click();
   await dialog.getByRole('button', { name: '동의하고 다음으로', exact: true }).click();
   return dialog;
+}
+
+async function loginExisting(page, phone) {
+  await page.locator('header').getByRole('button', { name: '로그인', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '로그인', exact: true });
+  await dialog.locator('#auth-phone').fill(phone);
+  await dialog.getByRole('button', { name: '인증번호 요청', exact: true }).click();
+  await dialog.getByRole('status').waitFor();
+  await dialog.getByRole('button', { name: '테스트 OTP 입력', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Supabase에서 인증 확인', exact: true }).click();
+  await dialog.waitFor({ state: 'detached' });
 }
 
 async function requestAndVerify(page, phone, { exerciseErrors = false } = {}) {
@@ -111,7 +136,8 @@ async function saveProfile(page, nickname, birthDate) {
   pageA.on('pageerror', error => pageErrors.push(error.message));
 
   try {
-    await openSignup(pageA);
+    await openSignup(pageA, { exerciseUnknownLogin: true });
+    evidence.checks.push('기본 로그인 화면과 하단 회원가입 진입, 미가입 번호 로그인 차단');
     evidence.rerequest = await requestAndVerify(pageA, evidence.firstPhone, { exerciseErrors: true });
     evidence.checks.push('실제 OTP 요청, 잘못된 OTP에 대한 만료/오류 안내, 고정 OTP 123456 확인');
 
@@ -225,6 +251,13 @@ async function saveProfile(page, nickname, birthDate) {
       await pageA.reload({ waitUntil: 'networkidle' });
       await pageA.locator('header').getByText('실제가입A수정 · 25살', { exact: true }).waitFor();
       evidence.checks.push('본인 입력 열 수정 허용, DB updated_at 트리거, 시스템 시각 위조 UPDATE 거부, 화면 재조회');
+
+      await pageA.goto(new URL('/me', appUrl).toString(), { waitUntil: 'networkidle' });
+      await pageA.getByTitle('로그아웃').click();
+      await pageA.locator('header').getByRole('button', { name: '로그인', exact: true }).waitFor();
+      await loginExisting(pageA, evidence.firstPhone);
+      await pageA.locator('header').getByText('실제가입A수정 · 25살', { exact: true }).waitFor();
+      evidence.checks.push('실제 로그아웃 후 기존 회원 OTP 로그인과 프로필 복구');
     } finally {
       await contextB.close();
     }

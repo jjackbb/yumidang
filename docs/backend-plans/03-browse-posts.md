@@ -24,7 +24,7 @@ flowchart TD
     H --> I[공고 상세]
 
     I --> J[제목·설명·일정·모집 마감]
-    I --> K[대략적인 지역·공개 랜드마크]
+    I --> K[시·구·동 공개 위치]
     I --> L[모집 상태·1대1 정원·선호 조건]
     I --> M[작성자 프로필 보기<br/>기능 4]
     I --> N[참여 요청<br/>기능 5]
@@ -33,7 +33,7 @@ flowchart TD
     N -. 이번 단계에서는 구현 안 함 .-> P[참여 요청 생성]
 ```
 
-목록과 상세에서 정확한 만남 장소는 내려받지 않는다. 화면에서 숨기는 방식이 아니라 `posts` 데이터 자체에 저장하지 않는다.
+목록과 상세에는 `서울특별시 성동구 성수동`처럼 시·구·동까지만 공개한다. 정확한 만남 장소와 역·건물·출구 같은 랜드마크는 내려받지 않으며 `posts` 데이터 자체에도 저장하지 않는다.
 
 ## 데이터 관계
 
@@ -57,7 +57,6 @@ erDiagram
         timestamptz ends_at
         timestamptz recruitment_ends_at
         text public_area
-        text public_landmark
         text preference_note
         text_array tags
         smallint capacity
@@ -81,8 +80,7 @@ erDiagram
 | `starts_at` | `timestamptz` | O | 동행 시작 시각 |
 | `ends_at` | `timestamptz` | O | 동행 종료 시각. 이후 완료·평가 가능 시점의 기준 |
 | `recruitment_ends_at` | `timestamptz` | O | 참여 요청을 받을 수 있는 마지막 시각 |
-| `public_area` | `text` | O | 목록에 공개할 넓은 지역. 예: `서울 종로구` |
-| `public_landmark` | `text` | 선택 | 공개 가능한 랜드마크. 예: `안국역 인근` |
+| `public_area` | `text` | O | 목록·상세에 공개할 시·구·동. 예: `서울특별시 성동구 성수동` |
 | `preference_note` | `text` | 선택 | 상세에 공개할 원하는 동행 조건. 자동 신청 제한에는 사용하지 않음 |
 | `tags` | `text[]` | O | 공고 특징 표시와 간단 검색 보조. 기본값 빈 배열 |
 | `capacity` | `smallint` | O | 최소 사이클에서는 1대1이므로 값은 `2`로 고정 |
@@ -93,6 +91,7 @@ erDiagram
 이번 최소 스키마에는 다음을 넣지 않는다.
 
 - `secret_location`: 정확한 위치는 확정된 참여자만 접근할 별도 약속 데이터에서 나중에 저장
+- `public_landmark`: 공개 위치를 동까지만 제한하므로 역·건물·출구 정보는 저장하지 않음
 - `current_members`: 신청·확정 데이터로 계산해야 하며 직접 저장하면 불일치 위험이 있음
 - `neighborhood_id`: 프로필 지역 정보와 무관하며 현재 지역 마스터 테이블이 없음
 - `event_id`: 실제 행사 데이터 계약이 아직 없으므로 샘플 행사 ID를 DB 계약으로 굳히지 않음
@@ -103,6 +102,7 @@ erDiagram
 - `title`: 앞뒤 공백 제거, 2~80자
 - `description`: 1~2,000자
 - `preference_note`: 입력 시 1~300자
+- `public_area`: 정해진 시·구·동 형식만 허용하며 상세 주소·역·건물·출구 입력 금지
 - `starts_at < ends_at`
 - `recruitment_ends_at <= starts_at`
 - 새 공고 기준 `recruitment_ends_at > now()`
@@ -154,7 +154,7 @@ limit 20
 - 카테고리와 태그
 - 동행 시작·종료 시각
 - 모집 마감
-- `public_area`와 선택적인 `public_landmark`
+- 시·구·동 형식의 `public_area`
 - `1/2명`과 모집 상태
 
 작성자 닉네임·사진·만 나이·후기는 기능 4의 공개 프로필 계약이 정해진 뒤 연결한다. 기능 3에서 `birth_date`를 직접 읽어 나이를 노출하지 않는다.
@@ -164,7 +164,7 @@ limit 20
 - 카드의 모든 정보
 - 전체 설명
 - 일정과 모집 마감의 명확한 날짜·시각
-- 공개 가능한 지역·랜드마크
+- 시·구·동까지만 표시하는 공개 지역
 - 정원 2명과 현재 상태
 - 작성자가 입력한 공개 선호 조건
 - `preference_note`는 안내 문구이며 신청 가능 여부를 자동 판정하지 않음

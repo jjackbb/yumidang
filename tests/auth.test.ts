@@ -4,8 +4,8 @@ import type { User } from '@supabase/supabase-js';
 
 import { currentUserFromProfile } from '../src/auth/user.ts';
 import {
+  authErrorMessage,
   exactAgeLabel,
-  signupErrorMessage,
   toE164KoreanPhone,
   validateNickname,
   validateSignupProfile,
@@ -49,9 +49,11 @@ test('Supabase config accepts only the designated project and a publishable key'
 });
 
 test('OTP errors distinguish rate limiting, expiry, and invalid codes', () => {
-  assert.match(signupErrorMessage({ message: 'rate limit', status: 429 }, 'send'), /잠시/);
-  assert.match(signupErrorMessage({ message: 'otp_expired' }, 'verify'), /만료/);
-  assert.match(signupErrorMessage({ message: 'invalid token' }, 'verify'), /맞지 않아요/);
+  assert.match(authErrorMessage({ message: 'rate limit', status: 429 }, 'send'), /잠시/);
+  assert.match(authErrorMessage({ message: 'otp_expired' }, 'verify'), /만료/);
+  assert.match(authErrorMessage({ message: 'invalid token' }, 'verify'), /맞지 않아요/);
+  assert.match(authErrorMessage({ message: 'Signups not allowed for otp', status: 422, code: 'otp_disabled' }, 'send', 'login'), /가입된 휴대폰 번호가 아니에요/);
+  assert.match(authErrorMessage({ message: 'Failed to fetch' }, 'send'), /개발 서버를 다시 시작/);
 });
 
 test('Supabase profile becomes the minimum current user with an exact age', () => {

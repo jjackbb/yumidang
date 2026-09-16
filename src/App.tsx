@@ -60,6 +60,7 @@ import { canViewSecretLocation, visibleNotifications } from './utils/access';
 import { blockImpact } from './utils/blocking';
 import { useSupabaseAuth } from './auth/useSupabaseAuth';
 import { currentUserFromProfile } from './auth/user';
+import { getSupabaseClient } from './lib/supabase';
 
 import { mockCategories } from './data/mockData';
 import { Appointment, AppointmentReview, BlockRelation, CategoryItem, ChatMember, CompletionConfirmation, DemoSettings, EventBannerItem, FavoriteFriend, Invitation, MeetupPost, CurrentUser, JoinRequest, ReviewItem, EscrowPayment, NotificationItem, NotificationSettings, ChatRoom, ScheduleProposal } from './types';
@@ -957,7 +958,14 @@ export default function App() {
 
   const handleLogout = async () => {
     if (!demoMode) {
-      setLifecycleNotice('로그아웃은 사용자 흐름 2번에서 구현할 예정이에요. 이번 범위는 회원가입과 세션 복구까지만 포함합니다.');
+      const { error } = await getSupabaseClient().auth.signOut();
+      if (error) {
+        setLifecycleNotice('로그아웃하지 못했어요. 네트워크 상태를 확인하고 다시 시도해 주세요.');
+        return;
+      }
+      setProfileEditor(null); setIsProfilePreviewOpen(false); setSafetyDialog(null);
+      setActiveRoomId(null); setIsDashboardOpen(false); setIsReviewModalOpen(false); setSelectedChatProfile(null);
+      navigate('/', true);
       return;
     }
     setCurrentUser(null);
@@ -1092,14 +1100,14 @@ export default function App() {
             <button type="button" onClick={resetPrototype} className="rounded-lg bg-red-600 text-white px-2.5 py-1 font-bold">저장 데이터 초기화</button>
           </div>
         </div>}
-        {!demoMode && <div role="status" className="bg-amber-50 px-4 py-2 text-xs text-amber-950 border-b border-amber-100">기능 1 회원가입 · 테스트 번호는 Supabase가 고정 OTP 123456을 검증하며 실제 문자는 발송하지 않아요.</div>}
+        {!demoMode && <div role="status" className="bg-amber-50 px-4 py-2 text-xs text-amber-950 border-b border-amber-100">휴대폰 로그인·회원가입 · 테스트 번호는 Supabase가 고정 OTP 123456을 검증하며 실제 문자는 발송하지 않아요.</div>}
         {/* Top Header */}
         <Header
           unreadCount={unreadNotifCount}
           onOpenNotifications={() => currentUser ? setIsNotificationsOpen(true) : setIsAuthModalOpen(true)}
           currentUser={privateDataReady ? currentUser : null}
           onOpenAuth={() => setIsAuthModalOpen(true)}
-          guestLabel={supabaseAuth.status === 'profile-incomplete' ? '가입 계속' : '회원가입'}
+          guestLabel={supabaseAuth.status === 'profile-incomplete' ? '가입 계속' : '로그인'}
         />
         {privateDataReady && currentUser && profileMissing.length > 0 && !profileEditor && activeTab !== 'me' && <div role="status" data-profile-incomplete-bar className="flex items-center gap-2 bg-amber-50 border-b border-amber-100 px-4 py-2 text-xs text-amber-950">
           <span className="flex-1 min-w-0">프로필 미완성 · 남은 단계 {profileMissing.map(step => profileStepLabel[step]).join(' · ')}</span>

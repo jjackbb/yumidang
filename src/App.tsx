@@ -29,6 +29,7 @@ import { CreateMeetupModal } from './components/CreateMeetupModal';
 
 import { NotificationModal } from './components/NotificationModal';
 import { AuthModal } from './components/AuthModal';
+import { DemoAuthModal } from './components/DemoAuthModal';
 import { KycAuthModal } from './components/KycAuthModal';
 import { PostDetailModal } from './components/PostDetailModal';
 import { JoinRequestModal } from './components/JoinRequestModal';
@@ -57,6 +58,8 @@ import { demoNow, isDemoMode } from './utils/demoMode';
 import { browserStorage, clearPrototype, loadPrototype, savePrototype, storageIssueMessage, STORAGE_KEYS, type PrototypeData, type StorageIssue } from './utils/prototypeStore';
 import { canViewSecretLocation, visibleNotifications } from './utils/access';
 import { blockImpact } from './utils/blocking';
+import { useSupabaseAuth } from './auth/useSupabaseAuth';
+import { currentUserFromProfile } from './auth/user';
 
 import { mockCategories } from './data/mockData';
 import { Appointment, AppointmentReview, BlockRelation, CategoryItem, ChatMember, CompletionConfirmation, DemoSettings, EventBannerItem, FavoriteFriend, Invitation, MeetupPost, CurrentUser, JoinRequest, ReviewItem, EscrowPayment, NotificationItem, NotificationSettings, ChatRoom, ScheduleProposal } from './types';
@@ -76,6 +79,7 @@ type ConflictAction =
 export default function App() {
   // `?demo=1` is fixed for the page lifetime and uses its own storage key.
   const [demoMode] = useState(isDemoMode);
+  const supabaseAuth = useSupabaseAuth(!demoMode);
   const storageKey = demoMode ? STORAGE_KEYS.demo : STORAGE_KEYS.app;
   const [boot] = useState(() => {
     const loaded = loadPrototype(browserStorage(), storageKey);
@@ -95,8 +99,14 @@ export default function App() {
   const [users, setUsers] = useState<CurrentUser[]>(boot.data.users);
   const [localUser, setCurrentUser] = useState<CurrentUser | null>(() =>
     boot.data.users.find(user => user.id === boot.data.activeUserId) || null);
-  const currentUser = localUser;
-  const privateAreaAllowed = Boolean(currentUser?.isLoggedIn);
+  const currentUser = demoMode
+    ? localUser
+    : supabaseAuth.user && supabaseAuth.profile
+      ? currentUserFromProfile(supabaseAuth.user, supabaseAuth.profile)
+      : null;
+  const privateAreaAllowed = demoMode
+    ? Boolean(currentUser?.isLoggedIn)
+    : supabaseAuth.status === 'authenticated';
   const [demoSettings, setDemoSettings] = useState<DemoSettings>(boot.data.demo);
   const [favorites, setFavorites] = useState<FavoriteFriend[]>(boot.data.favorites);
   const [invitations, setInvitations] = useState<Invitation[]>(boot.data.invitations);
@@ -108,10 +118,11 @@ export default function App() {
   const clock = () => demoNow(demoMode ? demoSettings.timeOffsetMs : 0);
 
   useEffect(() => {
+    if (!demoMode) return;
     if (currentUser) setUsers(prev => prev.some(user => user.id === currentUser.id)
       ? prev.map(user => user.id === currentUser.id ? currentUser : user)
       : [...prev, currentUser]);
-  }, [currentUser]);
+  }, [demoMode, currentUser]);
 
   // Modal states
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
@@ -306,18 +317,20 @@ export default function App() {
   }, [currentUser?.id]);
   useEffect(() => {
     if (demoMode) return;
-    const status = currentUser ? 'authenticated' : 'anonymous';
-    if (isProtectedPath(path) && status === 'anonymous') navigate(loginPath(path), true);
+    const status = supabaseAuth.status;
+    if (isProtectedPath(path) && ['anonymous', 'profile-incomplete', 'error'].includes(status)) navigate(loginPath(path), true);
     if (path === '/login') {
       if (status === 'authenticated') {
         setIsAuthModalOpen(false);
         navigate(safeReturnPath(search.get('next')), true);
-      } else setIsAuthModalOpen(true);
+      } else if (status === 'anonymous' || status === 'profile-incomplete') setIsAuthModalOpen(true);
+      else setIsAuthModalOpen(false);
     } else if (status === 'authenticated') setIsAuthModalOpen(false);
-  }, [path, demoMode, currentUser?.id]);
+    if (status === 'profile-incomplete') setIsAuthModalOpen(true);
+  }, [path, demoMode, supabaseAuth.status]);
   const closeAuth = () => {
     setIsAuthModalOpen(false);
-    if (!demoMode && path === '/login') navigate(prototypeSignInSucceeded.current ? safeReturnPath(search.get('next')) : '/', true);
+    if (!demoMode && path === '/login') navigate('/', true);
     prototypeSignInSucceeded.current = false;
   };
   const matchingLocks = useRef(new Set<string>());
@@ -391,9 +404,9 @@ export default function App() {
   const snapshot = (): PrototypeData => ({
     posts: meetupPosts, requests: joinRequests, rooms: chatRooms, appointments, notifications, reviews,
     favorites, invitations, completions, appointmentReviews, notificationSettings, blocks,
-    // The signed-in record is the newest copy; the users list catches up one render later.
-    users: currentUser ? (users.some(user => user.id === currentUser.id) ? users.map(user => user.id === currentUser.id ? currentUser : user) : [...users, currentUser]) : users,
-    activeUserId: currentUser?.id || null, demo: demoSettings, ui: { activeTab },
+    // Supabase identity/profile data is not duplicated into the prototype localStorage envelope.
+    users: demoMode && currentUser ? (users.some(user => user.id === currentUser.id) ? users.map(user => user.id === currentUser.id ? currentUser : user) : [...users, currentUser]) : users,
+    activeUserId: demoMode ? currentUser?.id || null : null, demo: demoSettings, ui: { activeTab },
   });
   const persist = () => {
     const result = savePrototype(browserStorage(), storageKey, snapshot(), clock());
@@ -488,7 +501,7 @@ export default function App() {
     setNotifications((prev) => prev.map((n) => n.recipientId === currentUser?.id ? { ...n, read: true } : n));
   };
 
-  const profileMissing = currentUser ? missingProfileSteps(currentUser) : [];
+  const profileMissing = demoMode && currentUser ? missingProfileSteps(currentUser) : [];
   /** Requests and posts need the basic profile; sends the member back to the first missing step. */
   const requireCompleteProfile = (action: string) => {
     if (!profileMissing.length) return true;
@@ -943,7 +956,10 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-
+    if (!demoMode) {
+      setLifecycleNotice('로그아웃은 사용자 흐름 2번에서 구현할 예정이에요. 이번 범위는 회원가입과 세션 복구까지만 포함합니다.');
+      return;
+    }
     setCurrentUser(null);
     setProfileEditor(null); setIsProfilePreviewOpen(false); setSafetyDialog(null);
     setActiveRoomId(null); setIsDashboardOpen(false); setIsReviewModalOpen(false); setSelectedChatProfile(null);
@@ -1076,20 +1092,26 @@ export default function App() {
             <button type="button" onClick={resetPrototype} className="rounded-lg bg-red-600 text-white px-2.5 py-1 font-bold">저장 데이터 초기화</button>
           </div>
         </div>}
-        {!demoMode && <div role="status" className="bg-amber-50 px-4 py-2 text-xs text-amber-950 border-b border-amber-100">프론트엔드 프로토타입 · 테스트 인증번호 123456 · 실제 문자 발송 없음</div>}
+        {!demoMode && <div role="status" className="bg-amber-50 px-4 py-2 text-xs text-amber-950 border-b border-amber-100">기능 1 회원가입 · 테스트 번호는 Supabase가 고정 OTP 123456을 검증하며 실제 문자는 발송하지 않아요.</div>}
         {/* Top Header */}
         <Header
           unreadCount={unreadNotifCount}
           onOpenNotifications={() => currentUser ? setIsNotificationsOpen(true) : setIsAuthModalOpen(true)}
           currentUser={privateDataReady ? currentUser : null}
           onOpenAuth={() => setIsAuthModalOpen(true)}
+          guestLabel={supabaseAuth.status === 'profile-incomplete' ? '가입 계속' : '회원가입'}
         />
         {privateDataReady && currentUser && profileMissing.length > 0 && !profileEditor && activeTab !== 'me' && <div role="status" data-profile-incomplete-bar className="flex items-center gap-2 bg-amber-50 border-b border-amber-100 px-4 py-2 text-xs text-amber-950">
           <span className="flex-1 min-w-0">프로필 미완성 · 남은 단계 {profileMissing.map(step => profileStepLabel[step]).join(' · ')}</span>
           <button type="button" onClick={() => setProfileEditor({ mode: 'setup', step: profileMissing[0] })} className="shrink-0 rounded-lg bg-amber-900 text-white px-2.5 py-1 font-bold">이어서 작성</button>
         </div>}
 
-        {isProtectedPath(path) && !privateAreaAllowed && <AuthGate status="anonymous" error={null} onRetry={() => {}} onLogin={() => setIsAuthModalOpen(true)} />}
+        {isProtectedPath(path) && !privateAreaAllowed && <AuthGate
+          status={supabaseAuth.status === 'loading' ? 'loading' : supabaseAuth.status === 'error' ? 'error' : 'anonymous'}
+          error={supabaseAuth.error}
+          onRetry={() => void supabaseAuth.refresh()}
+          onLogin={() => setIsAuthModalOpen(true)}
+        />}
         {isProtectedPath(path) && privateAreaAllowed && !privateDataReady && <div aria-hidden="true" className="flex-1 p-5 space-y-4 animate-pulse">
           <div className="h-7 w-28 rounded-lg bg-gray-100" />
           {[0, 1, 2].map(item => <div key={item} className="h-20 rounded-2xl bg-gray-100" />)}
@@ -1399,13 +1421,19 @@ export default function App() {
         {privateDataReady && conflictPrompt && <ScheduleConflictDialog conflicts={conflictPrompt.conflicts} onClose={() => setConflictPrompt(null)} onContinue={continueConflict} />}
         {lifecycleNotice && <div role="alert" className="fixed bottom-24 left-5 right-5 mx-auto max-w-sm bg-gray-900 text-white p-4 rounded-2xl z-[95] text-xs leading-relaxed shadow-lg">{lifecycleNotice}<button onClick={() => setLifecycleNotice(null)} className="block ml-auto mt-2 font-bold underline">안내 닫기</button></div>}
         {/* Modal: 회원가입 / 휴대폰 본인확인 (Phase 1) */}
-        <AuthModal
+        {demoMode ? <DemoAuthModal
           isOpen={isAuthModalOpen}
           onClose={closeAuth}
           onAuthSuccess={handleAuthSuccess}
           users={users}
           now={now}
-        />
+        /> : <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={closeAuth}
+          profileIncomplete={supabaseAuth.status === 'profile-incomplete'}
+          onProfileSaved={supabaseAuth.refresh}
+          now={now}
+        />}
 
         {/* Modal: 선택형 KYC 본인확인 (Phase 1) */}
         <KycAuthModal

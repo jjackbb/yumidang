@@ -9,6 +9,7 @@ interface HeaderProps {
   onOpenNotifications: () => void;
   currentUser: CurrentUser | null;
   onOpenAuth: () => void;
+  guestLabel?: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,6 +17,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNotifications,
   currentUser,
   onOpenAuth,
+  guestLabel = '로그인',
 }) => {
   return (
     <header className="sticky top-0 z-30 bg-white px-5 py-3.5 flex items-center justify-between border-b border-transparent transition-all">
@@ -36,14 +38,14 @@ export const Header: React.FC<HeaderProps> = ({
         {currentUser && currentUser.isLoggedIn ? (
           <div className="flex items-center gap-1 px-3 py-1 bg-[#f0edff] rounded-full text-xs font-bold text-[#6c2cf5] shadow-2xs">
             <ShieldCheck className="w-3.5 h-3.5 text-[#6c2cf5]" />
-            <span>{currentUser.maskedName}</span>
+            <span>{currentUser.maskedName}{currentUser.ageGroup ? ` · ${currentUser.ageGroup}` : ''}</span>
           </div>
         ) : (
           <button
             onClick={onOpenAuth}
             className="px-3 py-1 bg-[#6c2cf5] text-white text-xs font-bold rounded-lg hover:bg-[#5820d8] transition-colors shadow-xs"
           >
-            로그인
+            {guestLabel}
           </button>
         )}
 
@@ -62,4 +64,3 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
-

@@ -1,0 +1,32 @@
+{
+  "commit": "56475ab15868d6c036c0e66199054360bc92ef24",
+  "url": "https://yumidang6.vercel.app",
+  "at": "2026-09-14T13:20:43.055Z",
+  "mode": "Observed browser behavior on simulated frontend; 이전 외부 백엔드 calls intercepted",
+  "cases": [
+    {
+      "name": "signup profile fields compared to MVP",
+      "observations": {
+        "dateInputs": 0,
+        "selects": [
+          "20대30대40대50대 이상"
+        ],
+        "textareas": 0,
+        "emailInputs": 0,
+        "maleReferralVisible": true,
+        "startingSugarText": "기본 시작 당도\n동행 완료 후 상호 평가로 상승합니다\n50 🍯\n회원가입 완료 및 서비스 시작\n이미 계정이 있으신가요? 로그인으로 돌아가기"
+      }
+    },
+    {
+      "name": "future appointment review and duplicate sugar settlement",
+      "observations": {
+        "upcomingText": "매칭 확정\nD-2\n조*미 님과의 강남맛집 식사 동행\n\n2026. 9. 16. (수) 오후 2:00\n\n서울 강남구 대치동 르브런치\n\n약속 확인",
+        "reviewAllowedBeforeStart": true,
+        "sugarText": "당도\n54 🍯\n\n기본 당도 50에서 4 올랐어요!\n\n14회\n참여한 동행\n5.0\n동행 평점\n4개\n받은 후기\n동행 정보\n칭찬 & 후기\n에스크로\n💎\n확정 ",
+        "has54": true,
+        "bodyExcerpt": ""
+      }
+    }
+  ],
+  "pageErrors": []
+}

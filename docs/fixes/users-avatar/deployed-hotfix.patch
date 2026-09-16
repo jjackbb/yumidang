@@ -1,0 +1,110 @@
+--- a/package.json
++++ b/package.json
+@@ -5,7 +5,7 @@
+   "type": "module",
+   "scripts": {
+     "dev": "vite --port=3000 --host=0.0.0.0",
+-    "build": "vite build",
++    "build": "npm run lint && vite build",
+     "preview": "vite preview",
+     "clean": "rm -rf dist server.js",
+     "lint": "tsc --noEmit",
+--- a/src/data/prototypeSeed.ts
++++ b/src/data/prototypeSeed.ts
+@@ -79,7 +79,7 @@
+     };
+   }), ...eventLinkedPosts()];
+   posts.push({
+-    id: 'post-minsu-invite', authorId: 'user-req-1', author: '김*수', avatar: usersAvatar('user-req-1'),
++    id: 'post-minsu-invite', authorId: 'user-req-1', author: '김*수', avatar: requests[0].requesterAvatar,
+     category: '산책', title: '저녁 서울숲 산책 같이 해요', description: '퇴근 뒤 한 시간 정도 천천히 걸으며 이야기 나눠요.',
+     startsAt: demoSchedule(4, 19), endsAt: demoSchedule(4, 20), recruitmentEndsAt: demoSchedule(3, 19),
+     time: formatMeetupRange(demoSchedule(4, 19), demoSchedule(4, 20)), location: '성동구 서울숲', publicLocation: '서울숲역 3번 출구', secretLocation: '서울숲 방문자센터 앞',
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -48,7 +48,8 @@
+ import { ProfileEditor, type ProfilePatch } from './components/ProfileEditor';
+ import { BlockUserDialog, ReportUserDialog } from './components/SafetyEntryDialogs';
+ import { avatarSrc, missingProfileSteps, profileStepLabel, type ProfileStep } from './utils/profile';
+-import { isSavedBy } from './utils/relations';
++import { isSavedBy, notificationSettingsFor } from './utils/relations';
++import { canInviteToPost, shouldNotifyInvitation } from './utils/invitations';
+ import { publicProfileForMember, publicProfileForPost } from './data/publicProfiles';
+ import { CancellationDialog, LifecycleConfirmDialog, ScheduleConflictDialog } from './components/LifecycleDialogs';
+ import { cancelAppointment as cancelConfirmedAppointment, closePost, conditionsOf, confirmChangedConditions, expirePosts, isConfirmedAppointment, isOpenRequest, isRecruiting, overlappingAppointments, recruitmentDeadline, updateRecruitingPost, type LifecycleState } from './utils/postLifecycle';
+@@ -859,6 +860,44 @@
+       ? prev.filter(item => !(item.ownerId === currentUser.id && item.targetId === targetId))
+       : [...prev, { ownerId: currentUser.id, targetId, savedAt: clock().toISOString(), notifyNewPosts: true }]);
+   };
++  const toggleFavoriteNotice = (targetId: string) => {
++    if (!currentUser) return;
++    setFavorites(prev => prev.map(item => item.ownerId === currentUser.id && item.targetId === targetId ? { ...item, notifyNewPosts: !item.notifyNewPosts } : item));
++  };
++  const openProfileById = (targetId: string) => {
++    const user = userById(targetId);
++    const post = meetupPosts.find(item => item.authorId === targetId);
++    if (user) setSelectedChatProfile(selfMember(user));
++    else if (post) setSelectedChatProfile(postAuthor(post));
++  };
++  const inviteFavorite = (targetId: string, postId: string) => {
++    if (!currentUser || !isSavedBy(currentUser.id, targetId, favorites)) return;
++    const post = meetupPosts.find(item => item.id === postId);
++    const blocked = blocks.some(item => (item.blockerId === currentUser.id && item.blockedId === targetId) || (item.blockerId === targetId && item.blockedId === currentUser.id));
++    const allowed = canInviteToPost(post, currentUser.id, targetId, invitations, blocked, clock());
++    if (!allowed.ok) { setLifecycleNotice(allowed.reason); return; }
++    const invitation: Invitation = { id: `invite-${crypto.randomUUID()}`, postId, senderId: currentUser.id, recipientId: targetId, receivedAt: clock().toISOString(), status: 'received' };
++    setInvitations(prev => [invitation, ...prev]);
++    if (shouldNotifyInvitation(invitation, notificationSettings, favorites, appointments, completions)) setNotifications(prev => [{
++      id: `notif-${invitation.id}`, recipientId: targetId, createdAt: invitation.receivedAt, title: `${currentUser.maskedName}님이 동행에 초대했어요`,
++      description: post!.title, time: '방금', read: false, type: 'invitation', targetType: 'invitation', targetId: invitation.id,
++    }, ...prev]);
++    setLifecycleNotice('공개된 공고로 초대했어요. 상대가 직접 신청하고 작성자가 수락해야 확정됩니다.');
++  };
++  const openInvitation = (target: Invitation) => {
++    if (!currentUser || ![target.senderId, target.recipientId].includes(currentUser.id)) return;
++    const post = meetupPosts.find(item => item.id === target.postId);
++    setInvitations(prev => prev.map(item => item.id === target.id && item.recipientId === currentUser.id && item.status === 'received' ? { ...item, status: 'viewed', viewedAt: clock().toISOString() } : item));
++    setNotifications(prev => prev.map(item => item.targetType === 'invitation' && item.targetId === target.id && item.recipientId === currentUser.id ? { ...item, read: true } : item));
++    setSelectedPostForDetail(post || null);
++    if (!post) setLifecycleNotice('삭제된 공고예요. 초대 기록은 Me에 남아 있어요.');
++  };
++  const changeStrangerInvitationNotice = (enabled: boolean) => {
++    if (!currentUser) return;
++    setNotificationSettings(prev => prev.some(item => item.userId === currentUser.id)
++      ? prev.map(item => item.userId === currentUser.id ? { ...item, strangerInvitations: enabled } : item)
++      : [...prev, { userId: currentUser.id, strangerInvitations: enabled }]);
++  };
+   const activeAppointmentsWith = (targetId: string) => appointments.filter(item =>
+     currentUser && item.participantIds?.includes(currentUser.id) && item.participantIds.includes(targetId) && isConfirmedAppointment(item));
+   const confirmBlock = (member: ChatMember) => {
+@@ -917,6 +956,7 @@
+     const account = otherId ? userById(otherId) : undefined;
+     return otherId ? { id: otherId, displayName: account?.maskedName || target.partnerName, avatar: account?.avatar || target.partnerAvatar } : undefined;
+   };
++  const currentNotificationSettings = notificationSettingsFor(notificationSettings, currentUser?.id || '');
+   const detailEvent = selectedPostForDetail?.eventId ? eventById(selectedPostForDetail.eventId) : undefined;
+   const dashboardPartner = chatRooms.find(room => room.appointmentId === appointment.id)?.members.find(member => member.id !== currentUser?.id);
+   const dashboardProfile = dashboardPartner ? publicProfileForMember(dashboardPartner, currentUser, users) : undefined;
+@@ -1064,11 +1104,21 @@
+               reviews={reviews}
+               escrowPayments={escrowPayments}
+               invitations={invitations}
++              favorites={favorites}
++              completions={completions}
++              notificationSettings={currentNotificationSettings}
++              users={users}
++              now={now}
+               userNameOf={id => userById(id)?.maskedName || meetupPosts.find(post => post.authorId === id)?.author || '회원'}
+               partnerOf={partnerOf}
+               onOpenAppointmentChat={target => { const room = chatRooms.find(item => item.appointmentId === target.id); if (room) openRoom(room); }}
+               onOpenPartnerProfile={setSelectedChatProfile}
+-              onOpenInvitationPost={postId => setSelectedPostForDetail(meetupPosts.find(post => post.id === postId) || null)}
++              onOpenInvitationPost={openInvitation}
++              onToggleFavoriteNotice={toggleFavoriteNotice}
++              onRemoveFavorite={toggleFavorite}
++              onInviteFavorite={inviteFavorite}
++              onOpenFavoriteProfile={openProfileById}
++              onChangeStrangerInvitationNotice={changeStrangerInvitationNotice}
+               acceptBlockedReason={acceptBlockedReason}
+             />
+           </div>

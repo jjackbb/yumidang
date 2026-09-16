@@ -1,0 +1,31 @@
+{
+  "checked_at": "2026-09-15T06:57:18.479Z",
+  "site": "https://yumidang6.vercel.app",
+  "cases": [
+    {
+      "path": "/",
+      "url": "https://yumidang6.vercel.app/",
+      "rendered": true
+    },
+    {
+      "path": "/explore",
+      "url": "https://yumidang6.vercel.app/explore",
+      "rendered": true
+    },
+    {
+      "path": "/chat",
+      "url": "https://yumidang6.vercel.app/login?next=%2Fchat",
+      "rendered": true
+    },
+    {
+      "path": "/me",
+      "url": "https://yumidang6.vercel.app/login?next=%2Fme",
+      "rendered": true
+    },
+    {
+      "path": "demo account → Me → reload",
+      "rendered": true
+    }
+  ],
+  "pageErrors": []
+}

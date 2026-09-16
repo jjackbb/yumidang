@@ -1,0 +1,11 @@
+{
+  "url": "http://127.0.0.1:4180",
+  "mode": "Frontend simulation; 이전 외부 백엔드 intercepted; no real messages or penalties",
+  "cases": [
+    {
+      "name": "privacy after a schedule change reveals the detailed place only to participants",
+      "status": "PASS"
+    }
+  ],
+  "errors": []
+}

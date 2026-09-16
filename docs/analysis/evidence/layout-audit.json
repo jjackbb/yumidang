@@ -1,0 +1,38 @@
+{
+  "mode": "LOCAL_BROWSER; backend intercepted",
+  "mobileViewport": {
+    "width": 390,
+    "height": 844
+  },
+  "carouselBefore": {
+    "scrollLeft": 0,
+    "width": 350
+  },
+  "carouselAfterDot2": {
+    "scrollLeft": 0,
+    "width": 350
+  },
+  "allEventsDestination": "2026 서울세계불꽃축제 함께 갈 이웃 찾기 🎆\n시즌 이벤트\n여의도 한강공원\nRKLES 이번 주말 특별 추천\n2026 서울세계불꽃축제 함께 갈 이웃 찾기 🎆\n2026.9.12(토) 19:20 시작\n여의도 한강공원 여의도 한강공원 일대\n이벤트 소개\n\n화려한 불꽃과 함께하는 서울의 대표 가을 축제! 혼자 보기 아쉬운 밤하늘을 좋은 이웃과 함께 나누세요. 돗자리 명당 잡기, ",
+  "createOpensAuth": true,
+  "createResumesAfterLogin": false,
+  "desktop": {
+    "main": {
+      "x": 500,
+      "y": 0,
+      "width": 440,
+      "height": 1171.125
+    },
+    "bottomNav": {
+      "x": 480,
+      "y": 831,
+      "width": 480,
+      "height": 69
+    },
+    "createButton": {
+      "x": 1362,
+      "y": 772,
+      "width": 54,
+      "height": 54
+    }
+  }
+}

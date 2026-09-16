@@ -1,0 +1,26 @@
+{
+  "checked_at": "2026-09-15T06:56:19.888Z",
+  "deployment": "https://yumidang6-rglc1jyou-jjackbb-projects.vercel.app",
+  "cases": [
+    {
+      "path": "/",
+      "rendered": true,
+      "url": "https://yumidang6-rglc1jyou-jjackbb-projects.vercel.app/"
+    },
+    {
+      "path": "/explore",
+      "rendered": true,
+      "url": "https://yumidang6-rglc1jyou-jjackbb-projects.vercel.app/explore"
+    },
+    {
+      "path": "/me",
+      "rendered": true,
+      "url": "https://yumidang6-rglc1jyou-jjackbb-projects.vercel.app/login?next=%2Fme"
+    },
+    {
+      "path": "demo account → Me → reload",
+      "rendered": true
+    }
+  ],
+  "pageErrors": []
+}

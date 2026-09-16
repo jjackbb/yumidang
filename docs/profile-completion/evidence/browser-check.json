@@ -1,0 +1,24 @@
+{
+  "url": "http://127.0.0.1:4176",
+  "mode": "Browser checks on frontend simulation; 이전 외부 백엔드 intercepted",
+  "cases": [
+    {
+      "name": "post details → summary → correct public profile → same post, private place locked",
+      "status": "PASS"
+    },
+    {
+      "name": "anonymous closed post cannot reveal exact place and desktop profile works",
+      "status": "PASS"
+    },
+    {
+      "name": "14:50/14:59 locked → 15:00 complete → review once, close/reopen and another appointment isolated",
+      "status": "PASS"
+    },
+    {
+      "name": "create/edit description + time range rejects reversed end and preserves own profile",
+      "status": "FAIL",
+      "error": "locator.click: Error: strict mode violation: getByRole('button', { name: '산책', exact: true }) resolved to 2 elements:\n    1) <button id=\"cat-walk\" class=\"flex flex-col items-center justify-center py-3 px-1 rounded-[20px] bg-white transition-all duration-150 active:scale-95 cursor-pointer shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-md hover:shadow-md\">…</button> aka locator('#cat-walk')\n    2) <button type=\"button\" class=\"px-3 py-1.5 rounded-xl text-xs font-semibold transition-all bg-gray-100 text-gray-700 hover:bg-gray-200\">산책</button> aka locator('form').getByRole('button', { name: '산책' })\n\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: '산책', exact: true })\u001b[22m\n"
+    }
+  ],
+  "errors": []
+}

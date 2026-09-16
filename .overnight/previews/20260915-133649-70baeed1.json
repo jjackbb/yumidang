@@ -1,0 +1,20 @@
+{
+  "created_at": "2026-09-15T13:37:00+09:00",
+  "url": "http://127.0.0.1:4188/releases/20260915-133649-70baeed1/?demo=1",
+  "release_id": "20260915-133649-70baeed1",
+  "source_hash": "70baeed11a867506cad18c80af3d7e9f0b300e6ebbf65349697e702bfafaba31",
+  "completed_stages": [
+    1
+  ],
+  "in_progress_stage": 2,
+  "runner_status_at_check": "RUNNING",
+  "checks": [
+    "TypeScript PASS",
+    "unit tests PASS",
+    "build PASS",
+    "mobile/desktop smoke PASS"
+  ],
+  "validation_scope": "페이지 열기·데모 역할 전환·Me/탐색 이동·새로고침 검사. 전체 기능 완성 판정과 다름.",
+  "evidence": ".overnight/previews/checks/20260915-133649-70baeed1",
+  "reason": "runner state changed"
+}

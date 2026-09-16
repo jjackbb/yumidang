@@ -1,0 +1,7 @@
+{
+  "name": "유미당",
+  "description": "취향 맞는 이웃과 함께하는 실시간 동행 매칭 및 라이프스타일 플랫폼",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

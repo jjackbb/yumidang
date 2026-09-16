@@ -1,0 +1,27 @@
+{
+  "url": "https://yumidang6.vercel.app",
+  "mode": "Browser checks on frontend simulation; 이전 외부 백엔드 intercepted",
+  "cases": [
+    {
+      "name": "post details → summary → correct public profile → same post, private place locked",
+      "status": "PASS"
+    },
+    {
+      "name": "anonymous closed post cannot reveal exact place and desktop profile works",
+      "status": "PASS"
+    },
+    {
+      "name": "14:50/14:59 locked → 15:00 complete → review once, close/reopen and another appointment isolated",
+      "status": "PASS"
+    },
+    {
+      "name": "create/edit description + time range rejects reversed end and preserves own profile",
+      "status": "PASS"
+    },
+    {
+      "name": "reschedule carries end time to the appointment and originating post",
+      "status": "PASS"
+    }
+  ],
+  "errors": []
+}

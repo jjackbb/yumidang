@@ -1,0 +1,31 @@
+{
+  "url": "http://127.0.0.1:4192/?demo=1",
+  "mode": "Frontend simulation; 이전 외부 백엔드 intercepted; no real messages or transactions",
+  "cases": [
+    {
+      "name": "anonymous notification content stays private, then login opens the correct request",
+      "status": "PASS"
+    },
+    {
+      "name": "host profile messages drafts isolated then accept once in the same room",
+      "status": "PASS"
+    },
+    {
+      "name": "requester apply cancel reapply and explicit host simulation retain the correct room",
+      "status": "PASS"
+    },
+    {
+      "name": "schedule requires explicit response survives tabs and updates only its appointment",
+      "status": "PASS"
+    },
+    {
+      "name": "future voice and paid preview show preparation without success or auto matching",
+      "status": "PASS"
+    },
+    {
+      "name": "review regression 14:50/14:59 locked → 15:00 personal completion → private review, reopen and appointment isolation",
+      "status": "PASS"
+    }
+  ],
+  "errors": []
+}

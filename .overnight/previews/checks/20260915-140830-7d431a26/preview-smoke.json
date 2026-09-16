@@ -1,0 +1,17 @@
+{
+  "url": "http://127.0.0.1:4188/releases/20260915-140830-7d431a26/?demo=1",
+  "scope": "preview readiness only",
+  "cases": [
+    {
+      "name": "mobile",
+      "status": "PASS"
+    },
+    {
+      "name": "desktop",
+      "status": "PASS"
+    }
+  ],
+  "errors": [],
+  "externalServiceRequests": [],
+  "status": "PASS"
+}

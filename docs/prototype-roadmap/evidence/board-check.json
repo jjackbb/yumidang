@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "checks": [
+    "A/B comparison",
+    "reset",
+    "keyboard tabs",
+    "three preview dialogs",
+    "390px no overflow"
+  ],
+  "errors": []
+}

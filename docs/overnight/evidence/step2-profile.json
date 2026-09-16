@@ -1,0 +1,44 @@
+{
+  "url": "http://127.0.0.1:4186/?demo=1",
+  "mode": "step-2 signup/profile",
+  "cases": [
+    {
+      "id": "P1",
+      "name": "signup input errors, male route, photo/interest/bio validation, public preview, persistence",
+      "status": "PASS",
+      "details": "13 digits typed/pasted→11, wrong OTP, empty/jamo/latin name, future/under-19 birth date, missing gender, referral empty, free mail, wrong email code; gif/10MB+1/corrupt photo, next without photo, unsaved preview, save→delete→re-register; hobby/trait required; bio 301 and phone contact rejected; preview matches Me and hides name/phone/birth/email; sugar 15, 인증 전, 0회 after reload"
+    },
+    {
+      "id": "P2",
+      "name": "incomplete profile returns to the first missing step from apply, bar and Me",
+      "status": "PASS",
+      "details": "apply blocked → setup at photo; after saving photo and leaving, reload resumes at 취미·성향 from bar and Me"
+    },
+    {
+      "id": "P3",
+      "name": "post → author summary → profile A expand / B scroll, back to post, favorite saved privately",
+      "status": "PASS",
+      "details": "A summary→expand, B continuous; back and Escape return to post with focus; favorite kept across A/B and reload, no notification to target"
+    },
+    {
+      "id": "P4",
+      "name": "chat and received-request entry points open the same user profile",
+      "status": "PASS",
+      "details": "chat header, Me received request and post author all open the same userId profile with identical sugar/basics"
+    },
+    {
+      "id": "P5",
+      "name": "a new member seen by the host: sugar 15, no badge, saved photo/bio, no private data",
+      "status": "PASS",
+      "details": "host 서*진 opens new applicant: sugar 15, 인증 전, same stored photo and bio, age band only"
+    },
+    {
+      "id": "P6",
+      "name": "Me edit: validation, public preview, save persists, discard guard, partner sees the same bio",
+      "status": "PASS",
+      "details": "bio 301 and messenger id rejected on save; preview shows draft; saved bio survives reload; close with unsaved edit asks and discards; 서*진 sees the same bio from chat"
+    }
+  ],
+  "errors": [],
+  "externalRequests": []
+}

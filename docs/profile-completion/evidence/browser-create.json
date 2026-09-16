@@ -1,0 +1,11 @@
+{
+  "url": "http://127.0.0.1:4176",
+  "mode": "Browser checks on frontend simulation; 이전 외부 백엔드 intercepted",
+  "cases": [
+    {
+      "name": "create/edit description + time range rejects reversed end and preserves own profile",
+      "status": "PASS"
+    }
+  ],
+  "errors": []
+}

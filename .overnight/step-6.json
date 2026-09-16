@@ -1,0 +1,26 @@
+{
+  "step": 6,
+  "done": true,
+  "summary": "후속 기능 체험과 전체 시연 완료. 전화·PRO 결제·캘린더·AI 탐색·행사 수집에 각각 의미 있는 앞단과 상태를 제공하고 실제 외부 성공을 주장하지 않는다. 전체 가입부터/매칭부터/완료·평가부터 시작점, 역할·시간·02/04/07 A/B 전환, 모바일·데스크톱 통합 흐름을 연결했다.",
+  "files": [
+    "src/components/FutureFeatureLab.tsx",
+    "src/components/DemoControlPanel.tsx",
+    "src/App.tsx",
+    "tests/browser/overnight.cjs",
+    "docs/overnight/evidence-current/browser.json",
+    "docs/overnight/MORNING_REPORT.md",
+    "docs/overnight/PREVIEW.md",
+    "docs/overnight/STATUS.md"
+  ],
+  "checks": [
+    "npm run lint: PASS",
+    "npm test: PASS 85/85",
+    "npm run build: PASS, 기존 번들 크기 경고만",
+    "저장된 통합 브라우저 B01-B15+B15D: PASS 16/16, 페이지 오류 0, 외부 요청 0"
+  ],
+  "remaining": [
+    "현재 소스 브라우저 재실행은 자동 승인 심사 모델의 일시적 용량 문제로 NOT_RUN",
+    "실제 SMS·DB 다중기기·전화·결제·캘린더·AI·크롤링·운영 처리·Vercel 배포·Gemini 독립 검증은 NOT_RUN",
+    "Supabase DB·인증은 다른 대화 세션에서 진행 중"
+  ]
+}

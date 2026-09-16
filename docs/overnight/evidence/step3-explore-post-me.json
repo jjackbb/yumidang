@@ -1,0 +1,56 @@
+{
+  "url": "http://127.0.0.1:4186/?demo=1",
+  "mode": "step-3 explore/post form/Me",
+  "cases": [
+    {
+      "id": "E1",
+      "name": "explore category/region/date filters, zero results, reset, return keeps filters",
+      "status": "PASS",
+      "details": "all 13, 전시 3, +종로 3, +7일 3, 오늘 1, 지금 1"
+    },
+    {
+      "id": "E1D",
+      "name": "explore filters at 1280×900 without horizontal overflow",
+      "status": "PASS",
+      "details": "식사+성동 1"
+    },
+    {
+      "id": "E2",
+      "name": "event detail shows only its eventId posts; create from the event links the same eventId; ended event blocks creation",
+      "status": "PASS",
+      "details": "event sample-2026-9-3-1: 2 → 3 related; other event sample-2026-9-3-0 excluded; ended event disabled"
+    },
+    {
+      "id": "E3",
+      "name": "post form A and B: same validation, same saved fields, edit restores; others cannot edit; partner condition",
+      "status": "PASS",
+      "details": "A/B saved fields equal, edit restore in both variants, author-only edit, condition gate"
+    },
+    {
+      "id": "E4",
+      "name": "condition change requires re-consent; consent alone does not confirm; host acceptance confirms 1:1",
+      "status": "PASS",
+      "details": "reconfirming → consent → pending → host accept → matched_with_other + same room + Me both sides"
+    },
+    {
+      "id": "E5",
+      "name": "apply → optional chat kept across tabs/reload → host accept → Me/home → cancel shows the same state on both sides",
+      "status": "PASS",
+      "details": "request req-0533f0e7-85f5-42c9-81ec-1c1e5bc59d99: chat kept, accepted once, other candidate ended, cancel mirrored"
+    },
+    {
+      "id": "E6",
+      "name": "close and delete: Me reasons, requester reason, deleted link returns, closing is not completion",
+      "status": "PASS",
+      "details": "closed/deleted reasons in Me; requester reason; deleted link returns"
+    },
+    {
+      "id": "E7",
+      "name": "Me status and invitation skeleton at 1280×900",
+      "status": "PASS",
+      "details": "confirmed cards 4"
+    }
+  ],
+  "errors": [],
+  "externalRequests": []
+}

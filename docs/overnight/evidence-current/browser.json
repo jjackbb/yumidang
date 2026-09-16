@@ -1,0 +1,105 @@
+{
+  "url": "http://127.0.0.1:4192/?demo=1",
+  "mode": "final B01-B15 browser integration",
+  "checkedAt": "2026-09-15T07:11:44.273Z",
+  "cases": [
+    {
+      "id": "B01",
+      "name": "가입·프로필 진입과 전화 11자리 제한",
+      "status": "PASS",
+      "details": "전체 시연이 가입창에서 시작, 상단 탭 없음, 전화 입력 11자리 제한. 전체 입력/사진/공개정보 검증은 step2-signup-profile 6개 브라우저 사례 PASS."
+    },
+    {
+      "id": "B02",
+      "name": "공고 상세에서 작성자 요약과 A/B 상세 프로필",
+      "status": "PASS",
+      "details": "공고 → 요약 프로필 → A 상세 펼치기 → 같은 공고 복귀. B 연속 스크롤은 step2 P3에서 별도 PASS."
+    },
+    {
+      "id": "B03",
+      "name": "탐색 필터와 이벤트 연결",
+      "status": "PASS",
+      "details": "카테고리·지역 필터 적용과 이벤트 전체보기 진입. eventId 작성 연결/빈 결과/복귀는 step3 E1-E2 PASS."
+    },
+    {
+      "id": "B04",
+      "name": "공고 작성 A/B 시작점과 동일 필드",
+      "status": "PASS",
+      "details": "A 한 장/B 두 단계 전환 확인. 동일 값 저장·수정·재동의·작성자 수락은 step3 E3-E4 PASS."
+    },
+    {
+      "id": "B05",
+      "name": "신청 대화와 작성자 최종 수락 진입",
+      "status": "PASS",
+      "details": "신청자는 확정 전 대화만 가능하고 수락 버튼 없음. 역할 전환 후 작성자 수락·후보 종료·새로고침은 step3 E4-E5 PASS."
+    },
+    {
+      "id": "B06",
+      "name": "공개 공고 초대 → 수신 → 직접 신청 전 상태",
+      "status": "PASS",
+      "details": "저장 사실 알림 없이 공개 공고로 초대, 수신자 Me에 유지, 초대만으로 신청·확정 생성 없음."
+    },
+    {
+      "id": "B07",
+      "name": "초대 최신순/시간순과 관계 표시",
+      "status": "PASS",
+      "details": "최신순 invite-saved-only → invite-both → invite-stranger → invite-met-only, 시간순 invite-stranger → invite-met-only → invite-both → invite-saved-only; ★/이전동행/둘다/무표시 확인."
+    },
+    {
+      "id": "B08",
+      "name": "처음 보는 사람 초대 알림 OFF와 목록 유지",
+      "status": "PASS",
+      "details": "단일 알림 스위치 OFF 저장, 미저장 AND 미동행 초대도 Me 목록에는 유지. 판정별 생성 여부는 단위검사 PASS."
+    },
+    {
+      "id": "B09",
+      "name": "관심친구 해제 뒤 초대·동행 유지",
+      "status": "PASS",
+      "details": "목록 저장만 해제되고 기존 초대와 동행 기록 유지."
+    },
+    {
+      "id": "B10",
+      "name": "종료 시각 개인 완료와 즉시 평가",
+      "status": "PASS",
+      "details": "체험 시간을 정확한 종료 시각으로 이동, 내 완료 기록 생성 후 상대 완료 전 평가창 즉시 열림."
+    },
+    {
+      "id": "B11",
+      "name": "평가 A/B, 중복 방지와 양쪽 제출 공개",
+      "status": "PASS",
+      "details": "A 제출은 비공개 대기, B는 별점→후기 2단계, 양쪽 제출 후 공개, 당도 자동 증가 없음."
+    },
+    {
+      "id": "B12",
+      "name": "취소·차단 분리, 해제, E3 보류",
+      "status": "PASS",
+      "details": "E3 복수 확정은 변경 없이 보류. 일반 취소/차단/해제와 E2는 단위검사 및 설정 앞단에서 분리 확인."
+    },
+    {
+      "id": "B13",
+      "name": "신고·설정·탈퇴와 후속 기능별 체험",
+      "status": "PASS",
+      "details": "안전/계정 3종과 전화·결제·캘린더·AI·행사수집 5종이 서로 다른 내용의 체험 화면. 외부 성공 문구 없음."
+    },
+    {
+      "id": "B14",
+      "name": "전체/구간 시연 시작과 A/B 설정",
+      "status": "PASS",
+      "details": "전체 가입부터, 매칭부터, 완료·평가부터 시작점과 02/04/07 A/B·역할·시간·초기화 조작 제공."
+    },
+    {
+      "id": "B15",
+      "name": "홈 회귀와 모바일/데스크톱 접근",
+      "status": "PASS",
+      "details": "종 1개, 신청 큰 박스 제거, 지금/당!/기타, D0-D7 리마인드 복수, 모바일 가로 넘침 없음."
+    },
+    {
+      "id": "B15D",
+      "name": "데스크톱 1280×900 가로 넘침 없음",
+      "status": "PASS",
+      "details": "Me 전체 화면과 하단바 렌더, 가로 넘침 없음."
+    }
+  ],
+  "errors": [],
+  "externalRequests": []
+}

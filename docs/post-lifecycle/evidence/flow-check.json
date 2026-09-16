@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "checks": [
+    "consent then host acceptance",
+    "decline and reset",
+    "four termination reasons",
+    "keyboard tabs",
+    "conflict choices",
+    "390px overflow"
+  ],
+  "errors": []
+}

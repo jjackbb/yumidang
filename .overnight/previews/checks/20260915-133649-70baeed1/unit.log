@@ -1,0 +1,66 @@
+
+> react-example@0.0.0 test
+> node --experimental-strip-types --test tests/*.test.ts
+
+✔ weeks use 1–7, 8–14 boundaries including short February and fifth weeks (0.91825ms)
+✔ week filters use event start dates; previous-week ongoing and ended records remain findable (14.247625ms)
+✔ event end date is inclusive and transitions at Korean midnight (0.265292ms)
+✔ reminders include future D-day and D-7, exclude D-8, passed times, invalid and completed plans, sort by time (0.530292ms)
+✔ D-day counts calendar dates in Korea over month boundaries (0.163792ms)
+✔ legacy and form schedules parse Korean times without relying on browser locale (0.448792ms)
+✔ applying opens a private conversation without confirming an appointment (1.81925ms)
+✔ only the actual post author can accept; requester and forged host cannot (0.129917ms)
+✔ one host acceptance confirms the selected request and ends other candidates (0.530208ms)
+✔ cancelled, rejected, unavailable or already matched posts cannot be accepted (0.096167ms)
+✔ confirmation preserves the request room and ended candidates stay read-only (0.123958ms)
+✔ termination retains history with a precise reason and no new input (0.147459ms)
+✔ demo mode starts only with an explicit demo=1 query (1.723875ms)
+✔ demo clock shifts real time and converts Asia/Seoul input exactly (14.357209ms)
+✔ new members start at sugar 15 with no verification badge, shown the same from every entry point (1.076458ms)
+✔ public profiles never include phone, real name, birth date, email or referral code (0.186083ms)
+✔ unknown users stay unverified with no sugar; sample accounts are labeled samples (0.199459ms)
+✔ detailed location needs participation in a confirmed or completed meetup; closing a post reveals nothing (0.136875ms)
+✔ addressed notifications are visible only to their recipient, including after logout (0.102458ms)
+✔ stranger means not saved by the recipient AND never actually met (0.223416ms)
+✔ shifted demo time is honored by request access and host-only acceptance (0.304959ms)
+✔ 14:00–15:00 walk stays locked at 14:50 and 14:59:59.999, opens exactly at 15:00 (23.77775ms)
+✔ review requires completion and still cannot bypass the end time (0.170167ms)
+✔ missing, invalid and reversed end times fail closed without using recruitment closure (0.11125ms)
+✔ only participants of a confirmed appointment can complete it (0.086542ms)
+✔ overnight and edited end times use the full date and Korean timezone (0.192ms)
+✔ forms reject a zero duration and date ranges display the end date when needed (1.262625ms)
+✔ manual closure ends pending candidates, retains conversations and does not manufacture a match (3.161ms)
+✔ delete leaves a tombstone for old request links and never deletes message history (0.191083ms)
+✔ expiry uses the exact deadline, is idempotent, and cannot cancel an existing appointment (0.190792ms)
+✔ condition changes require each applicant to consent and keep the original baseline through later edits (17.198ms)
+✔ consent permits host acceptance but does not itself confirm or consent for other applicants (1.399417ms)
+✔ declined or expired reconfirmations cannot be reused, and decline closes only that request (1.213125ms)
+✔ unchanged save and tag edits do not demand consent; restoring original terms removes the pending change (2.759792ms)
+✔ private location changes are detectable without exposing the exact old or new address (0.4655ms)
+✔ foreign, closed, expired, invalid-deadline and confirmed posts reject direct edits (0.147667ms)
+✔ either participant can cancel once with a reason; completed or unrelated appointments cannot be cancelled (0.337875ms)
+✔ overlap detects partial and overnight intersections but excludes adjacent, cancelled and other-user appointments (0.136916ms)
+✔ phone keeps digits only and at most 11, for typing and pasting alike (0.65425ms)
+✔ real name must be complete Hangul syllables, 2-10 characters (0.21ms)
+✔ birth date: real calendar date, not in the future (KST), at least 19 (15.205292ms)
+✔ male signup routes validate format only (0.244458ms)
+✔ photos: JPG/JPEG/PNG only, 10MB inclusive limit (0.12525ms)
+✔ bio: required, 300 chars inclusive, contacts and banned words rejected (0.962542ms)
+✔ profile completeness walks photo → interests → bio and treats a stripped photo as missing (0.723542ms)
+✔ saved profile shows the same public data everywhere, with age band only and no private fields (0.55675ms)
+✔ a resized profile photo survives storage while a raw oversized original does not (0.827333ms)
+✔ save then load restores every shared record, the active role, time offset and A/B choice (7.337542ms)
+✔ empty storage is a normal first visit, not an error (0.086292ms)
+✔ broken JSON, wrong shapes and other versions are reported without throwing (0.204917ms)
+✔ storage that throws on read or write is reported as unavailable (0.690458ms)
+✔ quota errors keep the previous saved copy intact (0.1795ms)
+✔ large inline photo originals are never written; small ones and URLs are kept (0.208375ms)
+✔ demo reset clears only the demo key and leaves ordinary app data untouched (0.156375ms)
+ℹ tests 54
+ℹ suites 0
+ℹ pass 54
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 144.859667

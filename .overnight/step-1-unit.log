@@ -1,0 +1,57 @@
+
+> react-example@0.0.0 test
+> node --experimental-strip-types --test tests/*.test.ts
+
+✔ weeks use 1–7, 8–14 boundaries including short February and fifth weeks (0.857834ms)
+✔ week filters use event start dates; previous-week ongoing and ended records remain findable (19.825959ms)
+✔ event end date is inclusive and transitions at Korean midnight (0.246667ms)
+✔ reminders include future D-day and D-7, exclude D-8, passed times, invalid and completed plans, sort by time (0.517042ms)
+✔ D-day counts calendar dates in Korea over month boundaries (0.157375ms)
+✔ legacy and form schedules parse Korean times without relying on browser locale (0.480458ms)
+✔ applying opens a private conversation without confirming an appointment (6.592125ms)
+✔ only the actual post author can accept; requester and forged host cannot (0.132709ms)
+✔ one host acceptance confirms the selected request and ends other candidates (0.467625ms)
+✔ cancelled, rejected, unavailable or already matched posts cannot be accepted (0.094542ms)
+✔ confirmation preserves the request room and ended candidates stay read-only (0.11925ms)
+✔ termination retains history with a precise reason and no new input (0.138292ms)
+✔ demo mode starts only with an explicit demo=1 query (0.545ms)
+✔ demo clock shifts real time and converts Asia/Seoul input exactly (14.309958ms)
+✔ new members start at sugar 15 with no verification badge, shown the same from every entry point (0.753375ms)
+✔ public profiles never include phone, real name, birth date, email or referral code (0.113583ms)
+✔ unknown users stay unverified with no sugar; sample accounts are labeled samples (0.184917ms)
+✔ detailed location needs participation in a confirmed or completed meetup; closing a post reveals nothing (0.140875ms)
+✔ addressed notifications are visible only to their recipient, including after logout (0.106208ms)
+✔ stranger means not saved by the recipient AND never actually met (0.213084ms)
+✔ shifted demo time is honored by request access and host-only acceptance (0.3045ms)
+✔ 14:00–15:00 walk stays locked at 14:50 and 14:59:59.999, opens exactly at 15:00 (20.51975ms)
+✔ review requires completion and still cannot bypass the end time (0.160541ms)
+✔ missing, invalid and reversed end times fail closed without using recruitment closure (0.102375ms)
+✔ only participants of a confirmed appointment can complete it (0.081458ms)
+✔ overnight and edited end times use the full date and Korean timezone (0.179375ms)
+✔ forms reject a zero duration and date ranges display the end date when needed (1.248417ms)
+✔ manual closure ends pending candidates, retains conversations and does not manufacture a match (2.84325ms)
+✔ delete leaves a tombstone for old request links and never deletes message history (0.180166ms)
+✔ expiry uses the exact deadline, is idempotent, and cannot cancel an existing appointment (0.1955ms)
+✔ condition changes require each applicant to consent and keep the original baseline through later edits (16.473708ms)
+✔ consent permits host acceptance but does not itself confirm or consent for other applicants (1.253333ms)
+✔ declined or expired reconfirmations cannot be reused, and decline closes only that request (1.4835ms)
+✔ unchanged save and tag edits do not demand consent; restoring original terms removes the pending change (2.809291ms)
+✔ private location changes are detectable without exposing the exact old or new address (0.44175ms)
+✔ foreign, closed, expired, invalid-deadline and confirmed posts reject direct edits (0.157166ms)
+✔ either participant can cancel once with a reason; completed or unrelated appointments cannot be cancelled (0.343666ms)
+✔ overlap detects partial and overnight intersections but excludes adjacent, cancelled and other-user appointments (0.133375ms)
+✔ save then load restores every shared record, the active role, time offset and A/B choice (2.375208ms)
+✔ empty storage is a normal first visit, not an error (0.083084ms)
+✔ broken JSON, wrong shapes and other versions are reported without throwing (0.210334ms)
+✔ storage that throws on read or write is reported as unavailable (0.135917ms)
+✔ quota errors keep the previous saved copy intact (0.276792ms)
+✔ large inline photo originals are never written; small ones and URLs are kept (0.254375ms)
+✔ demo reset clears only the demo key and leaves ordinary app data untouched (0.174708ms)
+ℹ tests 45
+ℹ suites 0
+ℹ pass 45
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 133.903625

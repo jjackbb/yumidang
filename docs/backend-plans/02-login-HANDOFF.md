@@ -32,12 +32,14 @@
 
 ### 실행 명령과 결과
 
+최종 통합 run: `npm run test:harness` → `run-20260916T115621-lu3w` 전 단계 PASS.
+
 | 검사 | 계층 | 결과 |
 |---|---|---|
 | `npm run harness:02` — 미가입 임의 번호 로그인 거부(재시도 시에도 계정 없음), 미사용 기존 번호 `shouldCreateUser:false` 거부, 잘못된 코드/알 수 없는 mode 거부, 동일 UUID 재로그인, A/B 세션 분리, refresh·로그아웃 | REMOTE | PASS |
 | 단위: 로그인 모드 계정 미생성·404, 반환 경로 allowlist | LOCAL | PASS |
 | 전체 사이클 1·15단계 — A/B/C UI 로그인, 헤더 마스킹 이름·만 나이, 로그아웃 후 private 데이터 사라짐, 재로그인 후 상태 복구 | BROWSER | PASS |
-| `/me`·`/chat` 보호 경로 로그인 후 복귀 | BROWSER | NOT_RUN (이번 회차 브라우저 자동화에 미포함. 단위 테스트와 기존 2026-09-16 브라우저 기록만 있음) |
+| 전체 사이클 15단계 — 로그아웃 상태 `/me` 접근 → `/login?next=%2Fme` → 로그인 후 `/me` 복귀, 조작한 외부 `next`는 `/`로 | BROWSER | PASS (`/chat` 복귀는 같은 allowlist 단위 테스트만) |
 | 실제 SMS | — | NOT_RUN (범위 밖) |
 
 ### 남은 위험

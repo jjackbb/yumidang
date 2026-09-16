@@ -44,6 +44,8 @@ UNIQUE `(post_id, requester_id)` — 같은 공고 한 번만(취소·거절 후
 
 ## 실행 명령과 실제 결과
 
+최종 통합 run: `npm run test:harness` → `run-20260916T115621-lu3w` 전 단계 PASS (증거 `docs/backend-implementation/evidence/run-20260916T115621-lu3w/`).
+
 | 검사 | 계층 | 결과 |
 |---|---|---|
 | `npm run harness:05` — anon 생성/조회 거부, B 요청 1건·서버가 신청자 결정·메시지 trim, 신청자 파라미터 위조 거부, 반복·병렬 4회 → 1건, 자기 공고/마감/삭제/짧은 메시지 거부(행 없음), 목록 마스킹·나이·누출 없음, C 조회 불가, 상대 프로필 B↔A만, 타인 취소/거절 거부, 취소 멱등·이후 거절 거부·재신청 없음, 거절 후 취소 거부, REST 직접 쓰기 거부 | REMOTE | PASS (10/10) |

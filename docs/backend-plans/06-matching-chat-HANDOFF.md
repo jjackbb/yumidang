@@ -40,6 +40,8 @@
 
 ## 실행 명령과 실제 결과
 
+최종 통합 run: `npm run test:harness` → `run-20260916T115621-lu3w` 전 단계 PASS (증거 `docs/backend-implementation/evidence/run-20260916T115621-lu3w/`).
+
 | 검사 | 계층 | 결과 |
 |---|---|---|
 | `npm run harness:06` — 헤더(마스킹·can_send, C 거부), Node 세션 A↔B Realtime 양방향 도착·C 이벤트 0건, 같은 UUID 재시도 PK 거부·행 1개·이벤트 1개, 기록 순서·C/anon 조회 0, 발신자 위조/외부인/anon/공백/1001자/created_at 지정/수정/삭제 거부, 구독 해제 후 미수신, 55개 → 50+5 페이지 중복·누락 없음, 취소·거절·시작 후 읽기 전용 | REMOTE | PASS (10/10) |

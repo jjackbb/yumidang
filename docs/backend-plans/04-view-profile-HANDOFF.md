@@ -38,6 +38,8 @@
 
 ## 실행 명령과 실제 결과
 
+최종 통합 run: `npm run test:harness` → `run-20260916T115621-lu3w` 전 단계 PASS (증거 `docs/backend-implementation/evidence/run-20260916T115621-lu3w/`).
+
 | 검사 | 계층 | 결과 |
 |---|---|---|
 | 원격 SQL: `변종→변*`, `변종현→변*현`, `변종현미→변**미`, 2000-02-29 출생 2026-02-28=25/03-01=26, 생일 당일/전날 | REMOTE | PASS |

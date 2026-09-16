@@ -111,13 +111,15 @@
       }
     },
     "full-cycle": {
-      "status": "running",
+      "status": "pass",
       "runId": "run-20260916T115621-lu3w",
-      "updatedAt": "2026-09-16T11:58:33.692Z",
-      "lastPassedStep": null,
+      "updatedAt": "2026-09-16T12:05:10.881Z",
+      "lastPassedStep": "no uncaught page errors in A/B/C/anon browsers",
       "failure": null,
-      "evidence": null,
-      "counts": {}
+      "evidence": "docs/backend-implementation/evidence/run-20260916T115621-lu3w/full-cycle.json",
+      "counts": {
+        "PASS": 17
+      }
     }
   },
   "lastRunId": "run-20260916T115621-lu3w"

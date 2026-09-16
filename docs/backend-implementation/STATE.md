@@ -3,7 +3,7 @@
 자동 생성 파일이다. 직접 수정하지 말고 하네스를 실행한다. 상태 값: `pending`, `running`, `pass`, `fail`, `not_run`.
 
 - 마지막 run: `run-20260916T115621-lu3w`
-- 재개 지점: A/B/C 두 브라우저 전체 사이클 → `npm run harness:full-cycle`
+- 재개 지점: 모든 단계 pass — 회귀는 `npm run test:harness`
 
 | 단계 | 상태 | run_id | 단계 결과 | 마지막 통과 단계 | 실패 원인 | 재실행 명령 |
 |---|---|---|---|---|---|---|
@@ -17,6 +17,6 @@
 | 기능 7 최종 확정 | `pass` | run-20260916T115621-lu3w | PASS 10 | direct REST writes to appointments are refused | - | `npm run harness:07` |
 | 기능 8 동행 완료 | `pass` | run-20260916T115621-lu3w | PASS 7 | completion responses carry no raw personal data | - | `npm run harness:08` |
 | 기능 9 상호 평가 | `pass` | run-20260916T115621-lu3w | PASS 10 | review responses contain no raw personal data or exact place | - | `npm run harness:09` |
-| A/B/C 두 브라우저 전체 사이클 | `running` | run-20260916T115621-lu3w | - | - | - | `npm run harness:full-cycle` |
+| A/B/C 두 브라우저 전체 사이클 | `pass` | run-20260916T115621-lu3w | PASS 17 | no uncaught page errors in A/B/C/anon browsers | - | `npm run harness:full-cycle` |
 
 증거는 `docs/backend-implementation/evidence/<run_id>/`에 run별로 저장되며 기존 파일을 덮어쓰지 않는다.

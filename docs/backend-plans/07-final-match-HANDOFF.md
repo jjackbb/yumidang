@@ -42,6 +42,8 @@
 
 ## 실행 명령과 실제 결과
 
+최종 통합 run: `npm run test:harness` → `run-20260916T115621-lu3w` 전 단계 PASS (증거 `docs/backend-implementation/evidence/run-20260916T115621-lu3w/`).
+
 | 검사 | 계층 | 결과 |
 |---|---|---|
 | `npm run harness:07` — 확정 전 B·C 장소 0행, 신청자·다른 신청자·anon·없는 요청 확정 거부, A가 B 확정 시 4개 변경 동시 반영, 재시도 동일 appointment·다른 요청 거부·1건, 두 요청 동시 확정(3건 병렬) → appointment 1건·matched/not_selected, A·B만 장소 조회·C·anon 불가·공개/목록/대화 응답에 장소 없음, appointment A·B만, matched 채팅 전송·not_selected 읽기 전용·matched 취소 불가, 시작 후 확정 실패 시 요청·공고·appointment·장소 변화 없음, REST 직접 쓰기 거부 | REMOTE | PASS (10/10) |

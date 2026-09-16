@@ -33,6 +33,8 @@ UNIQUE `(appointment_id, reviewer_id)`. 저장하지 않음: `reviewee_id`(두 �
 
 ## 실행 명령과 실제 결과
 
+최종 통합 run: `npm run test:harness` → `run-20260916T115621-lu3w` 전 단계 PASS (증거 `docs/backend-implementation/evidence/run-20260916T115621-lu3w/`).
+
 | 검사 | 계층 | 결과 |
 |---|---|---|
 | `npm run harness:09` — 종료 후라도 본인 완료 전 제출 거부, 원본 테이블 A/B/C/anon SELECT·INSERT 거부, `appointment_reviews` Realtime 구독 이벤트 0건, A 완료 후 B 미완료 상태에서 제출 가능, 0/6점·301자 거부·잔여 행 없음, 같은 내용 동시 재시도 OK·다른 내용 `already_submitted`, B는 `peer_submitted=true`·내용 null·B가 보는 다른 RPC 응답에도 A 한마디 없음, A는 상대 평가 null, C·anon 존재 여부도 거부, B 완료 후 블라인드 제출 → 양쪽 동시 공개, 평가가 완료 행·appointment 상태를 바꾸지 않음, 거의 동시 제출 → 일관된 공개, 기한 경계 `ends_at+7일-1ms` 열림/정각 닫힘 + `deadline_at` 일치, 응답에 원본 개인정보·장소 없음 | REMOTE | PASS (10/10) |

@@ -41,6 +41,8 @@
 
 ## 실행 명령과 실제 결과
 
+최종 통합 run: `npm run test:harness` → `run-20260916T115621-lu3w` 전 단계 PASS (증거 `docs/backend-implementation/evidence/run-20260916T115621-lu3w/`).
+
 | 검사 | 계층 | 결과 |
 |---|---|---|
 | `npm run harness:08` — 종료 전 두 사람 `too_early`·행 없음·평가 자격 없음, C·anon 조회/확인 거부, 종료 후 A 더블클릭 → 행 1개·`confirmed` 유지·A만 평가 가능·B는 상대 확인 표시, 사용자 파라미터 위조·직접 INSERT·DELETE 거부, B 확인 → `completed`+`completed_at`, 재시도 시 `completed_at` 불변·행 2개, 두 사람 동시 확인 → 행 2개·완료 1회, 응답에 원본 개인정보·장소 없음 | REMOTE | PASS (7/7) |

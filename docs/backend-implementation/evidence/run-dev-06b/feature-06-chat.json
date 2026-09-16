@@ -1,0 +1,73 @@
+{
+  "key": "feature-06-chat",
+  "status": "pass",
+  "steps": [
+    {
+      "name": "conversation header: A and B see masked counterpart and can_send; C refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 131
+    },
+    {
+      "name": "A→B and B→A arrive over Realtime without reload; C receives nothing",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 5021,
+      "detail": {
+        "latencyBtoAms": 601,
+        "latencyAtoBms": 646
+      }
+    },
+    {
+      "name": "same UUID retry is rejected by PK and the stored row stays single",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 61
+    },
+    {
+      "name": "history reloads in order for both; anon and C read nothing",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 96
+    },
+    {
+      "name": "forged sender, outsider, anon and invalid content inserts are refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 202
+    },
+    {
+      "name": "closed channel no longer delivers",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 2091
+    },
+    {
+      "name": "50-message pages: newest 50 then older rest, no duplicates or gaps",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 464
+    },
+    {
+      "name": "withdrawn request becomes read-only for both participants",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 215
+    },
+    {
+      "name": "declined request becomes read-only",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 109
+    },
+    {
+      "name": "after the meetup start (server time) a pending chat is read-only",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 9593
+    }
+  ],
+  "startedAt": "2026-09-16T11:06:34.819Z",
+  "finishedAt": "2026-09-16T11:06:53.951Z",
+  "lastPassedStep": "after the meetup start (server time) a pending chat is read-only"
+}

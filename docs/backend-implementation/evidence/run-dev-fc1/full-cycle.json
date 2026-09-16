@@ -1,0 +1,47 @@
+{
+  "key": "full-cycle",
+  "status": "fail",
+  "steps": [
+    {
+      "name": "1. A, B, C log in through the UI in separate browser contexts",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 4627
+    },
+    {
+      "name": "2. A and B create posts in the UI (exact place required) and see each other in the list",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 1185
+    },
+    {
+      "name": "3. list and detail show 시·구·동 only, never the exact place (B and anon)",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 762
+    },
+    {
+      "name": "4. B sees A as masked real name + full age; anon is asked to log in",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 827
+    },
+    {
+      "name": "5. B requests A post once; a repeated request is blocked",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 611
+    },
+    {
+      "name": "6. A and B exchange messages in both directions without reloading",
+      "layer": "BROWSER",
+      "result": "FAIL",
+      "ms": 22801,
+      "error": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n  - waiting for getByRole('log').getByText('B→A 실시간 run-dev-fc1') to be visible\n"
+    }
+  ],
+  "startedAt": "2026-09-16T11:22:55.764Z",
+  "finishedAt": "2026-09-16T11:23:29.750Z",
+  "failure": "full-cycle › 6. A and B exchange messages in both directions without reloading: locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n  - waiting for getByRole('log').getByText('B→A 실시간 run-dev-fc1') to be visible\n — 재실행: npm run harness:full-cycle",
+  "lastPassedStep": "5. B requests A post once; a repeated request is blocked"
+}

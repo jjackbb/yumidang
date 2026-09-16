@@ -19,7 +19,7 @@
 flowchart TD
     A[pending 매칭 대화] --> B[작성자: 동행 확정]
     B --> C[선택한 신청자·일정 확인]
-    C --> D[정확한 만남 장소 입력]
+    C --> D[공고 작성 시 저장한<br/>비공개 장소 확인]
     D --> E[다른 요청 종료 안내]
     E --> F[최종 확인]
     F --> G[서버 트랜잭션]
@@ -39,6 +39,7 @@ erDiagram
     PROFILES ||--o{ POSTS : "작성한다"
     PROFILES ||--o{ JOIN_REQUESTS : "신청한다"
     POSTS ||--o{ JOIN_REQUESTS : "요청을 받는다"
+    POSTS ||--|| POST_PRIVATE_DETAILS : "작성 시 저장"
     POSTS ||--o| APPOINTMENTS : "최대 하나 확정"
     JOIN_REQUESTS ||--o| APPOINTMENTS : "선택된 요청"
     JOIN_REQUESTS ||--o{ CHAT_MESSAGES : "대화한다"
@@ -59,11 +60,17 @@ erDiagram
         text status
     }
 
+    POST_PRIVATE_DETAILS {
+        uuid post_id PK_FK
+        text exact_location "확정자만 공개"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
     APPOINTMENTS {
         uuid id PK
         uuid post_id FK_UK
         uuid join_request_id FK_UK
-        text exact_location "참가자만 공개"
         text status
         timestamptz confirmed_at
         timestamptz updated_at
@@ -77,7 +84,6 @@ erDiagram
 | `id` | `uuid` | O | 확정된 동행 식별자. 완료·평가 연결에 사용 |
 | `post_id` | `uuid` | O | 확정된 공고. 한 공고당 하나만 허용하는 UNIQUE FK |
 | `join_request_id` | `uuid` | O | 선택된 참여 요청. 한 요청당 하나만 허용하며 `post_id`와 묶어 관계 검증 |
-| `exact_location` | `text` | O | 확정된 두 사람만 보는 정확한 만남 장소 |
 | `status` | `text` | O | 기능 7에서는 `confirmed`. 기능 8에서 완료 상태 확장 |
 | `confirmed_at` | `timestamptz` | O | 최종 확정이 성공한 서버 시각 |
 | `updated_at` | `timestamptz` | O | 이후 완료·취소 같은 상태 변경 시각 |
@@ -89,6 +95,7 @@ erDiagram
 - 제목·일정·공개 지역: `posts`에서 조회
 - 상대 이름·나이·사진: 기능 4의 안전한 공개 프로필 응답 사용
 - 채팅 내용: 기존 `chat_messages`를 그대로 사용
+- 정확한 만남 장소: 공고 작성 시 저장된 `post_private_details.exact_location`을 그대로 사용
 
 참가자 ID를 여러 테이블에 복사하지 않아 불일치 가능성을 줄인다. `posts`와 `join_requests`는 확정 뒤에도 삭제하지 않고 관계 기록으로 유지한다.
 
@@ -134,29 +141,33 @@ stateDiagram-v2
 ## 정확한 만남 장소
 
 - 공개 공고의 `public_area`에는 시·구·동만 유지한다.
-- 작성자는 최종 확정 화면에서 `exact_location`을 2~200자로 입력한다.
+- 작성자는 공고 작성 화면에서 `exact_location`을 2~200자로 입력한다.
 - 예: `성수역 3번 출구 앞`
-- `exact_location`은 `posts`나 공개 프로필 응답에 복사하지 않는다.
-- 확정된 작성자와 동행자만 `appointments` RLS를 통해 조회한다.
+- 원본은 공개 `posts`가 아니라 `post_private_details`에 분리 저장한다.
+- 공고 작성자는 확정 전에도 자기 공고의 원본 장소를 확인할 수 있다.
+- 신청자는 최종 확정 전에는 정확한 장소를 받지 못한다.
+- 최종 확정 뒤 작성자와 선택된 동행자만 `post_private_details` RLS를 통해 조회한다.
 - 다른 신청자·관계없는 회원·비회원은 조회할 수 없다.
 - 정확한 장소를 분석 로그나 오류 메시지에 남기지 않는다.
 
-기능 7에서는 장소 변경 기능을 만들지 않는다. 변경 합의와 이력 보존은 별도 기능으로 검토한다.
+기능 7 확정 화면은 저장된 장소를 다시 보여주기만 하며 새로 입력받지 않는다. 장소가 없으면 확정을 차단하고 공고 수정으로 안내한다. 확정 뒤 장소 변경 합의와 이력 보존은 별도 기능으로 검토한다.
 
 ## 원자적 최종 확정 명령
 
-권장 서버 명령은 `confirm_match(join_request_id, exact_location)` 형태의 단일 RPC다.
+권장 서버 명령은 `confirm_match(join_request_id)` 형태의 단일 RPC다.
 
 ```mermaid
 sequenceDiagram
     participant H as 공고 작성자
     participant R as confirm_match RPC
     participant P as posts
+    participant D as post_private_details
     participant J as join_requests
     participant A as appointments
 
-    H->>R: 요청 ID·정확한 장소·로그인 JWT
+    H->>R: 요청 ID·로그인 JWT
     R->>P: 공고 행 잠금·작성자 확인
+    R->>D: 작성 시 저장된 정확한 장소 존재 확인
     R->>J: 대상과 같은 공고의 요청 행 잠금
     R->>R: 모집 상태·시간·pending 재검사
     R->>A: confirmed 동행 생성
@@ -184,7 +195,7 @@ sequenceDiagram
 6. 동행 시작 시각이 지나지 않았다.
 7. 같은 `post_id`의 appointment가 없다.
 8. 같은 `join_request_id`의 appointment가 없다.
-9. `exact_location`을 다듬은 결과가 2~200자다.
+9. 해당 공고의 `post_private_details.exact_location`이 존재하고 유효하다.
 
 공고 행과 관련 요청 행을 잠가 두 탭이나 두 요청을 동시에 확정해도 한 건만 성공하게 한다. `appointments.post_id`와 `appointments.join_request_id`의 UNIQUE 제약, `(join_request_id, post_id)` 복합 FK가 마지막 방어선이다.
 
@@ -192,17 +203,18 @@ sequenceDiagram
 
 ## RLS와 권한 계획
 
-| 역할 | appointment 조회 | 최종 확정 |
-|---|---:|---:|
-| 비회원 | X | X |
-| 관계없는 회원 | X | X |
-| 선택되지 않은 신청자 | X | X |
-| 확정된 신청자 | O | X |
-| 공고 작성자 | O | O |
+| 역할 | appointment 조회 | 정확한 장소 조회 | 최종 확정 |
+|---|---:|---:|---:|
+| 비회원 | X | X | X |
+| 관계없는 회원 | X | X | X |
+| 선택되지 않은 신청자 | X | X | X |
+| 확정된 신청자 | O | O | X |
+| 공고 작성자 | O | O | O |
 
 - `appointments` 직접 `INSERT`, `UPDATE`, `DELETE` 권한은 열지 않는다.
 - 생성과 관련 상태 변경은 `confirm_match` RPC에서만 수행한다.
 - `SELECT`는 해당 appointment의 작성자와 선택된 신청자에게만 허용한다.
+- `post_private_details`는 작성자가 자기 공고를 관리할 때와 해당 공고의 appointment 참가자가 된 뒤에만 조회한다.
 - 클라이언트가 작성자 ID·동행자 ID·공고 ID를 임의로 정하지 못하게 서버 관계에서 계산한다.
 - RPC 반환에도 원본 실명·생년월일·전화번호를 포함하지 않는다.
 
@@ -219,7 +231,7 @@ sequenceDiagram
 
 - 선택한 신청자의 마스킹된 실명·만 나이·사진
 - 공고 제목·일정·시·구·동 공개 지역
-- 정확한 만남 장소 입력
+- 공고 작성 때 저장한 정확한 만남 장소 확인
 - `확정하면 다른 신청은 종료됩니다.` 안내
 - 최종 확인 버튼과 처리 중 상태
 
@@ -242,26 +254,26 @@ sequenceDiagram
 
 ```mermaid
 stateDiagram-v2
-    [*] --> 확정입력
-    확정입력 --> 확인중: 최종확인
+    [*] --> 확정확인
+    확정확인 --> 확인중: 최종확인
     확인중 --> 확정완료: 트랜잭션성공
-    확인중 --> 입력유지: 서버검증실패
+    확인중 --> 확인유지: 서버검증실패
     확인중 --> 오류: 네트워크실패
     오류 --> 확인중: 같은요청재시도
     확정완료 --> 확정된동행
 ```
 
-실패하면 정확한 장소 입력과 선택한 신청자를 유지한다. 성공 응답을 받기 전에는 화면만 먼저 확정 상태로 바꾸지 않는다.
+실패하면 선택한 신청자와 확정 확인 화면을 유지한다. 성공 응답을 받기 전에는 화면만 먼저 확정 상태로 바꾸지 않는다.
 
 ## 구현 순서
 
 기능 7 구현을 시작하는 별도 세션은 다음 순서를 따른다.
 
 1. 기능 1~6의 실제 완료 상태와 최신 스키마를 다시 확인한다.
-2. `appointments` 테이블, FK, UNIQUE, CHECK, 인덱스, RLS 마이그레이션을 작성한다.
+2. `appointments` 테이블과 기존 `post_private_details`의 FK, UNIQUE, CHECK, 인덱스, RLS를 확인·작성한다.
 3. `join_requests`에 `matched`, `not_selected` 상태를 추가한다.
 4. 행 잠금과 네 가지 변경을 포함하는 `confirm_match` 트랜잭션 RPC를 작성한다.
-5. 작성자 전용 최종 확정 화면과 정확한 장소 입력을 연결한다.
+5. 작성자 전용 최종 확정 화면에 공고 작성 시 저장한 정확한 장소 확인을 연결한다.
 6. 확정된 두 사람 전용 appointment 조회와 장소 공개를 연결한다.
 7. 선택된 채팅은 유지하고 다른 채팅은 읽기 전용으로 전환한다.
 8. 두 탭 동시 확정, 다른 신청자, 비회원 권한을 실제로 검증한다.
@@ -273,7 +285,7 @@ stateDiagram-v2
 사용자 A는 공고 작성자, 사용자 B와 C는 `pending` 신청자다.
 
 1. A가 B와 C의 매칭 대화를 확인한다.
-2. A가 B를 선택하고 정확한 만남 장소를 입력한다.
+2. A가 B를 선택하고 공고 작성 때 저장한 정확한 만남 장소를 확인한다.
 3. B 요청은 `matched`, C 요청은 `not_selected`가 된다.
 4. 공고는 `closed`, appointment는 `confirmed`가 된다.
 5. A와 B만 정확한 장소를 본다.
@@ -290,7 +302,7 @@ stateDiagram-v2
 4. 위 네 변경 중 하나라도 실패하면 아무 변경도 남지 않는다.
 5. 두 요청을 동시에 확정해도 한 appointment만 생성된다.
 6. 같은 성공 요청을 재시도해도 중복 appointment가 생기지 않는다.
-7. 확정된 두 사람만 `exact_location`을 조회한다.
+7. 확정된 두 사람만 `post_private_details.exact_location`을 조회한다.
 8. 다른 신청자·비회원·관계없는 회원은 정확한 장소를 조회하지 못한다.
 9. 공개 공고·프로필·요청 응답에는 정확한 장소가 없다.
 10. 선택된 채팅은 계속 가능하고 다른 요청의 채팅은 읽기 전용이다.
@@ -320,4 +332,4 @@ stateDiagram-v2
 
 ## Notion 기록 예정
 
-실제 구현과 원격 검증이 끝난 뒤 지정된 Notion 페이지의 `기능 7. 최종 동행 확정`에 각 `appointments` 키의 형식·PK/FK·공개 범위·RLS·생성/변경 주체·필요 이유를 기록한다. 원자적 트랜잭션, 중복 확정 방지, 다른 요청 종료, 정확한 장소 접근 범위와 실제 PASS/NOT_RUN도 함께 남긴다.
+실제 구현과 원격 검증이 끝난 뒤 지정된 Notion 페이지의 `기능 7. 최종 동행 확정`에 각 `appointments` 키와 `post_private_details` 공개 권한의 형식·PK/FK·공개 범위·RLS·생성/변경 주체·필요 이유를 기록한다. 원자적 트랜잭션, 중복 확정 방지, 다른 요청 종료, 정확한 장소 접근 범위와 실제 PASS/NOT_RUN도 함께 남긴다.

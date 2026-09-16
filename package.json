@@ -9,7 +9,20 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/*.test.ts"
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test:harness": "node --experimental-strip-types --no-warnings tests/harness/run-all.mjs",
+    "test:harness:api": "HARNESS_SKIP_BROWSER=1 node --experimental-strip-types --no-warnings tests/harness/run-all.mjs",
+    "harness:preflight": "node --experimental-strip-types --no-warnings tests/harness/preflight.mjs",
+    "harness:01": "node --experimental-strip-types --no-warnings tests/harness/feature-01-auth.mjs",
+    "harness:02": "node --experimental-strip-types --no-warnings tests/harness/feature-02-login.mjs",
+    "harness:03": "node --experimental-strip-types --no-warnings tests/harness/feature-03-posts.mjs",
+    "harness:04": "node --experimental-strip-types --no-warnings tests/harness/feature-04-profile.mjs",
+    "harness:05": "node --experimental-strip-types --no-warnings tests/harness/feature-05-requests.mjs",
+    "harness:06": "node --experimental-strip-types --no-warnings tests/harness/feature-06-chat.mjs",
+    "harness:07": "node --experimental-strip-types --no-warnings tests/harness/feature-07-match.mjs",
+    "harness:08": "node --experimental-strip-types --no-warnings tests/harness/feature-08-completion.mjs",
+    "harness:09": "node --experimental-strip-types --no-warnings tests/harness/feature-09-reviews.mjs",
+    "harness:full-cycle": "node --experimental-strip-types --no-warnings tests/harness/full-cycle.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

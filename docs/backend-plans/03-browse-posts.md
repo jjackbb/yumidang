@@ -33,17 +33,18 @@ flowchart TD
     N -. 이번 단계에서는 구현 안 함 .-> P[참여 요청 생성]
 ```
 
-목록과 상세에는 `서울특별시 성동구 성수동`처럼 시·구·동까지만 공개한다. 정확한 만남 장소와 역·건물·출구 같은 랜드마크는 내려받지 않으며 `posts` 데이터 자체에도 저장하지 않는다.
+목록과 상세에는 `서울특별시 성동구 성수동`처럼 시·구·동까지만 공개한다. 공고 작성자가 입력한 정확한 만남 장소는 공개 `posts` 행이 아니라 별도 `post_private_details`에 저장하고, 목록·상세 응답에는 내려보내지 않는다.
 
 ## 데이터 관계
 
 ```mermaid
 erDiagram
     PROFILES ||--o{ POSTS : "작성한다"
+    POSTS ||--|| POST_PRIVATE_DETAILS : "비공개 장소"
 
     PROFILES {
         uuid id PK
-        text nickname
+        text real_name "원본 비공개"
         date birth_date "원본 비공개"
     }
 
@@ -61,6 +62,13 @@ erDiagram
         text_array tags
         smallint capacity
         text status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    POST_PRIVATE_DETAILS {
+        uuid post_id PK_FK
+        text exact_location "비공개"
         timestamptz created_at
         timestamptz updated_at
     }
@@ -90,12 +98,23 @@ erDiagram
 
 이번 최소 스키마에는 다음을 넣지 않는다.
 
-- `secret_location`: 정확한 위치는 확정된 참여자만 접근할 별도 약속 데이터에서 나중에 저장
+- `posts.secret_location`: 정확한 위치를 공개 공고 행에 섞지 않고 `post_private_details.exact_location`에 분리 저장
 - `public_landmark`: 공개 위치를 동까지만 제한하므로 역·건물·출구 정보는 저장하지 않음
 - `current_members`: 신청·확정 데이터로 계산해야 하며 직접 저장하면 불일치 위험이 있음
 - `neighborhood_id`: 프로필 지역 정보와 무관하며 현재 지역 마스터 테이블이 없음
 - `event_id`: 실제 행사 데이터 계약이 아직 없으므로 샘플 행사 ID를 DB 계약으로 굳히지 않음
-- 작성자 닉네임·나이 복사본: 프로필과 중복되어 오래된 값이 될 수 있음
+- 작성자 실명·마스킹 이름·나이 복사본: 프로필과 중복되어 오래된 값이 될 수 있음
+
+## `post_private_details` 키 계획
+
+| 키 | 형식 | 필수 | 설명과 이유 |
+|---|---|---:|---|
+| `post_id` | `uuid` | O | `posts.id`를 참조하는 PK/FK. 공고 하나당 비공개 장소 하나 |
+| `exact_location` | `text` | O | 공고 작성 시 입력하는 2~200자의 정확한 만남 장소 |
+| `created_at` | `timestamptz` | O | 비공개 장소가 처음 저장된 서버 시각 |
+| `updated_at` | `timestamptz` | O | 장소가 마지막으로 수정된 서버 시각 |
+
+공고 작성 기능이 구현될 때 `posts`와 `post_private_details`를 한 트랜잭션으로 함께 저장한다. 기능 3의 공고 조회 화면은 이 비공개 테이블을 조회하지 않는다.
 
 ## 데이터 제약
 
@@ -103,6 +122,7 @@ erDiagram
 - `description`: 1~2,000자
 - `preference_note`: 입력 시 1~300자
 - `public_area`: 정해진 시·구·동 형식만 허용하며 상세 주소·역·건물·출구 입력 금지
+- `exact_location`: 공고 작성 시 2~200자, 공개 위치와 분리 저장
 - `starts_at < ends_at`
 - `recruitment_ends_at <= starts_at`
 - 새 공고 기준 `recruitment_ends_at > now()`
@@ -124,6 +144,7 @@ erDiagram
 - RLS 조회 정책은 `status <> 'deleted'`인 행만 허용한다.
 - 삭제된 공고 ID를 직접 요청해도 행이 반환되지 않아야 한다.
 - 정확한 장소, 전화번호, 생년월일, 세션 정보는 공고 API 응답에 포함하지 않는다.
+- `post_private_details`는 비회원·일반 회원이 직접 조회할 수 없고, 작성자만 확정 전 원본을 확인한다. 확정된 신청자의 조회 권한은 기능 7에서 추가한다.
 - 작성 정책은 공고 작성 기능을 설계할 때 별도로 추가한다. 기능 3을 위해 광범위한 `insert/update` 정책을 열지 않는다.
 
 ## 목록 조회 계약
@@ -201,6 +222,8 @@ stateDiagram-v2
 
 테스트 데이터는 개발 프로젝트에만 넣는다. 프론트엔드에서 service-role key로 삽입하지 않는다. 자동 운영 시드와 실제 데이터로 표현하지 않고 테스트 데이터임을 기록한다.
 
+각 테스트 공고에는 작성자만 볼 수 있는 `post_private_details` 테스트 행을 함께 준비한다. 공개 목록·상세 응답에는 정확한 장소가 없어야 한다.
+
 ## 완료 기준
 
 아래를 실제로 확인해야 기능 3을 완료로 표시한다.
@@ -222,10 +245,10 @@ stateDiagram-v2
 
 ## 이번 단계에서 하지 않는 것
 
-- 공고 작성·수정·삭제 UI
+- 공고 작성·수정·삭제 UI와 비공개 장소 수정 UI
 - 작성자 상세 프로필 조회
 - 참여 요청 생성
-- 정확한 만남 장소 저장·조회
+- 확정된 신청자에게 정확한 만남 장소 공개
 - 채팅·매칭 상태 연결
 - 행사 수집·실시간 좌석·가격·예매 정보
 - AI 자연어 검색
@@ -242,4 +265,4 @@ stateDiagram-v2
 
 ## Notion 기록 예정
 
-구현과 원격 검증이 끝난 뒤 지정된 Notion 페이지의 `기능 3. 동행 공고 조회`에 각 `posts` 키의 형식·FK·공개 여부·작성 주체·필요 이유를 기록한다. 정확한 장소를 `posts`에서 제외한 이유와 RLS 조회 조건도 설명한다. 실행하지 못한 검증은 `NOT_RUN`으로 남긴다.
+구현과 원격 검증이 끝난 뒤 지정된 Notion 페이지의 `기능 3. 동행 공고 조회`에 각 `posts`와 `post_private_details` 키의 형식·FK·공개 여부·작성 주체·필요 이유를 기록한다. 정확한 장소를 공개 `posts`에서 분리한 이유와 RLS 조회 조건도 설명한다. 실행하지 못한 검증은 `NOT_RUN`으로 남긴다.

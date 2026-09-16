@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import LiveApp from './live/LiveApp';
 import { useAppRoute } from './auth/useAppRoute';
 import { isProtectedPath, loginPath, safeReturnPath } from './auth/routes';
 import { AuthGate } from './components/AuthGate';
@@ -77,7 +78,13 @@ type ConflictAction =
   | { kind: 'proposal'; roomId: string; messageId: string; accepted: boolean; sample: boolean }
   | { kind: 'create'; post: MeetupPost };
 
+/** Normal visits use the Supabase-backed app; the local prototype runs only under `?demo=1`. */
 export default function App() {
+  const [demoMode] = useState(isDemoMode);
+  return demoMode ? <PrototypeApp /> : <LiveApp />;
+}
+
+function PrototypeApp() {
   // `?demo=1` is fixed for the page lifetime and uses its own storage key.
   const [demoMode] = useState(isDemoMode);
   const supabaseAuth = useSupabaseAuth(!demoMode);

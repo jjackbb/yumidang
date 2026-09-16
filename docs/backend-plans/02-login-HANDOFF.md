@@ -2,7 +2,55 @@
 
 기준일: 2026-09-16  
 작업 폴더: `/Users/b/Documents/Antigravity/yumidang`  
-상태: 구현 대기
+상태: **구현·원격·브라우저 검증 완료 (2026-09-16 Claude Code 감사)** — 아래 "과거 기록" 절의 `구현 대기`는 감사 전 지시서 원문이다.
+
+## 최신 결과: 감사·보완 (2026-09-16)
+
+기능 2는 루트 HANDOFF에 완료로 기록돼 있었지만 이 문서는 `구현 대기`였다. 코드·원격 Auth·브라우저로 직접 감사했고 **누락만 보완**했다. 새 테이블·열·RPC는 없다.
+
+### 감사에서 발견한 결함과 수정
+
+| 결함 | 영향 | 수정 |
+|---|---|---|
+| 테스트 인증(`VITE_TEST_PHONE_AUTH=true`) 경로에서 로그인 모드도 `test-phone-auth`가 **미가입 번호의 계정을 생성** | "로그인은 계정을 만들지 않는다" 계약 위반 | Edge Function에 `mode: login/signup` 추가. `login`은 관리자 생성 호출을 하지 않고, 미가입이면 `404 not_registered`. 기존 20개 번호는 `create_user:false`. `mode`가 없는 구버전 클라이언트는 기존 `signup` 동작 유지. 원격 **v3 배포**(`verify_jwt=false` 유지, secrets 미변경) |
+| `safeReturnPath` 기본값이 `/me` | 외부·알 수 없는 `next`가 홈이 아니라 `/me`로 이동 | 기본값 `/`로 수정, 외부 URL·`//`·`javascript:`·`?demo=1` 조작 차단 단위 테스트 추가 |
+| 인증 상태 훅이 늦게 도착한 이전 세션의 프로필 조회로 최신 상태를 덮을 수 있음 | 계정 전환 시 이전 사용자 상태 잔존 가능 | 요청 순번 가드 추가. 같은 사용자의 토큰 갱신은 화면을 다시 마운트하지 않음 |
+| 일반 실행 화면이 localStorage 샘플 데이터를 사용 | 로그아웃·계정 전환 후 private 상태가 브라우저 샘플과 섞임 | 일반 실행을 `src/live/LiveApp.tsx`로 분리, 화면 상태를 사용자 ID로 키잉해 로그아웃·전환 시 폐기. 프로토타입은 `?demo=1` 전용 |
+
+### 실제 변경 파일
+
+- `supabase/functions/test-phone-auth/handler.ts` (원격 v3 배포)
+- `src/auth/testPhone.ts`, `src/components/AuthModal.tsx` — 로그인/가입 모드 전달, 실명 라벨(기능 1)
+- `src/auth/routes.ts`, `src/auth/useSupabaseAuth.ts`, `src/App.tsx`, `src/live/LiveApp.tsx`
+- `tests/test-phone-auth.test.ts`, `tests/auth.test.ts`, `tests/harness/feature-02-login.mjs`
+
+### 데이터와 권한
+
+- 새 DB 키 없음. 읽는 키: `auth.users.id`(세션), `profiles`의 본인 행(`real_name`, `birth_date`, `avatar_url`, `bio`, `created_at`, `updated_at`).
+- `profiles` RLS는 `auth.uid() = id` 본인 행 전용 그대로다. 상대 정보는 기능 4 이후 서버 RPC의 마스킹 값만 쓴다.
+- 세션 토큰은 supabase-js 저장소만 사용하며 DB·로그·URL·증거 파일에 남기지 않는다.
+
+### 실행 명령과 결과
+
+| 검사 | 계층 | 결과 |
+|---|---|---|
+| `npm run harness:02` — 미가입 임의 번호 로그인 거부(재시도 시에도 계정 없음), 미사용 기존 번호 `shouldCreateUser:false` 거부, 잘못된 코드/알 수 없는 mode 거부, 동일 UUID 재로그인, A/B 세션 분리, refresh·로그아웃 | REMOTE | PASS |
+| 단위: 로그인 모드 계정 미생성·404, 반환 경로 allowlist | LOCAL | PASS |
+| 전체 사이클 1·15단계 — A/B/C UI 로그인, 헤더 마스킹 이름·만 나이, 로그아웃 후 private 데이터 사라짐, 재로그인 후 상태 복구 | BROWSER | PASS |
+| `/me`·`/chat` 보호 경로 로그인 후 복귀 | BROWSER | NOT_RUN (이번 회차 브라우저 자동화에 미포함. 단위 테스트와 기존 2026-09-16 브라우저 기록만 있음) |
+| 실제 SMS | — | NOT_RUN (범위 밖) |
+
+### 남은 위험
+
+- 테스트 인증은 공유 코드이며 번호 소유 확인이 아니다. 서버 만료 2026-09-23 18:30 KST.
+- 미가입 안내는 번호 가입 여부를 드러낸다(계정 열거). 공개 운영 전 재검토.
+- Vercel에 배포된 이전 빌드는 `mode`를 보내지 않아 로그인 화면에서도 가입 동작을 유지한다. 재배포는 사용자 요청 전 수행하지 않았다.
+
+재실행: `npm run harness:02`, 전체: `npm run test:harness`
+
+---
+
+## 과거 기록: 감사 전 구현 지시서 (원문 보존)
 
 구현 도구: Claude Code `2.1.268`
 

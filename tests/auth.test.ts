@@ -7,7 +7,7 @@ import {
   authErrorMessage,
   exactAgeLabel,
   toE164KoreanPhone,
-  validateNickname,
+  validateRealName,
   validateSignupProfile,
   type SignupProfile,
 } from '../src/auth/signup.ts';
@@ -24,9 +24,9 @@ test('Korean phone is validated and converted to E.164 before Supabase OTP', () 
   assert.throws(() => toE164KoreanPhone('0101234'), /11자리/);
 });
 
-test('signup profile validation trims nickname and enforces adult birth date', () => {
-  assert.equal(validateNickname(' 유미 '), null);
-  assert.match(validateNickname('유') || '', /2~20자/);
+test('signup profile validation trims the real name and enforces adult birth date', () => {
+  assert.equal(validateRealName(' 변종현 '), null);
+  assert.match(validateRealName('변') || '', /2~20자/);
   assert.equal(validateSignupProfile('유미', '2000-09-16', NOW), null);
   assert.match(validateSignupProfile('유미', '2010-01-01', NOW) || '', /만 19세/);
 });
@@ -59,7 +59,7 @@ test('OTP errors distinguish rate limiting, expiry, and invalid codes', () => {
 test('Supabase profile becomes the minimum current user with an exact age', () => {
   const profile: SignupProfile = {
     id: '75ab41dd-dfb4-4fbd-b273-573c9f27f518',
-    nickname: '유미',
+    real_name: '변종현',
     birth_date: '2001-09-16',
     avatar_url: null,
     bio: null,
@@ -73,8 +73,25 @@ test('Supabase profile becomes the minimum current user with an exact age', () =
   } as User;
   const mapped = currentUserFromProfile(user, profile, NOW);
   assert.equal(mapped.ageGroup, '25살');
-  assert.equal(mapped.nickname, '유미');
+  assert.equal(mapped.maskedName, '변*현');
   assert.equal(mapped.isPhoneVerified, true);
-  assert.equal(mapped.realName, '');
+  assert.equal(mapped.realName, '변종현');
   assert.equal(mapped.gender, 'undisclosed');
+});
+
+test('real-name masking matches the server rule', async () => {
+  const { maskRealName } = await import('../src/utils/maskName.ts');
+  assert.equal(maskRealName('변종'), '변*');
+  assert.equal(maskRealName('변종현'), '변*현');
+  assert.equal(maskRealName('변종현미'), '변**미');
+  assert.equal(maskRealName(' 김 '), '*');
+});
+
+test('login return path accepts only internal tab paths', async () => {
+  const { safeReturnPath, loginPath } = await import('../src/auth/routes.ts');
+  assert.equal(safeReturnPath('/chat'), '/chat');
+  assert.equal(safeReturnPath('/me'), '/me');
+  for (const value of ['https://evil.example', '//evil.example', 'javascript:alert(1)', '/me?demo=1', '/unknown', '', null])
+    assert.equal(safeReturnPath(value), '/');
+  assert.equal(loginPath('/chat'), '/login?next=%2Fchat');
 });

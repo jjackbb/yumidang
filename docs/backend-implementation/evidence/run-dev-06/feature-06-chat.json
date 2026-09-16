@@ -1,0 +1,23 @@
+{
+  "key": "feature-06-chat",
+  "status": "fail",
+  "steps": [
+    {
+      "name": "conversation header: A and B see masked counterpart and can_send; C refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 146
+    },
+    {
+      "name": "A→B and B→A arrive over Realtime without reload; C receives nothing",
+      "layer": "REMOTE",
+      "result": "FAIL",
+      "ms": 20214,
+      "error": "realtime event not received"
+    }
+  ],
+  "startedAt": "2026-09-16T11:01:48.333Z",
+  "finishedAt": "2026-09-16T11:02:10.350Z",
+  "failure": "feature-06-chat › A→B and B→A arrive over Realtime without reload; C receives nothing: realtime event not received — 재실행: npm run harness:06",
+  "lastPassedStep": "conversation header: A and B see masked counterpart and can_send; C refused"
+}

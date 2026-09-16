@@ -7,11 +7,13 @@ import {
   exactAgeLabel,
   toE164KoreanPhone,
   validateSignupProfile,
+  PROFILE_COLUMNS,
   type AuthMode,
   type SignupProfile,
 } from '../auth/signup';
 import { koreaToday, validatePhone } from '../utils/profile';
 import { PhoneInput } from './PhoneInput';
+import { maskRealName } from '../utils/maskName';
 import { isTestPhoneAuthEnabled, testPhoneAuth } from '../auth/testPhone';
 
 export interface AuthModalProps {
@@ -25,7 +27,6 @@ export interface AuthModalProps {
 type AuthStep = 'terms' | 'phone' | 'basic' | 'complete';
 
 const TEST_OTP = '123456';
-const PROFILE_COLUMNS = 'id,nickname,birth_date,avatar_url,bio,created_at,updated_at';
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -45,7 +46,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(180);
-  const [nickname, setNickname] = useState('');
+  const [realName, setRealName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -109,7 +110,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setInfoMessage('');
     try {
       if (testPhoneMode) {
-        await testPhoneAuth('request', phone);
+        await testPhoneAuth('request', phone, undefined, mode);
         setRequestedPhone(phone);
       } else {
         const e164Phone = toE164KoreanPhone(phone);
@@ -145,7 +146,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       const supabase = getSupabaseClient();
       const { data, error } = testPhoneMode
-        ? await supabase.auth.setSession(await testPhoneAuth('verify', requestedPhone, otpCode))
+        ? await supabase.auth.setSession(await testPhoneAuth('verify', requestedPhone, otpCode, mode))
         : await supabase.auth.verifyOtp({ phone: requestedPhone, token: otpCode, type: 'sms' });
       if (error) throw error;
       if (!data.session || !data.user) throw new Error('Supabase 세션이 만들어지지 않았어요.');
@@ -171,7 +172,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const saveProfile = async (event: React.FormEvent) => {
     event.preventDefault();
-    const problem = validateSignupProfile(nickname, birthDate, now);
+    const problem = validateSignupProfile(realName, birthDate, now);
     if (problem) {
       setErrorMessage(problem);
       return;
@@ -189,7 +190,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       const payload = {
         id: sessionData.session.user.id,
-        nickname: nickname.trim(),
+        real_name: realName.trim(),
         birth_date: birthDate,
         avatar_url: null,
         bio: null,
@@ -259,13 +260,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       </div>}
 
       {step === 'basic' && <form onSubmit={saveProfile} className="p-5 space-y-4" noValidate>
-        <div><label htmlFor="auth-nickname" className="block text-xs font-bold mb-1.5">닉네임</label><input id="auth-nickname" value={nickname} maxLength={20} autoComplete="nickname" onChange={event => { setNickname(event.target.value); setErrorMessage(''); }} placeholder="예: 유미" className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200" /><p className="mt-1 text-[11px] text-gray-400">다른 사용자에게 공개할 이름이에요.</p></div>
+        <div><label htmlFor="auth-real-name" className="block text-xs font-bold mb-1.5">실명</label><input id="auth-real-name" value={realName} maxLength={20} autoComplete="name" onChange={event => { setRealName(event.target.value); setErrorMessage(''); }} placeholder="예: 변종현" className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200" /><p className="mt-1 text-[11px] text-gray-400">원본 실명은 본인만 볼 수 있고, 다른 회원에게는 {realName.trim().length >= 2 ? maskRealName(realName) : '변*현'}처럼 가려진 이름만 보여요. 신분증 확인이나 실명 인증은 아니에요.</p></div>
         <div><div className="flex justify-between mb-1.5"><label htmlFor="auth-birth" className="text-xs font-bold">생년월일</label>{age && <span className="text-[11px] font-bold text-[#6c2cf5] bg-[#f0edff] rounded-full px-2 py-0.5">화면 표시: {age}</span>}</div><input id="auth-birth" type="date" min="1900-01-01" max={koreaToday(now)} value={birthDate} onChange={event => { setBirthDate(event.target.value); setErrorMessage(''); }} className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200" /><p className="mt-1 text-[11px] text-gray-400">원본 생년월일은 본인만 조회하며, 화면에는 현재 서울 날짜 기준 만 나이만 표시해요.</p></div>
         <button type="submit" disabled={busy} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] disabled:bg-purple-300 text-white font-bold">{busy ? 'Supabase에 저장 중…' : '기본 프로필 저장하고 가입 완료'}</button>
         <p className="text-[11px] text-gray-400">저장에 실패해도 인증 세션은 유지됩니다. 창을 다시 열거나 새로고침하면 이 단계부터 이어집니다.</p>
       </form>}
 
-      {step === 'complete' && <div className="p-6 text-center space-y-4"><div className="mx-auto w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center"><Check className="w-7 h-7" /></div><p className="font-bold">회원가입이 완료됐어요.</p><p className="text-sm text-gray-600">{nickname.trim()} · {age}</p><button type="button" onClick={onClose} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] text-white font-bold">유미당 시작하기</button></div>}
+      {step === 'complete' && <div className="p-6 text-center space-y-4"><div className="mx-auto w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center"><Check className="w-7 h-7" /></div><p className="font-bold">회원가입이 완료됐어요.</p><p className="text-sm text-gray-600">{maskRealName(realName)} · {age}</p><button type="button" onClick={onClose} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] text-white font-bold">유미당 시작하기</button></div>}
     </div>
   </div>;
 };

@@ -2,11 +2,13 @@ import type { AuthError, PostgrestError } from '@supabase/supabase-js';
 
 import { ageOn, validateBirthDate, validatePhone } from '../utils/profile.ts';
 
-export const NICKNAME_MIN_CHARS = 2;
-export const NICKNAME_MAX_CHARS = 20;
+export const REAL_NAME_MIN_CHARS = 2;
+export const REAL_NAME_MAX_CHARS = 20;
+export const PROFILE_COLUMNS = 'id,real_name,birth_date,avatar_url,bio,created_at,updated_at';
 export interface SignupProfile {
   id: string;
-  nickname: string;
+  /** Private source; other members only receive the server-masked name. */
+  real_name: string;
   birth_date: string;
   avatar_url: string | null;
   bio: string | null;
@@ -20,16 +22,16 @@ export function toE164KoreanPhone(phone: string) {
   return `+82${phone.slice(1)}`;
 }
 
-export function validateNickname(value: string): string | null {
-  const nickname = value.trim();
-  if (!nickname) return '닉네임을 입력해 주세요.';
-  if (nickname.length < NICKNAME_MIN_CHARS || nickname.length > NICKNAME_MAX_CHARS)
-    return `닉네임은 ${NICKNAME_MIN_CHARS}~${NICKNAME_MAX_CHARS}자로 입력해 주세요.`;
+export function validateRealName(value: string): string | null {
+  const name = value.trim();
+  if (!name) return '실명을 입력해 주세요.';
+  if ([...name].length < REAL_NAME_MIN_CHARS || [...name].length > REAL_NAME_MAX_CHARS)
+    return `실명은 ${REAL_NAME_MIN_CHARS}~${REAL_NAME_MAX_CHARS}자로 입력해 주세요.`;
   return null;
 }
 
-export function validateSignupProfile(nickname: string, birthDate: string, now = new Date()) {
-  return validateNickname(nickname) || validateBirthDate(birthDate, now);
+export function validateSignupProfile(realName: string, birthDate: string, now = new Date()) {
+  return validateRealName(realName) || validateBirthDate(birthDate, now);
 }
 
 export function exactAgeLabel(birthDate: string, now = new Date()) {

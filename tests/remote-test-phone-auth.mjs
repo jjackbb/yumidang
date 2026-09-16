@@ -34,7 +34,7 @@ for (const [index, member] of [a, b].entries()) {
   assert.equal(member.user.app_metadata.phone_ownership_verified, false);
   const existing = await member.sdk.from('profiles').select('id').eq('id', member.user.id).maybeSingle();
   assert.equal(existing.error, null);
-  const fields = { nickname: `활성검증${index + 1}`, birth_date: '2000-09-16' };
+  const fields = { real_name: `활성검증${index + 1}`, birth_date: '2000-09-16' };
   // Match the application: INSERT id once; never request UPDATE permission on id.
   const saved = existing.data
     ? await member.sdk.from('profiles').update(fields).eq('id', member.user.id).select()
@@ -45,7 +45,7 @@ for (const [index, member] of [a, b].entries()) {
 const otherRead = await a.sdk.from('profiles').select('*').eq('id', b.user.id);
 assert.equal(otherRead.error, null);
 assert.deepEqual(otherRead.data, []);
-const otherWrite = await a.sdk.from('profiles').update({ nickname: '접근금지' }).eq('id', b.user.id).select();
+const otherWrite = await a.sdk.from('profiles').update({ real_name: '접근금지' }).eq('id', b.user.id).select();
 assert.equal(otherWrite.error, null);
 assert.deepEqual(otherWrite.data, []);
 const anonRead = await client().from('profiles').select('*');
@@ -55,7 +55,7 @@ assert.ok(createdAtWrite.error);
 assert.equal((await a.sdk.auth.signOut()).error, null);
 const again = await login('01091610001');
 assert.equal(again.user.id, a.user.id);
-assert.equal((await again.sdk.from('profiles').select('nickname').single()).data.nickname, '활성검증1');
+assert.equal((await again.sdk.from('profiles').select('real_name').single()).data.real_name, '활성검증1');
 assert.equal((await again.sdk.auth.refreshSession()).error, null);
 const legacyRequest = await invoke('01000000010', '', 'request');
 assert.equal(legacyRequest.status, 200, legacyRequest.data.message);

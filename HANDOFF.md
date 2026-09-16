@@ -2,7 +2,25 @@
 
 기준일: 2026-09-16  
 작업 폴더: `/Users/b/Documents/Antigravity/yumidang`  
-현재 상태: 사용자 흐름 1번 `회원가입`과 2번 `기존 회원 로그인` 구현·로컬·원격 검증 완료. 3번부터는 미구현이다.
+현재 상태: **사용자 흐름 1~9 (회원가입 → 로그인 → 공고 → 상대 프로필 → 참여 요청 → 매칭 채팅 → 최종 확정 → 동행 완료 → 블라인드 상호 평가) 구현·원격 적용·하네스 검증.** 최종 결과는 `docs/backend-implementation/HARNESS-REPORT.md`. 아래 "과거 기록" 절들은 기능 1·2 당시 기록이며 `nickname`, `3번부터 미구현` 등은 더 이상 최신이 아니다.
+
+## 최신 상태: 기능 1 감사 + 기능 2~9 구현 (2026-09-16, Claude Code)
+
+- 대상: `yumidang` / `bndguguarijmghnkenvt` / ap-northeast-2. 첫 원격 조회·첫 원격 변경 직전 ref 확인. 다른 Supabase 프로젝트 요청·변경 없음. service-role/secret 키 미사용.
+- **기능 1 감사 결함 수정:** `profiles.nickname` → `real_name`(데이터 보존 RENAME, 열 권한 유지), 서버 `mask_real_name`/`korean_age` 추가, 프론트 "닉네임" → "실명"(신분증 검증 아님 안내), 4글자 마스킹 규칙 `변**미`로 통일.
+- **기능 2 감사 결함 수정:** 테스트 인증 로그인 모드가 미가입 번호 계정을 만들던 문제 → Edge Function `mode` 추가, v3 배포(secrets·만료 설정 미변경). 외부 `next` 기본 복귀 `/`로. 인증 훅의 늦은 응답 덮어쓰기 방지.
+- **기능 3 범위 충돌 해소:** 최소 공고 작성 + `posts`/`post_private_details` 원자적 저장 추가(수정·삭제 없음).
+- 일반 실행은 새 `src/live/`(Supabase 전용)로 분리했다. 기존 프로토타입은 `?demo=1`에서만 실행되며 일반 실행에서 샘플 데이터로 돌아가지 않는다.
+- 원격 마이그레이션(로컬 파일명 = 원격 version): `20260916101123_profiles_real_name_contract`, `20260916105220_feature03_posts`, `20260916105738_feature04_post_author_profile`, `20260916105916_feature05_join_requests`, `20260916110052_feature06_matching_chat`, `20260916110758_feature07_final_match`, `20260916110943_feature08_completion`, `20260916111030_feature09_mutual_review`, `20260916111437_appointments_request_post_fk_index`, `20260916114036_rpc_unavailable_errors_as_404`. 기존 3개 마이그레이션은 수정하지 않았다.
+- 테스트 데이터: 하네스 계정 A/B/C(`010-9270-0001~0003`), run마다 가입 검증 계정 1개, `[run_id]` 제목 공고와 그 요청·메시지·동행·평가, 삭제 상태 고정 공고 1건(관리자 SQL). 기존 사용자·프로필·공고는 삭제하지 않았다.
+- 관리자 SQL 사용: 스키마 조회, 삭제 상태 고정 공고 1건 생성, 평가 기한 검증용 run 공고 1건 일정 이동. 사용자 행동 성공을 관리자 권한으로 대신하지 않았다.
+- 기능별 인수인계: `docs/backend-plans/02-login-HANDOFF.md` ~ `09-mutual-review-HANDOFF.md`. 실행 방법: `docs/backend-implementation/RUNBOOK.md`. 상태: `docs/backend-implementation/STATE.md`.
+- Git: 작업 중 GitHub Desktop 브랜치 전환으로 변경분이 `stash@{0}`(회원가입까지만)에 보관돼 사용자 선택에 따라 main에 `stash apply`로 복구했다. stash 항목은 삭제하지 않았다. 커밋·푸시·Vercel 배포는 하지 않았다.
+- 테스트 인증 서버 만료: **2026-09-23 18:30 KST**. 이후 하네스 사전 검사가 실패하며 임의 연장하지 않는다.
+
+---
+
+# 과거 기록 (기능 1·2 단계)
 
 ## 최신 상태: 임의 번호 테스트 인증 활성화 (2026-09-16 18:35 KST)
 

@@ -1,0 +1,74 @@
+{
+  "key": "feature-01-auth",
+  "status": "pass",
+  "steps": [
+    {
+      "name": "new number verifies to a real session with no profile yet (profile-incomplete)",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 1608
+    },
+    {
+      "name": "session restores in a new client from the stored refresh token (reload)",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 106
+    },
+    {
+      "name": "client cannot set created_at/updated_at or write another id",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 653
+    },
+    {
+      "name": "owner saves real_name/birth_date; DB manages timestamps; no phone column",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 168,
+      "detail": {
+        "columns": [
+          "avatar_url",
+          "bio",
+          "birth_date",
+          "created_at",
+          "id",
+          "real_name",
+          "updated_at"
+        ]
+      }
+    },
+    {
+      "name": "real_name constraints reject blank/short/untrimmed values",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 88
+    },
+    {
+      "name": "A/B/C personas have profiles (idempotent setup)",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 793
+    },
+    {
+      "name": "other members and anon cannot read or modify raw profiles",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 88
+    },
+    {
+      "name": "server masking and Seoul full-age functions match the contract; anon cannot execute",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 141
+    },
+    {
+      "name": "logout revokes the refresh token",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 53
+    }
+  ],
+  "startedAt": "2026-09-16T11:56:21.319Z",
+  "finishedAt": "2026-09-16T11:56:25.020Z",
+  "lastPassedStep": "logout revokes the refresh token"
+}

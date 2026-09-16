@@ -1,0 +1,69 @@
+{
+  "key": "feature-05-requests",
+  "status": "pass",
+  "steps": [
+    {
+      "name": "anon cannot create or list requests",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 58
+    },
+    {
+      "name": "B requests A post once: pending, requester decided by the session",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 72
+    },
+    {
+      "name": "repeat and parallel submits keep exactly one request",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 143
+    },
+    {
+      "name": "own post, closed/deleted posts and short messages are refused without rows",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 124
+    },
+    {
+      "name": "sent/received lists show masked names and ages only; C sees nothing",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 114
+    },
+    {
+      "name": "counterpart profile: B↔A only; C refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 61
+    },
+    {
+      "name": "only the requester withdraws, only the author declines; others get a generic refusal",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 113
+    },
+    {
+      "name": "withdraw → withdrawn (idempotent); decline afterwards refused; no re-request row",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 150
+    },
+    {
+      "name": "decline → declined visible to both; withdraw afterwards refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 121
+    },
+    {
+      "name": "direct REST insert/update on join_requests is refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 64
+    }
+  ],
+  "startedAt": "2026-09-16T11:41:56.312Z",
+  "finishedAt": "2026-09-16T11:41:57.382Z",
+  "lastPassedStep": "direct REST insert/update on join_requests is refused"
+}

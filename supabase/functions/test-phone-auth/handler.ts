@@ -32,7 +32,7 @@ export function createTestAuthHandler(config: TestAuthConfig, fetcher: typeof fe
     if (config.url !== PROJECT_URL || !config.serviceKey || !config.anonKey || (config.passwordSecret?.length ?? 0) < 32)
       return reply(503, { message: '테스트 인증 서버 설정을 확인해 주세요.' });
 
-    let body: { action?: string; phone?: string; code?: string };
+    let body: { action?: string; phone?: string; code?: string; mode?: string };
     try {
       const raw = await request.text();
       if (raw.length > 1024) return reply(413, { message: '요청이 너무 커요.' });
@@ -42,6 +42,10 @@ export function createTestAuthHandler(config: TestAuthConfig, fetcher: typeof fe
       return reply(400, { message: '숫자 11자리를 입력해 주세요.' });
     if (!['request', 'verify'].includes(body.action || ''))
       return reply(400, { message: '올바른 인증 단계가 아니에요.' });
+    // Login must never create an account. Older clients without `mode` keep the signup behavior.
+    const mode = body.mode === undefined ? 'signup' : body.mode;
+    if (!['login', 'signup'].includes(mode))
+      return reply(400, { message: '올바른 인증 모드가 아니에요.' });
     if (body.action === 'verify' && body.code !== TEST_CODE)
       return reply(400, { message: '인증번호가 맞지 않아요. 123456을 입력해 주세요.' });
 
@@ -56,13 +60,15 @@ export function createTestAuthHandler(config: TestAuthConfig, fetcher: typeof fe
       const data = await response.json();
       return { response, data };
     };
+    const notRegistered = () => reply(404, { code: 'not_registered', message: '가입된 휴대폰 번호가 아니에요. 아래 회원가입 버튼을 눌러 먼저 가입해 주세요.' });
     const failure = (status: number) => reply(status === 429 ? 429 : 400, {
       message: status === 429 ? '요청이 너무 많아요. 잠시 후 다시 시도해 주세요.' : '테스트 로그인에 실패했어요. 기존 테스트 계정인지 확인해 주세요.',
     });
     try {
       if (body.action === 'request') {
         if (isLegacyTestPhone(body.phone)) {
-          const sent = await callAuth('otp', { phone, create_user: true });
+          const sent = await callAuth('otp', { phone, create_user: mode === 'signup' });
+          if (mode === 'login' && sent.response.status === 422) return notRegistered();
           if (!sent.response.ok) return failure(sent.response.status);
         }
         return reply(200, { message: '실제 문자는 보내지 않아요. 테스트 인증번호 123456을 입력해 주세요.' });
@@ -79,13 +85,16 @@ export function createTestAuthHandler(config: TestAuthConfig, fetcher: typeof fe
         const key = await crypto.subtle.importKey('raw', encoder.encode(config.passwordSecret!), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
         const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(`yumidang-test-phone-v1:${phone}`));
         const password = `Test!${Array.from(new Uint8Array(signature), byte => byte.toString(16).padStart(2, '0')).join('')}`;
-        const created = await callAuth('admin/users', {
-          phone, password, phone_confirm: true,
-          app_metadata: { test_phone_auth: true, phone_ownership_verified: false },
-        }, true);
-        if (!created.response.ok && !['phone_exists', 'user_already_exists'].includes(created.data.error_code || created.data.code))
-          return failure(created.response.status);
+        if (mode === 'signup') {
+          const created = await callAuth('admin/users', {
+            phone, password, phone_confirm: true,
+            app_metadata: { test_phone_auth: true, phone_ownership_verified: false },
+          }, true);
+          if (!created.response.ok && !['phone_exists', 'user_already_exists'].includes(created.data.error_code || created.data.code))
+            return failure(created.response.status);
+        }
         result = await callAuth('token?grant_type=password', { phone, password });
+        if (mode === 'login' && result.response.status === 400) return notRegistered();
         if (result.response.ok && result.data.user?.app_metadata?.test_phone_auth !== true)
           return reply(403, { message: '이 계정은 임의 번호 테스트 로그인 대상이 아니에요.' });
       }

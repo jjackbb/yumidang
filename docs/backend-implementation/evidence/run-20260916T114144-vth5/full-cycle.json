@@ -1,0 +1,23 @@
+{
+  "key": "full-cycle",
+  "status": "fail",
+  "steps": [
+    {
+      "name": "1. A, B, C log in through the UI in separate browser contexts",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 4542
+    },
+    {
+      "name": "2. A and B create posts in the UI (exact place required) and see each other in the list",
+      "layer": "BROWSER",
+      "result": "FAIL",
+      "ms": 31030,
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByText('[run-20260916T114144-vth5] B 전체사이클 공고') to be visible\n"
+    }
+  ],
+  "startedAt": "2026-09-16T11:43:55.027Z",
+  "finishedAt": "2026-09-16T11:44:31.441Z",
+  "failure": "full-cycle › 2. A and B create posts in the UI (exact place required) and see each other in the list: locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByText('[run-20260916T114144-vth5] B 전체사이클 공고') to be visible\n — 재실행: npm run harness:full-cycle",
+  "lastPassedStep": "1. A, B, C log in through the UI in separate browser contexts"
+}

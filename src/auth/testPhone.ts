@@ -2,9 +2,9 @@ import { getSupabaseClient } from '../lib/supabase';
 
 export const isTestPhoneAuthEnabled = () => import.meta.env.VITE_TEST_PHONE_AUTH === 'true';
 
-export async function testPhoneAuth(action: 'request' | 'verify', phone: string, code?: string) {
+export async function testPhoneAuth(action: 'request' | 'verify', phone: string, code?: string, mode: 'login' | 'signup' = 'signup') {
   const { data, error } = await getSupabaseClient().functions.invoke('test-phone-auth', {
-    body: { action, phone, code },
+    body: { action, phone, code, mode },
   });
   if (error) {
     if (error.context instanceof Response) {

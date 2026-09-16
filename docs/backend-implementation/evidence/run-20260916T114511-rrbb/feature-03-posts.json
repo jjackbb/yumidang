@@ -1,0 +1,89 @@
+{
+  "key": "feature-03-posts",
+  "status": "pass",
+  "steps": [
+    {
+      "name": "anon cannot create posts",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 20
+    },
+    {
+      "name": "A and B each create a post; author comes from the session; response has no exact location",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 68,
+      "detail": {
+        "postA": "ce95d6ab-d811-4bb9-b140-5b3dd0628a6e",
+        "postB": "a5e75b35-af51-4389-aad0-3201899678b5"
+      }
+    },
+    {
+      "name": "retrying the same submit returns the same post; another member cannot reuse the id",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 60
+    },
+    {
+      "name": "invalid input is rejected and leaves no partial post/private row",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 390,
+      "detail": {
+        "rejected": [
+          "stationInPublicArea",
+          "shortExactLocation",
+          "recruitmentInPast",
+          "startsAfterEnds",
+          "unknownCategory",
+          "tooManyTags"
+        ]
+      }
+    },
+    {
+      "name": "anon, A and B see the same public list and detail without exact location",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 127
+    },
+    {
+      "name": "search, date, category and public-area filters match server rows",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 176
+    },
+    {
+      "name": "keyset pagination has no duplicates or gaps (page size 1 over run posts)",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 87
+    },
+    {
+      "name": "deleted posts are hidden from list and direct id lookup",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 94
+    },
+    {
+      "name": "recruitment-closed post leaves the default list but its detail still opens as closed (server time)",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 6159
+    },
+    {
+      "name": "exact location: author reads own; other members and anon cannot",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 131
+    },
+    {
+      "name": "direct REST writes to posts/private details are refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 130
+    }
+  ],
+  "startedAt": "2026-09-16T11:45:15.313Z",
+  "finishedAt": "2026-09-16T11:45:22.760Z",
+  "lastPassedStep": "direct REST writes to posts/private details are refused"
+}

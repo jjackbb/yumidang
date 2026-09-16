@@ -3,15 +3,17 @@ import type { User } from '@supabase/supabase-js';
 import type { CurrentUser } from '../types.ts';
 import { NEW_USER_SUGAR } from '../data/publicProfiles.ts';
 import { exactAgeLabel, type SignupProfile } from './signup.ts';
+import { maskRealName } from '../utils/maskName.ts';
 
 export function currentUserFromProfile(user: User, profile: SignupProfile, now = new Date()): CurrentUser {
   return {
     id: profile.id,
     isLoggedIn: true,
     phone: user.phone || '',
-    realName: '',
-    maskedName: profile.nickname,
-    nickname: profile.nickname,
+    // The owner may see their own source name; other members only ever receive a server-masked value.
+    realName: profile.real_name,
+    maskedName: maskRealName(profile.real_name),
+    nickname: maskRealName(profile.real_name),
     gender: 'undisclosed',
     birthDate: profile.birth_date,
     ageGroup: exactAgeLabel(profile.birth_date, now),

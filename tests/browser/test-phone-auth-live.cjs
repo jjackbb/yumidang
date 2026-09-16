@@ -19,29 +19,29 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/Users/b/.npm/_np
     assert.equal(await session(), null);
     await page.locator('#auth-otp').fill('123456');
     await page.getByRole('button', { name: 'Supabase에서 인증 확인' }).click();
-    await page.locator('#auth-nickname').waitFor();
+    await page.locator('#auth-real-name').waitFor();
     const before = await session();
     assert.ok(before.user.id);
     await page.reload();
-    await page.locator('#auth-nickname').waitFor();
+    await page.locator('#auth-real-name').waitFor();
     assert.equal((await session()).user.id, before.user.id);
-    await page.locator('#auth-nickname').fill('화면활성검증');
+    await page.locator('#auth-real-name').fill('화면활성검증');
     await page.locator('#auth-birth').fill('2000-09-16');
     await page.getByText('화면 표시: 26살', { exact: true }).waitFor();
     await page.getByRole('button', { name: '기본 프로필 저장하고 가입 완료' }).click();
     // App closes the signup modal after the authenticated profile state is loaded.
-    await page.locator('#auth-nickname').waitFor({ state: 'hidden' });
+    await page.locator('#auth-real-name').waitFor({ state: 'hidden' });
     await page.reload();
-    await page.waitForFunction(() => !!document.querySelector('header') && !document.querySelector('#auth-nickname'));
+    await page.waitForFunction(() => !!document.querySelector('header') && !document.querySelector('#auth-real-name'));
     assert.equal((await session()).user.id, before.user.id);
     assert.equal(await page.locator('header').getByRole('button', { name: '로그인', exact: true }).count(), 0);
     const saved = await page.evaluate(async () => {
       const { getSupabaseClient } = await import('/src/lib/supabase.ts');
-      const result = await getSupabaseClient().from('profiles').select('nickname').single();
-      return { nickname: result.data?.nickname, error: result.error?.code };
+      const result = await getSupabaseClient().from('profiles').select('real_name').single();
+      return { realName: result.data?.real_name, error: result.error?.code };
     });
     assert.equal(saved.error, undefined);
-    assert.equal(saved.nickname, '화면활성검증');
+    assert.equal(saved.realName, '화면활성검증');
     await page.evaluate(async () => {
       const { getSupabaseClient } = await import('/src/lib/supabase.ts');
       await getSupabaseClient().auth.signOut();

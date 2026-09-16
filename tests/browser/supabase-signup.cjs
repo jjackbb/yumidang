@@ -107,13 +107,13 @@ async function requestAndVerify(page, phone, { exerciseErrors = false } = {}) {
   await dialog.getByRole('button', { name: '테스트 OTP 입력', exact: true }).click();
   assert.equal(await dialog.locator('#auth-otp').inputValue(), '123456');
   await dialog.getByRole('button', { name: 'Supabase에서 인증 확인', exact: true }).click();
-  await dialog.locator('#auth-nickname').waitFor();
+  await dialog.locator('#auth-real-name').waitFor();
   return rerequest;
 }
 
-async function saveProfile(page, nickname, birthDate) {
+async function saveProfile(page, realName, birthDate) {
   const dialog = page.getByRole('dialog', { name: '회원가입', exact: true });
-  await dialog.locator('#auth-nickname').fill(nickname);
+  await dialog.locator('#auth-real-name').fill(realName);
   await dialog.locator('#auth-birth').fill(birthDate);
   assert.equal(await dialog.getByText(`화면 표시: ${birthDate === '2001-09-16' ? '25살' : '30살'}`, { exact: true }).isVisible(), true);
   await dialog.getByRole('button', { name: '기본 프로필 저장하고 가입 완료', exact: true }).click();
@@ -151,19 +151,19 @@ async function saveProfile(page, nickname, birthDate) {
       await route.continue();
     });
     const dialogA = pageA.getByRole('dialog', { name: '회원가입', exact: true });
-    await dialogA.locator('#auth-nickname').fill('실제가입A');
+    await dialogA.locator('#auth-real-name').fill('실제가입A');
     await dialogA.locator('#auth-birth').fill('2001-09-16');
     await dialogA.getByRole('button', { name: '기본 프로필 저장하고 가입 완료', exact: true }).click();
     await dialogA.getByRole('alert').waitFor();
     assert.match(await dialogA.getByRole('alert').innerText(), /기본 프로필을 저장하지 못했어요/);
-    assert.equal(await dialogA.locator('#auth-nickname').inputValue(), '실제가입A');
+    assert.equal(await dialogA.locator('#auth-real-name').inputValue(), '실제가입A');
     assert.equal(await dialogA.locator('#auth-birth').inputValue(), '2001-09-16');
     evidence.checks.push('프로필 저장 실패 시 입력과 인증 세션 유지');
 
     await pageA.unroute('**/rest/v1/profiles*');
     await pageA.reload({ waitUntil: 'networkidle' });
     const resumed = pageA.getByRole('dialog', { name: '회원가입', exact: true });
-    await resumed.locator('#auth-nickname').waitFor();
+    await resumed.locator('#auth-real-name').waitFor();
     assert.equal(await resumed.getByText(/휴대폰 확인은 완료됐어요/).isVisible(), true);
     evidence.checks.push('새로고침 후 미완성 프로필 단계 자동 복구');
 
@@ -174,7 +174,7 @@ async function saveProfile(page, nickname, birthDate) {
       headers: { ...apiHeaders(incompleteSession.access_token), Prefer: 'return=representation' },
       body: JSON.stringify({
         id: incompleteSession.user.id,
-        nickname: '시각위조',
+        real_name: '시각위조',
         birth_date: '2001-09-16',
         avatar_url: null,
         bio: null,
@@ -205,7 +205,7 @@ async function saveProfile(page, nickname, birthDate) {
       assert.ok(sessionB, 'user B session missing');
       evidence.checks.push('두 번째 실제 사용자 가입');
 
-      const select = 'id,nickname,birth_date,created_at,updated_at';
+      const select = 'id,real_name,birth_date,created_at,updated_at';
       const ownResponse = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${sessionA.user.id}&select=${select}`, { headers: apiHeaders(sessionA.access_token) });
       assert.equal(ownResponse.status, 200);
       const ownRows = await ownResponse.json();
@@ -218,13 +218,13 @@ async function saveProfile(page, nickname, birthDate) {
       const blockedUpdate = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${sessionB.user.id}`, {
         method: 'PATCH',
         headers: { ...apiHeaders(sessionA.access_token), Prefer: 'return=representation' },
-        body: JSON.stringify({ nickname: '침범시도' }),
+        body: JSON.stringify({ real_name: '침범시도' }),
       });
       assert.equal(blockedUpdate.status, 200);
       assert.deepEqual(await blockedUpdate.json(), []);
 
-      const verifyB = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${sessionB.user.id}&select=nickname`, { headers: apiHeaders(sessionB.access_token) });
-      assert.equal((await verifyB.json())[0].nickname, '실제가입B');
+      const verifyB = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${sessionB.user.id}&select=real_name`, { headers: apiHeaders(sessionB.access_token) });
+      assert.equal((await verifyB.json())[0].real_name, '실제가입B');
 
       const anonResponse = await fetch(`${supabaseUrl}/rest/v1/profiles?select=id&limit=1`, { headers: { apikey: publishableKey } });
       const anonBody = await anonResponse.text();
@@ -235,7 +235,7 @@ async function saveProfile(page, nickname, birthDate) {
       const ownUpdate = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${sessionA.user.id}`, {
         method: 'PATCH',
         headers: { ...apiHeaders(sessionA.access_token), Prefer: 'return=representation' },
-        body: JSON.stringify({ nickname: '실제가입A수정' }),
+        body: JSON.stringify({ real_name: '실제가입A수정' }),
       });
       assert.equal(ownUpdate.status, 200);
       const updatedRows = await ownUpdate.json();

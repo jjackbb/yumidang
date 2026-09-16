@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 
 import { getSupabaseClient } from '../lib/supabase.ts';
-import type { SignupProfile } from './signup.ts';
+import { PROFILE_COLUMNS, type SignupProfile } from './signup.ts';
 
 export type SupabaseAuthStatus = 'disabled' | 'loading' | 'anonymous' | 'profile-incomplete' | 'authenticated' | 'error';
 
@@ -19,22 +19,29 @@ const loadingState: SupabaseAuthState = { status: 'loading', session: null, user
 
 export function useSupabaseAuth(enabled: boolean) {
   const [state, setState] = useState<SupabaseAuthState>(enabled ? loadingState : disabledState);
+  const sequence = useRef(0);
 
   const syncSession = useCallback(async (session: Session | null) => {
     if (!enabled) return;
+    // A slower profile read for an older session must not overwrite a newer login/logout.
+    const current = ++sequence.current;
     if (!session) {
       setState({ status: 'anonymous', session: null, user: null, profile: null, error: null });
       return;
     }
 
-    setState(previous => ({ ...previous, status: 'loading', session, user: session.user, error: null }));
+    // Token refreshes for the same signed-in member keep the screen mounted; a different member starts from loading.
+    setState(previous => previous.status === 'authenticated' && previous.user?.id === session.user.id
+      ? { ...previous, session, user: session.user }
+      : { status: 'loading', session, user: session.user, profile: null, error: null });
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('profiles')
-        .select('id,nickname,birth_date,avatar_url,bio,created_at,updated_at')
+        .select(PROFILE_COLUMNS)
         .eq('id', session.user.id)
         .maybeSingle<SignupProfile>();
+      if (current !== sequence.current) return;
       if (error) throw error;
       setState({
         status: data ? 'authenticated' : 'profile-incomplete',
@@ -44,6 +51,7 @@ export function useSupabaseAuth(enabled: boolean) {
         error: null,
       });
     } catch (error) {
+      if (current !== sequence.current) return;
       setState({
         status: 'error',
         session,

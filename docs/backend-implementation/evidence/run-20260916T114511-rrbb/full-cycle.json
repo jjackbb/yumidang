@@ -1,0 +1,23 @@
+{
+  "key": "full-cycle",
+  "status": "fail",
+  "steps": [
+    {
+      "name": "1. A, B, C log in through the UI in separate browser contexts",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 4739
+    },
+    {
+      "name": "2. A and B create posts in the UI (exact place required) and see each other in the list",
+      "layer": "BROWSER",
+      "result": "FAIL",
+      "ms": 31116,
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: /\\[run-20260916T114511-rrbb\\] B 전체사이클 공고/ }).first() to be visible\n    - waiting for \"http://127.0.0.1:4320/explore\" navigation to finish...\n    - navigated to \"http://127.0.0.1:4320/explore\"\n"
+    }
+  ],
+  "startedAt": "2026-09-16T11:47:22.828Z",
+  "finishedAt": "2026-09-16T11:48:00.040Z",
+  "failure": "full-cycle › 2. A and B create posts in the UI (exact place required) and see each other in the list: locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: /\\[run-20260916T114511-rrbb\\] B 전체사이클 공고/ }).first() to be visible\n    - waiting for \"http://127.0.0. — 재실행: npm run harness:full-cycle",
+  "lastPassedStep": "1. A, B, C log in through the UI in separate browser contexts"
+}

@@ -4,9 +4,9 @@ export const isProtectedPath = (path: string) => path === '/chat' || path === '/
 export const tabForPath = (path: string): AppTab =>
   (Object.keys(TAB_PATHS) as AppTab[]).find(tab => TAB_PATHS[tab] === path) || 'home';
 
-/** A strict allowlist prevents login links from redirecting to another site or demo mode. */
+/** A strict allowlist prevents login links from redirecting to another site or demo mode; anything else goes home. */
 export function safeReturnPath(value: string | null | undefined) {
-  return value && Object.values(TAB_PATHS).includes(value) ? value : '/me';
+  return value && Object.values(TAB_PATHS).includes(value) ? value : '/';
 }
 
 export function loginPath(next: string) {

@@ -10,7 +10,9 @@ import {
   type AuthMode,
   type SignupProfile,
 } from '../auth/signup';
-import { koreaToday, sanitizePhone, validatePhone } from '../utils/profile';
+import { koreaToday, validatePhone } from '../utils/profile';
+import { PhoneInput } from './PhoneInput';
+import { isTestPhoneAuthEnabled, testPhoneAuth } from '../auth/testPhone';
 
 export interface AuthModalProps {
   isOpen: boolean;
@@ -50,6 +52,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [infoMessage, setInfoMessage] = useState('');
 
   const allAgreed = agreedAge && agreedService && agreedPrivacy && agreedSafety;
+  const testPhoneMode = isTestPhoneAuthEnabled();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -96,7 +99,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const requestOtp = async () => {
-    const problem = validatePhone(phone);
+    const problem = testPhoneMode ? (/^\d{11}$/.test(phone) ? null : '숫자 11자리를 입력해 주세요.') : validatePhone(phone);
     if (problem) {
       setErrorMessage(problem);
       return;
@@ -105,19 +108,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage('');
     setInfoMessage('');
     try {
-      const e164Phone = toE164KoreanPhone(phone);
-      const { error } = await getSupabaseClient().auth.signInWithOtp({
-        phone: e164Phone,
-        options: { shouldCreateUser: mode === 'signup' },
-      });
-      if (error) throw error;
-      setRequestedPhone(e164Phone);
+      if (testPhoneMode) {
+        await testPhoneAuth('request', phone);
+        setRequestedPhone(phone);
+      } else {
+        const e164Phone = toE164KoreanPhone(phone);
+        const { error } = await getSupabaseClient().auth.signInWithOtp({
+          phone: e164Phone,
+          options: { shouldCreateUser: mode === 'signup' },
+        });
+        if (error) throw error;
+        setRequestedPhone(e164Phone);
+      }
       setOtpSent(true);
       setOtpCode('');
       setTimerSeconds(180);
-      setInfoMessage('Supabase가 인증번호 요청을 받았어요. 등록된 테스트 번호는 문자 대신 고정 OTP로 확인합니다.');
+      setInfoMessage(testPhoneMode ? '실제 문자는 보내지 않아요. 인증번호 123456을 입력해 주세요.' : 'Supabase가 인증번호 요청을 받았어요. 등록된 테스트 번호는 문자 대신 고정 OTP로 확인합니다.');
     } catch (error: any) {
-      setErrorMessage(authErrorMessage(error, 'send', mode));
+      setErrorMessage(testPhoneMode ? error.message : authErrorMessage(error, 'send', mode));
     } finally {
       setBusy(false);
     }
@@ -136,11 +144,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage('');
     try {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: requestedPhone,
-        token: otpCode,
-        type: 'sms',
-      });
+      const { data, error } = testPhoneMode
+        ? await supabase.auth.setSession(await testPhoneAuth('verify', requestedPhone, otpCode))
+        : await supabase.auth.verifyOtp({ phone: requestedPhone, token: otpCode, type: 'sms' });
       if (error) throw error;
       if (!data.session || !data.user) throw new Error('Supabase 세션이 만들어지지 않았어요.');
       setOtpSent(false);
@@ -157,7 +163,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         ? '휴대폰 확인은 완료됐지만 기본 프로필이 없어요. 가입을 이어서 완료해 주세요.'
         : '휴대폰 확인이 완료됐어요. 기본 프로필을 입력해 주세요.');
     } catch (error: any) {
-      setErrorMessage(authErrorMessage(error, 'verify', mode));
+      setErrorMessage(testPhoneMode ? error.message : authErrorMessage(error, 'verify', mode));
     } finally {
       setBusy(false);
     }
@@ -245,9 +251,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       </div>}
 
       {step === 'phone' && <div className="p-5 space-y-4">
-        <div><label htmlFor="auth-phone" className="block text-xs font-bold text-gray-700 mb-1.5">휴대폰 번호</label><div className="flex gap-2"><div className="relative flex-1"><Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" /><input id="auth-phone" type="tel" inputMode="numeric" autoComplete="tel" maxLength={11} placeholder="01000000008" value={phone} onChange={event => { setPhone(sanitizePhone(event.target.value)); setOtpSent(false); setErrorMessage(''); }} className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#6c2cf5]/30" /></div><button type="button" disabled={busy} onClick={requestOtp} className="px-3.5 rounded-xl bg-[#f0edff] text-[#6c2cf5] font-bold text-xs disabled:opacity-50">{otpSent ? '재요청' : '인증번호 요청'}</button></div><p className="mt-1.5 text-[11px] text-gray-400">하이픈 없이 11자리로 입력해 주세요. 하이픈을 입력해도 자동으로 제거됩니다.</p></div>
+        <div><label htmlFor="auth-phone" className="block text-xs font-bold text-gray-700 mb-1.5">휴대폰 번호</label><div className="flex gap-2"><div className="relative flex-1"><Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" /><PhoneInput id="auth-phone" value={phone} onValueChange={digits => { setPhone(digits); setOtpSent(false); setRequestedPhone(''); setOtpCode(''); setErrorMessage(''); setInfoMessage(''); }} className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#6c2cf5]/30" /></div><button type="button" disabled={busy} onClick={requestOtp} className="px-3.5 rounded-xl bg-[#f0edff] text-[#6c2cf5] font-bold text-xs disabled:opacity-50">{otpSent ? '재요청' : '인증번호 요청'}</button></div><p className="mt-1.5 text-[11px] text-gray-400">숫자 11자리를 입력하면 하이픈이 자동으로 표시돼요.</p></div>
         {otpSent && <div className="space-y-2.5"><div className="flex justify-between"><label htmlFor="auth-otp" className="text-xs font-bold">인증번호 6자리</label><span className="text-xs text-rose-500 flex items-center gap-1"><Clock className="w-3.5 h-3.5" />화면 안내 {Math.floor(Math.max(timerSeconds, 0) / 60)}:{String(Math.max(timerSeconds, 0) % 60).padStart(2, '0')}</span></div><div className="relative"><input id="auth-otp" inputMode="numeric" maxLength={6} value={otpCode} onChange={event => { setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6)); setErrorMessage(''); }} className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-center tracking-widest font-mono font-bold" /><button type="button" onClick={() => setOtpCode(TEST_OTP)} className="absolute right-2 top-2 px-2 py-1 text-[11px] font-bold text-[#6c2cf5] bg-[#f0edff] rounded-lg">테스트 OTP 입력</button></div><button type="button" disabled={busy || otpCode.length !== 6} onClick={verifyOtp} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] disabled:bg-purple-300 text-white font-bold">Supabase에서 인증 확인</button></div>}
-        <div className="p-3.5 rounded-2xl bg-amber-50 text-[11px] leading-relaxed text-amber-950"><strong>테스트 인증</strong><p className="mt-1">010-0000-0001~0020만 사용하며 실제 문자는 발송되지 않아요. 고정 OTP도 브라우저가 아니라 Supabase가 검증합니다.</p></div>
+        <div className="p-3.5 rounded-2xl bg-amber-50 text-[11px] leading-relaxed text-amber-950"><strong>테스트 인증</strong><p className="mt-1">{testPhoneMode ? '숫자 11자리와 인증번호 123456으로 테스트해요. 처음 쓰는 번호는 인증 후 기본 프로필을 입력합니다. 실제 문자는 발송되지 않으며, 누구나 같은 번호로 해당 테스트 계정에 접속할 수 있어요.' : '010-0000-0001~0020만 사용하며 실제 문자는 발송되지 않아요. 고정 OTP도 브라우저가 아니라 Supabase가 검증합니다.'}</p></div>
         {mode === 'login' ? <div className="pt-4 border-t border-gray-100 text-center space-y-2"><p className="text-xs text-gray-500">아직 유미당 계정이 없나요?</p><button type="button" onClick={() => switchMode('signup')} className="w-full py-3 rounded-xl border border-[#6c2cf5] text-[#6c2cf5] font-bold">회원가입</button></div>
           : <button type="button" onClick={() => switchMode('login')} className="w-full text-xs font-bold text-[#6c2cf5]">이미 계정이 있어요 · 로그인</button>}
       </div>}

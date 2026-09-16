@@ -4,6 +4,7 @@ dist/
 .env.*
 !.env.example
 .vercel/
+supabase/.temp/
 .overnight/
 .DS_Store
 server.js

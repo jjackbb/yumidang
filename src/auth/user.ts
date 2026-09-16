@@ -18,7 +18,7 @@ export function currentUserFromProfile(user: User, profile: SignupProfile, now =
     // Activity/location data belongs to the later meetup/profile contract, not signup.
     neighborhood: '',
     sugarContent: NEW_USER_SUGAR,
-    isPhoneVerified: Boolean(user.phone_confirmed_at),
+    isPhoneVerified: Boolean(user.phone_confirmed_at) && user.app_metadata?.phone_ownership_verified !== false,
     isKycVerified: false,
     avatar: profile.avatar_url || '',
     bio: profile.bio || '',

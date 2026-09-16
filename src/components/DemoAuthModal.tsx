@@ -4,9 +4,10 @@ import { X, ShieldCheck, Phone, ArrowRight, AlertCircle, Check, Clock, Sparkles,
 import { CurrentUser } from '../types';
 import { maskRealName } from '../utils/maskName';
 import {
-  NEIGHBORHOOD_OPTIONS, ageGroupOf, koreaToday, sanitizePhone, validateBirthDate, validateKoreanName,
+  NEIGHBORHOOD_OPTIONS, ageGroupOf, koreaToday, validateBirthDate, validateKoreanName,
   validatePhone, validateReferralCode, validateWorkEmail,
 } from '../utils/profile';
+import { PhoneInput } from './PhoneInput';
 
 export interface DemoAuthModalProps {
   isOpen: boolean;
@@ -162,16 +163,15 @@ export const DemoAuthModal: React.FC<DemoAuthModalProps> = ({ isOpen, onClose, o
     <div className="flex gap-2">
       <div className="relative flex-1 min-w-0">
         <Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
-        <input id="auth-phone" type="tel" maxLength={11} inputMode="numeric" autoComplete="tel" aria-label="휴대폰 번호" placeholder="01012345678" value={phone}
-          onChange={(e) => { setPhone(sanitizePhone(e.target.value)); setErrorMessage(''); if (otpSent) resetOtp(); }}
-          onPaste={(e) => { e.preventDefault(); setPhone(sanitizePhone(e.clipboardData.getData('text'))); setErrorMessage(''); if (otpSent) resetOtp(); }}
+        <PhoneInput id="auth-phone" aria-label="휴대폰 번호" value={phone}
+          onValueChange={digits => { setPhone(digits); setErrorMessage(''); if (otpSent) resetOtp(); }}
           className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-gray-50 focus:bg-white text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#6c2cf5]/30 focus:border-[#6c2cf5]" />
       </div>
       <button type="button" onClick={handleSendOtp} className="px-3.5 py-2.5 bg-[#f0edff] hover:bg-[#ded6fb] text-[#6c2cf5] font-bold text-xs rounded-xl transition-colors whitespace-nowrap">
         {otpSent ? '재발송' : '인증번호 발송'}
       </button>
     </div>
-    <p className="text-[11px] text-gray-400 mt-1">숫자만 11자리까지 입력돼요. 붙여넣어도 하이픈·공백은 빠져요.</p>
+    <p className="text-[11px] text-gray-400 mt-1">숫자 11자리를 입력하면 하이픈이 자동으로 표시돼요.</p>
   </div>;
 
   const otpBlock = (submitLabel: string) => otpSent && <div className="space-y-2.5 animate-in fade-in">

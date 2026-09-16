@@ -4,6 +4,40 @@
 작업 폴더: `/Users/b/Documents/Antigravity/yumidang`  
 현재 상태: 사용자 흐름 1번 `회원가입`과 2번 `기존 회원 로그인` 구현·로컬·원격 검증 완료. 3번부터는 미구현이다.
 
+## 최신 상태: 임의 번호 테스트 인증 활성화 (2026-09-16 18:35 KST)
+
+- 사용자 승인: Supabase 테스트 인증 활성화 허용. 이어 Vercel `yumidang`의 **Production·Preview 환경 변수 추가**를 명시 승인받았다. Git 커밋·푸시·Vercel 사이트 배포는 수행하지 않았다.
+- 대상 재확인: `jjjackbbb` / `uyighfgdivmjhmqtokna`, 프로젝트 `yumidang` / `bndguguarijmghnkenvt`, `ACTIVE_HEALTHY`. 다른 Supabase 프로젝트는 변경하지 않았다.
+- **PASS / 실제 적용:** Supabase 플러그인으로 `test-phone-auth` version 1 배포, 로그인 전 endpoint의 `verify_jwt=false` + 함수 내부 고정 코드 검사. CLI로 대상 ref를 명시해 서버 secrets 3개 설정. 비밀값은 브라우저·Git·문서에 기록하지 않았다.
+- **활성 만료:** `2026-09-23T09:30:00Z` = **9월 23일 18:30 KST**. 7일 기본값을 사용자에게 안내했다. 만료는 신규 인증만 막고 기존 계정·프로필을 삭제하거나 이미 발급된 세션을 취소하지 않는다.
+- `.env.local`: `VITE_TEST_PHONE_AUTH=true`. `.env.example`은 안전한 비활성 기본값 유지.
+- **PASS / 설정 재조회:** Vercel `jjackbb-projects/yumidang` Production·Preview에 `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_TEST_PHONE_AUTH=true` 추가. 기존 GEMINI/APP_URL은 보존했다. Vercel UI의 Sensitive 표시와 무관하게 `VITE_*` 값은 웹 빌드에서 공개된다. 관리자 키를 넣지 않았다.
+- **오래된 연결 주의:** `.vercel/project.json`의 `yumidang6`은 잔여 데이터다. 해당 ID 원격 조회는 실패했고 변경하지 않았다. 현재 프로젝트는 `--project yumidang`으로 명시해 조회·환경 변수 설정했다. 동시 진행 중인 사용자 배포와 충돌하지 않도록 로컬 링크는 임의로 덮어쓰지 않았다.
+- **PASS / 실제 원격:** `tests/remote-test-phone-auth.mjs` — 새 계정·실제 토큰, 010이 아닌 11자리, 잘못된 코드·길이 거부, 프로필 저장, 동일 UUID 재로그인, refresh, A/B/anon RLS, 시스템 열 쓰기 거부, 기존 0010 native OTP, 로그아웃. 요청만 하거나 잘못된 코드로 검사한 번호의 사용자 수는 SQL로 0 확인.
+- **PASS / 실제 로컬 브라우저 + 원격:** `tests/browser/test-phone-auth-live.cjs` — 자동 하이픈, 틀린 OTP, 인증 후 미완성 프로필 새로고침 복구, 프로필 저장, 26살 표시, 새로고침 후 세션·프로필 복구, 로그아웃. API mock 없이 수행했다.
+- 검증 과정의 초기 실패: 원격 테스트의 upsert가 수정 금지 `id` 열 권한에 걸려 앱과 동일한 INSERT/입력 열 UPDATE로 수정했다. 브라우저 테스트는 가입 후 창이 자동 닫히는 앱 동작에 맞춰 대기를 수정했다. 보안 권한이나 앱 동작을 느슨하게 바꾸지 않았다.
+- 검증 데이터: `010-9161-0001`, `987-9161-0002`, `010-9161-0003`, `010-9161-0004` 테스트 계정·프로필을 보존. 0003은 첫 브라우저 검사 중 실제 저장 후 검사 대기만 실패한 기록이다.
+- 최종 SQL 재조회: Auth 사용자 16명, 프로필 14행. 기존 12/10에서 검증용 4/4가 추가됐다. Notion 지정 페이지에 기능·키·검증·만료·Vercel 후속 단계를 갱신하고 재조회로 확인했다.
+- **PASS / 로컬:** 88/88 tests, TypeScript lint, Vite production build. 임시 폴더 출력, 기존 500 kB 청크 경고 유지.
+- **보안 Advisor:** 기존 유출 비밀번호 보호 비활성 1건. 신규 임의 번호 경로는 내부 phone/password를 사용하므로 과거의 '비밀번호 없음' 설명은 기존 native OTP에만 해당한다. 서버 HMAC 비밀번호이며 사용자 비밀번호 입력은 없다. 공개 운영 전 공유 코드 자체를 제거한다.
+- **NOT_RUN:** Vercel 사이트 재배포·공개 URL 인증 확인, 실제 SMS, 실제 7일 만료 경계 대기, Git 커밋·푸시.
+- **다음 단계:** 사용자가 진행 중인 Vercel 배포에 최신 파일이 포함됐는지 확인하고 환경 변수 추가 이후 새 빌드를 실행한다. 변경 전 시작한 빌드는 새 설정을 포함하지 않을 수 있다. 기능 3~9는 구현하지 않았다.
+
+## 이전 준비 기록: 전화번호 표시 / 임의 번호 테스트 로그인 (활성화 전)
+
+- 사용자 요청: 숫자 입력 시 `010-0000-0001` 자동 표시, 임의 11자리 + `123456`, Supabase 실제 저장 유지.
+- **PASS:** `PhoneInput`을 일반/데모 인증 입력에 적용. 내부 숫자 상태와 표시 하이픈을 분리하고 중간 수정·하이픈 삭제·붙여넣기를 지원한다.
+- **준비 / 미활성:** `supabase/functions/test-phone-auth/`와 `src/auth/testPhone.ts`. 서버에서 고정 코드 확인 후 실제 Auth 사용자·세션을 발급받아 기존 `setSession`/프로필/RLS를 사용하도록 작성했다. 기존 20개 번호는 기존 native OTP 경로를 유지한다. 미등록 임의 번호는 코드 확인 뒤 계정을 생성하고 기본 프로필을 입력한다.
+- `.env.example`의 `VITE_TEST_PHONE_AUTH=false`가 기본값이다. `.env.local`에는 활성화하지 않았다. 따라서 아래의 기존 20개 번호 인증 계약은 현재 실행 경로이고, 임의 번호 인증은 아직 사용자에게 제공되지 않는다.
+- 원격 `list_edge_functions` 결과는 빈 목록이었다. 이전 배포 금지 지시 때문에 Edge Function 배포·서버 secrets 설정을 실행하지 않았다. 활성화 절차와 키 역할은 `supabase/functions/test-phone-auth/README.md` 참조.
+- **PASS:** 로컬 테스트 88/88, TypeScript, Vite build. 빌드 산출물은 저장소 밖 임시 폴더로 출력. 500 kB 청크 경고는 기존과 동일.
+- **PASS / 실제 로컬 브라우저·API mock:** `tests/browser/phone-input.cjs`로 숫자 타이핑, 하이픈 포함 입력, 하이픈 앞뒤 삭제, E.164 요청값, 번호 변경 시 OTP 초기화를 검증했다.
+- **PASS / mock:** 서버 비활성·만료·대상 ref·잘못된 OTP 검사, 번호별 비밀번호 분리·재로그인 안정성, 기존 20개 OTP 경로, 비테스트 계정 차단.
+- **NOT_RUN:** 임의 번호 원격 계정/세션 생성, 동일 UUID 재로그인, 원격 A/B RLS 회귀. 서버 코드의 mock 통과를 실제 Supabase 성공으로 표현하지 않는다.
+- **다음 단계:** `bndguguarijmghnkenvt`에 테스트 인증 Edge Function 배포 예외 허용을 먼저 확인한다. 서버 활성화/만료/비밀 설정 후 원격 회귀를 통과해야 프론트 플래그를 켠다. 사이트 배포·Git 커밋·푸시는 계속 금지다.
+- **후속 기능 영향:** 공유 OTP는 실제 번호 소유 인증이 아니다. `app_metadata.phone_ownership_verified=false`인 신규 테스트 계정은 인증 배지를 표시하지 않는다. 사용자 UUID가 생겨도 기능 3~9의 원격 상호작용은 아직 미구현이다.
+- **Notion:** 지정 페이지에 이번 변경, 환경 키, mock PASS/원격 NOT_RUN을 추가 기록했다.
+
 ## 1. 범위 경계
 
 현재 완료 범위는 아래 두 흐름이다.

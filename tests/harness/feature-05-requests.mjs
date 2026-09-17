@@ -83,15 +83,24 @@ export async function feature05(ctx, feature) {
     const state = await b.sdk.from('join_requests').select('status').eq('id', request.id).single();
     assert.equal(state.data.status, 'pending');
   });
-  await feature.step('withdraw → withdrawn (idempotent); decline afterwards refused; no re-request row', 'REMOTE', async () => {
+  await feature.step('withdraw → new request/new chat; old history stays readable and read-only', 'REMOTE', async () => {
     const own = await c.sdk.from('join_requests').select('id').eq('post_id', withdrawPost.post.id).single();
+    const oldMessage = { id: crypto.randomUUID(), join_request_id: own.data.id, sender_id: c.userId, content: `이전 대화 ${ctx.run.runId}` };
+    assert.equal((await c.sdk.from('chat_messages').insert(oldMessage)).error, null);
     const first = await c.sdk.rpc('withdraw_join_request', { p_request_id: own.data.id }).single();
     assert.equal(first.data.status, 'withdrawn');
     assert.equal((await c.sdk.rpc('withdraw_join_request', { p_request_id: own.data.id }).single()).data.status, 'withdrawn');
     assert.equal(expectError(await a.sdk.rpc('decline_join_request', { p_request_id: own.data.id }), 'decline withdrawn').message, 'invalid_transition');
+    expectError(await c.sdk.from('chat_messages').insert({ id: crypto.randomUUID(), join_request_id: own.data.id, sender_id: c.userId, content: '취소 뒤 전송은 거절되어야 합니다.' }), 'old chat write');
     const again = await c.sdk.rpc('create_join_request', { p_post_id: withdrawPost.post.id, p_message: MESSAGE }).single();
-    assert.equal(again.data.already_existed, true);
-    assert.equal(again.data.status, 'withdrawn');
+    assert.equal(again.data.already_existed, false);
+    assert.equal(again.data.status, 'pending');
+    assert.notEqual(again.data.id, own.data.id);
+    const rows = await c.sdk.from('join_requests').select('id,status').eq('post_id', withdrawPost.post.id).order('created_at');
+    assert.deepEqual(rows.data.map(row => row.status), ['withdrawn', 'pending']);
+    assert.equal((await c.sdk.from('chat_messages').select('content').eq('join_request_id', own.data.id).single()).data.content, oldMessage.content);
+    assert.equal((await c.sdk.rpc('get_conversation', { p_request_id: own.data.id }).single()).data.can_send, false);
+    assert.equal((await c.sdk.rpc('get_conversation', { p_request_id: again.data.id }).single()).data.can_send, true);
     const seenByAuthor = (await a.sdk.rpc('list_received_join_requests')).data.find(row => row.id === own.data.id);
     assert.equal(seenByAuthor.status, 'withdrawn');
   });
@@ -101,6 +110,7 @@ export async function feature05(ctx, feature) {
     assert.equal(declined.data.status, 'declined');
     assert.equal((await b.sdk.rpc('list_sent_join_requests')).data.find(row => row.id === created.data.id).status, 'declined');
     assert.equal(expectError(await b.sdk.rpc('withdraw_join_request', { p_request_id: created.data.id }), 'withdraw declined').message, 'invalid_transition');
+    assert.equal(expectError(await b.sdk.rpc('create_join_request', { p_post_id: declinePost.post.id, p_message: MESSAGE }), 'reapply declined').message, 'request_declined_history');
   });
   await feature.step('partner gender condition is enforced by the server (gender stays private)', 'REMOTE', async () => {
     const maleOnly = await createPost(ctx, a, '남성조건', { partnerGender: 'male' });

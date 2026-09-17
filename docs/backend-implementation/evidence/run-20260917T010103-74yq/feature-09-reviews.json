@@ -1,0 +1,72 @@
+{
+  "key": "feature-09-reviews",
+  "status": "pass",
+  "steps": [
+    {
+      "name": "no review before appointment completion (even after ends_at)",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 21638
+    },
+    {
+      "name": "raw review table is closed to A, B, C and anon; not in Realtime",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 4672
+    },
+    {
+      "name": "A completes and submits; validation and duplicate/changed resubmits handled",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 408
+    },
+    {
+      "name": "B sees only that A submitted — no rating/comment anywhere; A sees no peer review",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 1702,
+      "detail": {
+        "realtime": "subscription refused"
+      }
+    },
+    {
+      "name": "C and anon cannot learn review existence or content",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 118
+    },
+    {
+      "name": "B submits blind during the 24h hold; both reviews remain hidden",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 131
+    },
+    {
+      "name": "reviews did not modify completion rows or appointment status",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 153
+    },
+    {
+      "name": "near-simultaneous submissions settle one consistent held state",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 21824
+    },
+    {
+      "name": "deadline boundary is completed_at+7d and exact",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 120
+    },
+    {
+      "name": "review responses contain no raw personal data or exact place",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 60
+    }
+  ],
+  "startedAt": "2026-09-17T01:01:03.649Z",
+  "finishedAt": "2026-09-17T01:01:56.021Z",
+  "lastPassedStep": "review responses contain no raw personal data or exact place"
+}

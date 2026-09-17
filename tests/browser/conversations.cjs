@@ -421,7 +421,7 @@ const url = process.env.CHECK_URL || 'http://127.0.0.1:4176';
       await modal.getByRole('button', { name: '친절하고 배려해요', exact: true }).click();
       await modal.getByLabel(/선택 한마디/).fill('종료 시각 이후 작성한 산책 후기입니다.');
       await modal.getByRole('button', { name: '평가 제출하기', exact: true }).click();
-      assert.match(await modal.innerText(), /7일 뒤에도 자동 공개되지 않습니다/);
+      assert.match(await modal.innerText(), /한쪽만 제출해도 평가 기한에는 공개돼요/);
       await modal.getByRole('button', { name: '닫기', exact: true }).click();
       const waiting = p.getByRole('button', { name: '상대 평가 대기 중', exact: true });
       assert.equal(await waiting.isDisabled(), false);

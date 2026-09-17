@@ -20,12 +20,12 @@ npm run test:harness:api    # 브라우저 사이클 제외 (full-cycle은 NOT_R
 | `npm run harness:02` | 로그인 시 계정 미생성·잘못된 코드·재로그인·A/B 세션 분리·로그아웃 |
 | `npm run harness:03` | 공고 원자적 생성·검증·목록/상세/필터/페이지·삭제·마감·정확한 장소 비공개 |
 | `npm run harness:04` | 작성자 공개 프로필(마스킹 실명·만 나이)·익명 차단·삭제 공고 |
-| `npm run harness:05` | 참여 요청 1회·동시 요청·상태 전이·목록 마스킹·C 차단 |
+| `npm run harness:05` | 동시 요청 1건·철회 후 새 ID 재신청/새 채팅·이전 채팅 읽기 전용·거절 후 재신청 차단 |
 | `npm run harness:06` | 참가자 채팅·Realtime 양방향·UUID 재시도·50개 페이지·읽기 전용 전환 |
 | `npm run harness:07` | 원자적 최종 확정·동시 확정·정확한 장소 공개 범위 |
-| `npm run harness:08` | 종료 시각 전 거부·개인별 완료·두 번째 확인 트랜잭션·동시 확인 |
-| `npm run harness:09` | 블라인드 평가·중복/수정 금지·동시 공개·기한 경계·원본 테이블 차단 |
-| `npm run harness:full-cycle` | A/B/C/익명 4개 브라우저 컨텍스트 전체 흐름 |
+| `npm run harness:08` | 종료 전 거부·한 명 완료 즉시 확정·동시 요청 단일 audit·24시간 이의 제기·자동완료 경계 |
+| `npm run harness:09` | 완료 후 양쪽 작성·24시간 비공개·7일 경계·분쟁 동결·원본 테이블 차단 |
+| `npm run harness:full-cycle` | 철회→재신청→새 채팅→매칭→단일 완료→평가 보류→재로그인·제3자 차단 |
 
 각 기능 파일은 필요한 run 전용 데이터를 스스로 만들어 단독 실행된다.
 
@@ -58,14 +58,16 @@ npm run test:harness:api    # 브라우저 사이클 제외 (full-cycle은 NOT_R
 - 같은 파일이 있으면 쓰기를 거부한다(덮어쓰기 금지).
 - 저장 전 토큰(JWT)·비밀키·전화번호·정확한 장소·실명 원본·생년월일을 검사해 포함되면 저장을 거부한다. 스크린샷은 정확한 장소·전화번호가 찍히므로 남기지 않는다.
 
-## 수동(관리자 보조) 검사
+## 정책 시간 전이(관리자 보조) 검사
 
-평가 기한 7일 경과를 실제로 기다릴 수 없어 다음 두 단계를 1회 수행했다.
+실제 24시간·7일을 기다리지 않는 검증은 run 전용 fixture의 정책 시각만 관리자 SQL로 이동한 뒤 브라우저로 확인한다. 운영 데이터에는 적용하지 않는다.
 
 ```bash
-node tests/harness/manual/review-deadline-prepare.mjs     # A 평가 제출, B 완료만 한 run 공고 준비
-# 서버 SQL: 해당 run 공고 1건의 starts_at/ends_at/recruitment_ends_at만 8일 앞으로 이동
-node tests/harness/manual/review-deadline-verify.mjs <appointment_id>
+POLICY_RUN_ID=<full-cycle-run-id> \
+  node --experimental-strip-types --no-warnings tests/harness/policy-release-browser.mjs
 ```
 
-자동 하네스의 기한 경계는 RPC가 사용하는 서버 함수 `review_submission_open(ends_at, at)`으로 검사한다.
+- 먼저 해당 full-cycle appointment의 `completion_notified_at`과 `dispute_deadline_at`을 24시간 이후로 이동해야 한다.
+- 단독 공개 fixture는 `completed_at+7일`이 지난 평가 1건을 사용한다.
+- 자동 하네스의 작성 기한 경계는 서버 함수 `review_submission_open(completed_at, deadline_at, status, at)`으로 검사한다.
+- 실제 자동완료는 활성 Cron job `yumidang-auto-complete-appointments`가 매분 `private.complete_due_appointments`를 호출한다.

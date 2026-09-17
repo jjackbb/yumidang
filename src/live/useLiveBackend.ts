@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Appointment, AppointmentReview, ChatMember, ChatRoom, CompletionConfirmation, JoinRequest, MeetupPost, PublicUserProfile } from '../types';
 import { getSupabaseClient } from '../lib/supabase';
 import { toLiveError } from './errors';
-import { liveApi, type SentRequest, type ReceivedRequest } from './api';
+import { liveApi, type AppointmentState, type SentRequest, type ReceivedRequest } from './api';
 import {
   avatarOrPlaceholder, NEW_USER_SUGAR_POLICY, toAppointment, toAppointmentReviews, toChatRoom, toCompletion, toJoinRequest, toMeetupPost,
   type AppointmentRow, type AuthorCard, type JoinRow, type LivePostRow, type MessageRow, type ReviewStateRow,
@@ -62,6 +62,7 @@ export function useLiveBackend(enabled: boolean, userId: string | null, self: Ch
       let joins: JoinRow[] = [], sent: SentRequest[] = [], received: ReceivedRequest[] = [];
       let appointments: AppointmentRow[] = [], completions: { appointment_id: string; user_id: string; confirmed_at: string }[] = [];
       let exact: { post_id: string; exact_location: string }[] = [], messages: MessageRow[] = [], cards: AuthorCard[] = [];
+      const appointmentStates: AppointmentState[] = [];
       const reviewStates: ReviewStateRow[] = [];
 
       if (userId) {
@@ -80,9 +81,17 @@ export function useLiveBackend(enabled: boolean, userId: string | null, self: Ch
         if (joins.length) messages = await rows<MessageRow>(client().from('chat_messages').select('id,join_request_id,sender_id,content,created_at')
           .in('join_request_id', joins.map(row => row.id)).order('created_at', { ascending: true }).order('id', { ascending: true }).limit(2000));
         if (postRows.size) cards = await rows<AuthorCard>(client().rpc('get_post_author_cards', { p_post_ids: [...postRows.keys()] }));
-        const states = await Promise.all(appointments.map(appointment =>
-          rows<ReviewStateRow>(client().rpc('get_appointment_review_state', { p_appointment_id: appointment.id }))));
-        states.forEach(state => { if (state[0]) reviewStates.push(state[0]); });
+        const states = await Promise.all(appointments.map(async appointment => {
+          const [appointmentState, reviewState] = await Promise.all([
+            liveApi.appointmentState(appointment.id),
+            liveApi.reviewState(appointment.id),
+          ]);
+          return { appointment: appointmentState, review: reviewState };
+        }));
+        states.forEach(state => {
+          if (state.appointment) appointmentStates.push(state.appointment);
+          if (state.review) reviewStates.push(state.review);
+        });
       }
       if (current !== sequence.current) return;
 
@@ -124,7 +133,15 @@ export function useLiveBackend(enabled: boolean, userId: string | null, self: Ch
         if (!post || !request || !userId) return [];
         const room = rooms.find(item => item.requestId === request.id)!;
         const partner = room.members.find(member => member.id !== userId)!;
-        return [toAppointment(row, post, request, userId, partner)];
+        return [toAppointment(
+          row,
+          post,
+          request,
+          userId,
+          partner,
+          appointmentStates.find(state => state.appointment_id === row.id),
+          reviewStates.find(state => state.appointment_id === row.id),
+        )];
       });
       const appointmentReviews = reviewStates.flatMap(state => {
         const appointment = mappedAppointments.find(item => item.id === state.appointment_id);
@@ -222,6 +239,7 @@ export function useLiveBackend(enabled: boolean, userId: string | null, self: Ch
     withdraw: (requestId: string) => run(() => liveApi.withdrawJoinRequest(requestId)),
     sendMessage: (requestId: string, text: string) => run(() => liveApi.sendMessage({ id: crypto.randomUUID(), join_request_id: requestId, sender_id: userId!, content: text })),
     confirmCompletion: (appointmentId: string) => run(() => liveApi.confirmCompletion(appointmentId)),
+    raiseDispute: (appointmentId: string, reason: string) => run(() => liveApi.raiseDispute(appointmentId, reason)),
     submitReview: (appointmentId: string, rating: number, comment: string) => run(() => liveApi.submitReview(appointmentId, rating, comment)),
   };
 

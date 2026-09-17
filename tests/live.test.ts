@@ -26,11 +26,12 @@ test('existing-screen adapters map server rows without inventing sample data', a
   const request = toJoinRequest({ id: 'r1', post_id: 'p1', requester_id: 'b', message: 'hello there!', status: 'matched', created_at: 'c', updated_at: 'u' }, closed, { name: '하*비', avatar: '' });
   assert.equal(request.hostId, 'a');
   assert.equal(request.status, 'accepted');
-  const hidden = toAppointmentReviews({ appointment_id: 'ap', peer_submitted: true, released: false, own_review: null, peer_review: { rating: 5, comment: '비밀', submitted_at: 's' } }, 'b', 'a');
+  const baseReviewState = { appointment_id: 'ap', appointment_completed: true, deadline_at: 'd', hold_until: 'h', disputed: false, can_write: true, release_reason: null, server_now: 'n' };
+  const hidden = toAppointmentReviews({ ...baseReviewState, peer_submitted: true, released: false, own_review: null, peer_review: { rating: 5, comment: '비밀', submitted_at: 's' } }, 'b', 'a');
   assert.equal(hidden.length, 1);
   assert.equal(hidden[0].rating, 0);
   assert.equal(hidden[0].comment, '');
-  const released = toAppointmentReviews({ appointment_id: 'ap', peer_submitted: true, released: true, own_review: { rating: 4, comment: null, submitted_at: 's' }, peer_review: { rating: 5, comment: '공개', submitted_at: 's' } }, 'b', 'a');
+  const released = toAppointmentReviews({ ...baseReviewState, peer_submitted: true, released: true, release_reason: 'mutual', own_review: { rating: 4, comment: null, submitted_at: 's' }, peer_review: { rating: 5, comment: '공개', submitted_at: 's' } }, 'b', 'a');
   assert.equal(released.find(item => item.reviewerId === 'a')?.comment, '공개');
 });
 

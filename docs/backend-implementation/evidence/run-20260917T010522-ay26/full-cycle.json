@@ -1,0 +1,120 @@
+{
+  "key": "full-cycle",
+  "status": "pass",
+  "steps": [
+    {
+      "name": "1. existing home renders; A, B, C log in in separate browser contexts",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 5111
+    },
+    {
+      "name": "2. A and B create posts in the existing form (시·구·동 + private place) and see each other",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 12499
+    },
+    {
+      "name": "3. detail shows 시·구·동 only; B and anon never receive the exact place",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 430
+    },
+    {
+      "name": "4. B sees A as masked real name + full age; anon is asked to log in",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 298
+    },
+    {
+      "name": "5. B requests A post once through the existing request modal; repeat is idempotent",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 1874
+    },
+    {
+      "name": "6. withdraw preserves the old read-only chat; reapply creates a new writable chat",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 13949,
+      "detail": {
+        "latencyBtoAms": 1788,
+        "latencyAtoBms": 1788,
+        "oldRequest": "a96925e0-7318-42f6-84da-7f36020eead5",
+        "newRequest": "c33eb4c2-48b0-4611-bb38-f7d47fedb114"
+      }
+    },
+    {
+      "name": "7. A accepts B in the chat room → server final match (post closed)",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 1095
+    },
+    {
+      "name": "8. only B newly sees the exact place; C still cannot",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 922
+    },
+    {
+      "name": "9. completion before the end time is refused by the server",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 74,
+      "detail": {
+        "waitSecondsUntilEnd": 358
+      }
+    },
+    {
+      "name": "10. after the end time A confirms completion and immediately submits a review",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 372568
+    },
+    {
+      "name": "11. B cannot see A’s rating or comment anywhere",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 3053
+    },
+    {
+      "name": "12. A’s single confirmation already completed the appointment; B may review",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 149
+    },
+    {
+      "name": "13–14. B reviews blind; both reviews remain hidden during the 24h hold",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 930
+    },
+    {
+      "name": "15. state survives reload, logout and re-login (protected /me return, external next ignored)",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 4171
+    },
+    {
+      "name": "16. C and anon cannot read the request, chat, appointment, exact place, completion or reviews",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 1042
+    },
+    {
+      "name": "17. A and B cannot read each other’s raw real name, birth date or phone",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 109
+    },
+    {
+      "name": "no uncaught page errors in A/B/C/anon browsers",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 0
+    }
+  ],
+  "startedAt": "2026-09-17T01:05:22.236Z",
+  "finishedAt": "2026-09-17T01:12:23.676Z",
+  "lastPassedStep": "no uncaught page errors in A/B/C/anon browsers"
+}

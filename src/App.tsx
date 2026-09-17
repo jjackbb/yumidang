@@ -925,13 +925,12 @@ export default function App() {
   // Phase 5: personal completion + mutual blind reviews
   const handleOpenReview = (target: Appointment) => {
     const state = completionReviewState(target, currentUser?.id, completions, appointmentReviews, clock());
-    if (!state.canReview && !state.hasOwnReview) return;
+    if (!state.canReview && !state.hasOwnReview && !state.reviewsReleased) return;
     setReviewAppointmentId(target.id);
     setIsReviewModalOpen(true);
   };
 
   const handleCompleteAppointment = (target: Appointment) => {
-
     if (!currentUser) return;
     if (!demoMode) {
       void live.actions.confirmCompletion(target.id).then(result => {
@@ -945,8 +944,7 @@ export default function App() {
     const nextCompletions = [...completions, result.value];
     setCompletions(nextCompletions);
     const partnerId = target.participantIds?.find(id => id !== currentUser.id);
-    const bothComplete = Boolean(partnerId && nextCompletions.some(item => item.appointmentId === target.id && item.userId === partnerId));
-    if (bothComplete) setAppointments(prev => prev.map(item => item.id === target.id ? { ...item, status: '동행 완료', dDay: '완료됨' } : item));
+    setAppointments(prev => prev.map(item => item.id === target.id ? { ...item, status: '동행 완료', dDay: '완료됨' } : item));
     if (partnerId) setNotifications(prev => [{
       id: `notif-completion-${target.id}-${currentUser.id}`, recipientId: partnerId, createdAt: result.value.confirmedAt,
       title: `${currentUser.maskedName}님이 동행 완료를 확인했어요`, description: '평가 내용은 포함되지 않아요. 내 완료 확인 후 평가를 남길 수 있어요.',
@@ -954,6 +952,15 @@ export default function App() {
     }, ...prev]);
     setReviewAppointmentId(target.id);
     setIsReviewModalOpen(true);
+  };
+
+  const handleDisputeAppointment = (target: Appointment) => {
+    if (!currentUser) return;
+    if (demoMode) { setLifecycleNotice('완료 이의 제기는 실제 서버 정책에서만 처리돼요.'); return; }
+    if (!window.confirm('완료 처리에 이의를 제기할까요? 검토가 끝날 때까지 평가 작성과 공개가 멈춥니다.')) return;
+    void live.actions.raiseDispute(target.id, '동행 완료 처리에 이의를 제기합니다.').then(result => {
+      setLifecycleNotice('error' in result ? result.error : '이의가 접수됐어요. 검토가 끝날 때까지 평가 작성과 공개가 멈춥니다.');
+    });
   };
 
   const handleSubmitReview = async (reviewPayload: ReviewDraft): Promise<{ ok: true } | { ok: false; error: string }> => {
@@ -967,7 +974,7 @@ export default function App() {
     setAppointmentReviews(prev => [...prev, result.value]);
     const createdAt = result.value.submittedAt;
     setNotifications(prev => [
-      { id: `notif-review-self-${reviewAppointment.id}-${currentUser.id}`, recipientId: currentUser.id, createdAt, title: '블라인드 평가 제출 완료', description: partnerAlreadySubmitted ? '양쪽 평가가 모두 제출되어 서로의 후기가 공개됐어요.' : '상대가 제출할 때까지 후기는 비공개이며 7일 뒤에도 자동 공개되지 않아요.', time: '방금', read: false, type: 'review', targetType: 'review', targetId: reviewAppointment.id },
+      { id: `notif-review-self-${reviewAppointment.id}-${currentUser.id}`, recipientId: currentUser.id, createdAt, title: '블라인드 평가 제출 완료', description: partnerAlreadySubmitted ? '양쪽 평가가 모두 제출되어 공개 조건을 확인하고 있어요.' : '상대가 제출하면 함께, 한쪽만 제출하면 7일 기한에 공개돼요.', time: '방금', read: false, type: 'review', targetType: 'review', targetId: reviewAppointment.id },
       ...(partnerAlreadySubmitted ? [{ id: `notif-review-release-${reviewAppointment.id}-${partnerId}`, recipientId: partnerId, createdAt, title: '상호 평가가 공개됐어요', description: '양쪽 평가가 모두 제출되어 서로의 후기를 확인할 수 있어요.', time: '방금', read: false, type: 'review' as const, targetType: 'review' as const, targetId: reviewAppointment.id }] : []),
       ...prev,
     ]);
@@ -1175,6 +1182,7 @@ export default function App() {
   const completionActionsFor = (target: Appointment) => ({
     state: completionReviewState(target, currentUser?.id, completions, appointmentReviews, now),
     onComplete: () => handleCompleteAppointment(target),
+    onDispute: () => handleDisputeAppointment(target),
     onOpenReview: () => handleOpenReview(target),
   });
   const existingPostRoom = selectedPostForDetail && chatRooms.find(room =>

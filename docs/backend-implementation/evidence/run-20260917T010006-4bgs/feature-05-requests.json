@@ -1,0 +1,75 @@
+{
+  "key": "feature-05-requests",
+  "status": "pass",
+  "steps": [
+    {
+      "name": "anon cannot create or list requests",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 126
+    },
+    {
+      "name": "B requests A post once: pending, requester decided by the session",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 114
+    },
+    {
+      "name": "repeat and parallel submits keep exactly one request",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 230
+    },
+    {
+      "name": "own post, closed/deleted posts and short messages are refused without rows",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 5311
+    },
+    {
+      "name": "sent/received lists show masked names and ages only; C sees nothing",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 208
+    },
+    {
+      "name": "counterpart profile: B↔A only; C refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 91
+    },
+    {
+      "name": "only the requester withdraws, only the author declines; others get a generic refusal",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 190
+    },
+    {
+      "name": "withdraw → new request/new chat; old history stays readable and read-only",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 410
+    },
+    {
+      "name": "decline → declined visible to both; withdraw afterwards refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 204
+    },
+    {
+      "name": "partner gender condition is enforced by the server (gender stays private)",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 256
+    },
+    {
+      "name": "direct REST insert/update on join_requests is refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 110
+    }
+  ],
+  "startedAt": "2026-09-17T01:00:06.036Z",
+  "finishedAt": "2026-09-17T01:00:17.220Z",
+  "lastPassedStep": "direct REST insert/update on join_requests is refused"
+}

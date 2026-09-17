@@ -1,0 +1,72 @@
+{
+  "key": "feature-07-match",
+  "status": "pass",
+  "steps": [
+    {
+      "name": "before the match nobody but the author reads the exact place",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 110
+    },
+    {
+      "name": "requesters, anon and outsiders cannot confirm",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 120
+    },
+    {
+      "name": "author confirms B: appointment + matched + not_selected + closed in one transaction",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 90,
+      "detail": {
+        "appointment": "add10cc2-8046-4787-8b24-5b944866407c"
+      }
+    },
+    {
+      "name": "retrying the same confirm returns the same appointment; confirming another is refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 89
+    },
+    {
+      "name": "two tabs confirming different requests at once create exactly one appointment",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 231
+    },
+    {
+      "name": "exact place: A and B read it; not-selected C, anon and public responses do not",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 300
+    },
+    {
+      "name": "appointment visible to A and B only; conversation exposes its id only to the pair",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 780
+    },
+    {
+      "name": "matched chat stays writable; not_selected chat is read-only; matched request cannot be withdrawn",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 120
+    },
+    {
+      "name": "failed confirm (meetup already started) changes nothing",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 8700
+    },
+    {
+      "name": "direct REST writes to appointments are refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 62
+    }
+  ],
+  "startedAt": "2026-09-17T01:04:47.094Z",
+  "finishedAt": "2026-09-17T01:04:58.943Z",
+  "lastPassedStep": "direct REST writes to appointments are refused"
+}

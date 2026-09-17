@@ -147,7 +147,7 @@ const result = { url, mode: 'final B01-B15 browser integration', checkedAt: new 
     await panelOpen(page); await panel(page).locator('[data-demo-start="completion"]').click(); await dismiss(page);
     await page.getByRole('dialog', { name: '약속 상세' }).getByRole('button', { name: '내 동행 완료 확인' }).click();
     let modal = page.getByRole('dialog', { name: '동행 평가' }); await modal.getByRole('button', { name: '친절하고 배려해요' }).click(); await modal.getByRole('button', { name: '평가 제출하기' }).click();
-    assert.match(await modal.innerText(), /7일 뒤에도 자동 공개되지 않습니다/); await modal.getByRole('button', { name: '닫기', exact: true }).click();
+    assert.match(await modal.innerText(), /한쪽만 제출해도 평가 기한에는 공개돼요/); await modal.getByRole('button', { name: '닫기', exact: true }).click();
     await page.getByRole('dialog', { name: '약속 상세' }).getByRole('button', { name: '참여 대시보드 닫기' }).click();
     await panelOpen(page); await panel(page).getByRole('radiogroup', { name: '07 평가 안' }).getByRole('radio', { name: 'B안' }).click(); await panel(page).locator('[data-demo-user="user-hoon"]').click(); await panelOpen(page, false);
     await nav(page, 'me'); const card = page.locator('[data-appointment-card="appt-walk"]'); await card.getByRole('button', { name: /강\*훈 님과의 공원 산책/ }).click();

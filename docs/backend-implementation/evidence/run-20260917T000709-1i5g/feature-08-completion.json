@@ -1,0 +1,51 @@
+{
+  "key": "feature-08-completion",
+  "status": "pass",
+  "steps": [
+    {
+      "name": "before ends_at (server time) both confirmations are refused and no row is written",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 129
+    },
+    {
+      "name": "outsiders and anon can neither read nor confirm",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 108
+    },
+    {
+      "name": "after ends_at A confirms (double click): one row, appointment still confirmed, A may review, B may not",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 21517
+    },
+    {
+      "name": "no client-chosen user id: the RPC accepts no user parameter; direct inserts are refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 107
+    },
+    {
+      "name": "B confirms: completed + completed_at set together; retries keep two rows",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 218
+    },
+    {
+      "name": "simultaneous confirmations from both people end in two rows and one completion",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 21670
+    },
+    {
+      "name": "completion responses carry no raw personal data",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 27
+    }
+  ],
+  "startedAt": "2026-09-17T00:07:56.319Z",
+  "finishedAt": "2026-09-17T00:08:40.197Z",
+  "lastPassedStep": "completion responses carry no raw personal data"
+}

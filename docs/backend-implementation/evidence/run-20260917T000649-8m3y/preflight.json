@@ -1,0 +1,49 @@
+{
+  "key": "preflight",
+  "status": "fail",
+  "steps": [
+    {
+      "name": "target guard refuses forbidden/other projects before any request",
+      "layer": "LOCAL",
+      "result": "PASS",
+      "ms": 0
+    },
+    {
+      "name": ".env.local points at bndguguarijmghnkenvt with a publishable key",
+      "layer": "LOCAL",
+      "result": "PASS",
+      "ms": 1,
+      "detail": {
+        "url": "https://bndguguarijmghnkenvt.supabase.co",
+        "keyKind": "publishable"
+      }
+    },
+    {
+      "name": "no service-role/secret key referenced by browser code",
+      "layer": "LOCAL",
+      "result": "PASS",
+      "ms": 30
+    },
+    {
+      "name": "git state recorded",
+      "layer": "LOCAL",
+      "result": "PASS",
+      "ms": 58,
+      "detail": {
+        "head": "a449b05",
+        "changedFiles": 2
+      }
+    },
+    {
+      "name": "Supabase Auth reachable on the allowed project",
+      "layer": "REMOTE",
+      "result": "FAIL",
+      "ms": 32,
+      "error": "fetch failed"
+    }
+  ],
+  "startedAt": "2026-09-17T00:06:49.761Z",
+  "finishedAt": "2026-09-17T00:06:49.883Z",
+  "failure": "preflight › Supabase Auth reachable on the allowed project: fetch failed — 재실행: npm run harness:preflight",
+  "lastPassedStep": "git state recorded"
+}

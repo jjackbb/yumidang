@@ -1,5 +1,16 @@
 # 하네스 실행 보고서 — 기능 1~9
 
+## 2026-09-17 재신청·완료·평가 정책 후속 적용
+
+- 원격 migration `20260917005621 retry_completion_dispute_review_policy` 적용 완료.
+- 로컬 `npm test` 96/96, `npm run lint`, production build 통과.
+- 영향 범위 원격 하네스: 기능 05 `run-20260917T010006-4bgs` 11/11, 06 `run-20260917T010426-3rio` 10/10, 07 `run-20260917T010447-23fj` 10/10, 08 `run-20260917T010017-ufzz` 9/9, 09 `run-20260917T010103-74yq` 10/10 PASS.
+- 브라우저 전체 흐름 `run-20260917T010522-ay26` 17/17 PASS: 철회 이력/읽기 전용 채팅 보존, 새 request ID/새 채팅, 한 명 완료, 양쪽 평가 작성, 24시간 비공개, 재로그인 및 C·익명 차단.
+- 통제된 시간 전이 후 `policy-release-browser` PASS: 24시간 이후 상호 평가 공개와 `completed_at+7일` 단독 평가 공개를 A/B 인증 API 및 실제 Chromium에서 확인.
+- 실제 Cron fixture가 다음 스케줄에서 `automatic` 완료됨을 확인했다. 수동 행위자는 null, 분쟁 창 24시간, 평가 창 7일이었다.
+- 운영자 판정: `actual_meetup`은 남은 평가 시간(최소 24시간)을 복원하고, `no_show`는 평가 대상에서 제외했다. 두 private 함수는 authenticated 실행 불가다.
+- Advisor 신규 항목은 의도적 전면 비공개 테이블(`appointment_disputes`, 기존 `appointment_reviews`)의 무정책 INFO와 인증·관계 검사를 수행하는 공개 RPC의 SECURITY DEFINER 경고다.
+
 기준일: 2026-09-16 · 대상: Supabase `yumidang` / `bndguguarijmghnkenvt` / ap-northeast-2 · 실행: Claude Code
 
 ## 결론

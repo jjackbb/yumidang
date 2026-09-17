@@ -65,6 +65,22 @@ export interface Appointment {
   proDetails?: ProDetails;
   escrowPayment?: EscrowPayment;
   cancellation?: { actorId: string; reason: string; createdAt: string };
+  /** Server-authoritative policy state in normal Supabase mode. Demo records omit it. */
+  livePolicy?: {
+    completionMethod: 'manual' | 'automatic' | null;
+    completionNotifiedAt: string | null;
+    disputeDeadlineAt: string | null;
+    completedByMe: boolean;
+    canComplete: boolean;
+    canDispute: boolean;
+    disputeStatus: 'open' | 'resolved' | null;
+    reviewDeadlineAt: string | null;
+    reviewHoldUntil: string | null;
+    reviewDisputed: boolean;
+    reviewCanWrite: boolean;
+    reviewsReleased: boolean;
+    reviewReleaseReason: 'mutual' | 'deadline' | null;
+  };
 }
 
 export interface CategoryItem {
@@ -193,6 +209,8 @@ export interface AppointmentReview {
   comment: string;
   submittedAt: string;
   variant: ABVariant;
+  /** True only when the safe server RPC released this content to the viewer. */
+  released?: boolean;
 }
 
 export interface NotificationSettings {

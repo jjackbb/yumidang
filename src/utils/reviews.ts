@@ -3,15 +3,22 @@ import { formatSchedule } from './calendar.ts';
 import { isValidMeetupRange } from './meetupLifecycle.ts';
 
 export const REVIEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+export const REVIEW_HOLD_MS = 24 * 60 * 60 * 1000;
 
 export interface CompletionReviewState {
   canComplete: boolean;
   canReview: boolean;
+  canDispute: boolean;
+  appointmentCompleted: boolean;
+  disputed: boolean;
+  completionMethod?: 'manual' | 'automatic' | null;
   ownCompleted: boolean;
   otherCompleted: boolean;
   hasOwnReview: boolean;
   hasOtherReview: boolean;
   reviewsReleased: boolean;
+  releaseReason?: 'mutual' | 'deadline' | null;
+  holdUntil?: string;
   partnerId?: string;
   reviewDeadline?: string;
   reason: string;
@@ -40,6 +47,9 @@ export function completionReviewState(
   const base = {
     canComplete: false,
     canReview: false,
+    canDispute: false,
+    appointmentCompleted: false,
+    disputed: false,
     ownCompleted: false,
     otherCompleted: false,
     hasOwnReview: false,
@@ -48,41 +58,95 @@ export function completionReviewState(
   };
   if (!userId) return { ...base, reason: '로그인 후 참여한 동행을 완료할 수 있어요.' };
   if (!appointment.participantIds?.includes(userId)) return { ...base, reason: '이 동행의 참여자만 완료·평가할 수 있어요.' };
+  const partnerId = appointment.participantIds.find(id => id !== userId);
+  if (!partnerId) return { ...base, reason: '평가할 상대를 확인할 수 없어요.' };
+
+  // Normal mode receives an already-authorized, server-clock-based policy snapshot.
+  // Do not recompute its deadlines with the browser clock.
+  if (appointment.livePolicy) {
+    const policy = appointment.livePolicy;
+    const hasOwnReview = Boolean(reviewFor(reviews, appointment.id, userId));
+    const hasOtherReview = Boolean(reviewFor(reviews, appointment.id, partnerId));
+    const appointmentCompleted = ['동행 완료', '이의 검토 중'].includes(appointment.status);
+    const automatic = policy.completionMethod === 'automatic';
+    const common = {
+      ...base,
+      partnerId,
+      appointmentCompleted,
+      disputed: policy.reviewDisputed,
+      completionMethod: policy.completionMethod,
+      canComplete: policy.canComplete,
+      canDispute: policy.canDispute,
+      canReview: policy.reviewCanWrite,
+      ownCompleted: appointmentCompleted && (automatic || policy.completedByMe),
+      otherCompleted: appointmentCompleted && (automatic || !policy.completedByMe),
+      hasOwnReview,
+      hasOtherReview,
+      reviewsReleased: policy.reviewsReleased,
+      releaseReason: policy.reviewReleaseReason,
+      reviewDeadline: policy.reviewDeadlineAt || undefined,
+      holdUntil: policy.reviewHoldUntil || undefined,
+    };
+    if (appointment.status === '불발') return { ...common, canReview: false, canDispute: false, reason: '불발 처리된 동행은 평가와 공개 대상에서 제외돼요.' };
+    if (appointment.status === '동행 취소') return { ...common, canComplete: false, canReview: false, canDispute: false, reason: '취소된 동행은 완료·평가할 수 없어요. 이전 기록만 확인할 수 있습니다.' };
+    if (policy.reviewDisputed) return { ...common, canReview: false, reason: '이의 검토 중에는 평가 작성과 공개 시계가 모두 멈춰요.' };
+    if (policy.reviewsReleased) return {
+      ...common,
+      reason: policy.reviewReleaseReason === 'deadline'
+        ? '평가 기한이 끝나 제출된 후기가 공개됐어요.'
+        : '양쪽 평가가 모두 제출되어 후기가 공개됐어요.',
+    };
+    if (!appointmentCompleted) return {
+      ...common,
+      reason: policy.canComplete ? '동행이 끝났어요. 한 명이 완료하면 동행 전체가 바로 완료돼요.' : '동행 종료 뒤 완료할 수 있어요.',
+    };
+    if (hasOwnReview) return { ...common, reason: '내 평가는 제출됐어요. 상대 평가가 먼저 도착하면 보류 종료 후, 아니면 평가 기한에 공개돼요.' };
+    if (policy.reviewCanWrite) return { ...common, reason: '동행이 완료됐어요. 공개 보류 중에도 평가를 작성할 수 있어요.' };
+    return { ...common, reason: '평가 작성 기간이 끝났거나 현재 평가를 작성할 수 없는 상태예요.' };
+  }
+
   if (appointment.status === '동행 취소') return { ...base, reason: '취소된 동행은 완료·평가할 수 없어요. 이전 기록만 확인할 수 있습니다.' };
   if (!isEligibleAppointment(appointment)) return { ...base, reason: '확정된 동행만 완료·평가할 수 있어요.' };
   if (!isValidMeetupRange(appointment.scheduledAt, appointment.endsAt)) return { ...base, reason: '공고의 종료 시각을 먼저 확인해 주세요.' };
 
-  const partnerId = appointment.participantIds.find(id => id !== userId);
-  if (!partnerId) return { ...base, reason: '평가할 상대를 확인할 수 없어요.' };
   const endMs = Date.parse(appointment.endsAt!);
-  const reviewDeadlineMs = endMs + REVIEW_WINDOW_MS;
+  const appointmentCompletions = completions.filter(item => item.appointmentId === appointment.id);
+  const completedAtMs = appointmentCompletions.length
+    ? Math.min(...appointmentCompletions.map(item => Date.parse(item.confirmedAt)))
+    : appointment.status === '동행 완료' ? endMs : Number.NaN;
+  const appointmentCompleted = Number.isFinite(completedAtMs);
+  const reviewDeadlineMs = completedAtMs + REVIEW_WINDOW_MS;
+  const holdUntilMs = completedAtMs + REVIEW_HOLD_MS;
   const ownCompleted = Boolean(completionFor(completions, appointment.id, userId));
   const otherCompleted = Boolean(completionFor(completions, appointment.id, partnerId));
   const hasOwnReview = Boolean(reviewFor(reviews, appointment.id, userId));
   const hasOtherReview = Boolean(reviewFor(reviews, appointment.id, partnerId));
-  const reviewsReleased = hasOwnReview && hasOtherReview;
+  const reviewsReleased = appointmentCompleted && now.getTime() >= holdUntilMs
+    && ((hasOwnReview && hasOtherReview) || (now.getTime() >= reviewDeadlineMs && (hasOwnReview || hasOtherReview)));
   const common = {
     ...base,
     partnerId,
-    reviewDeadline: new Date(reviewDeadlineMs).toISOString(),
+    reviewDeadline: appointmentCompleted ? new Date(reviewDeadlineMs).toISOString() : undefined,
     ownCompleted,
     otherCompleted,
     hasOwnReview,
     hasOtherReview,
     reviewsReleased,
+    appointmentCompleted,
+    completionMethod: appointmentCompleted ? 'manual' as const : null,
+    holdUntil: appointmentCompleted ? new Date(holdUntilMs).toISOString() : undefined,
+    releaseReason: reviewsReleased ? (hasOwnReview && hasOtherReview ? 'mutual' as const : 'deadline' as const) : null,
   };
 
   if (now.getTime() < endMs) return { ...common, reason: `${formatSchedule(appointment.endsAt!)}부터 내 완료를 확인할 수 있어요.` };
-  if (!ownCompleted) return { ...common, canComplete: true, reason: '동행이 끝났어요. 내 완료를 확인하면 바로 평가할 수 있어요.' };
-  if (hasOwnReview && reviewsReleased) return { ...common, reason: '양쪽 평가가 모두 제출되어 서로의 후기가 공개됐어요.' };
-  if (hasOwnReview) return { ...common, reason: '내 평가는 제출됐어요. 상대가 제출할 때까지 후기는 비공개예요.' };
-  if (now.getTime() >= reviewDeadlineMs) return { ...common, reason: '평가 작성 기간이 끝났어요. 상대 후기는 자동 공개되지 않습니다.' };
+  if (!appointmentCompleted) return { ...common, canComplete: true, reason: '동행이 끝났어요. 한 명이 완료하면 동행 전체가 바로 완료돼요.' };
+  if (hasOwnReview && reviewsReleased) return { ...common, reason: hasOtherReview ? '양쪽 평가가 모두 제출되어 후기가 공개됐어요.' : '평가 기한이 끝나 제출된 후기가 공개됐어요.' };
+  if (hasOwnReview) return { ...common, reason: '내 평가는 제출됐어요. 상대 평가가 먼저 도착하면 보류 종료 후, 아니면 평가 기한에 공개돼요.' };
+  if (now.getTime() >= reviewDeadlineMs) return { ...common, reason: '평가 작성 기간이 끝났어요.' };
   return {
     ...common,
     canReview: true,
-    reason: otherCompleted
-      ? '양쪽 모두 완료를 확인했어요. 내 평가를 제출하면 상대 평가가 있을 때 함께 공개돼요.'
-      : '내 완료를 확인했어요. 상대 확인을 기다리지 않고 평가할 수 있어요.',
+    reason: '동행이 완료됐어요. 공개 보류 중에도 평가를 작성할 수 있어요.',
   };
 }
 
@@ -139,6 +203,8 @@ export function createAppointmentReview(
   };
 }
 
-export const releasedReviewsFor = (revieweeId: string, reviews: AppointmentReview[]) => reviews.filter(review =>
-  review.revieweeId === revieweeId && reviews.some(other => other.appointmentId === review.appointmentId && other.reviewerId === review.revieweeId && other.revieweeId === review.reviewerId));
-
+export const releasedReviewsFor = (revieweeId: string, reviews: AppointmentReview[]) => reviews.filter(review => {
+  if (review.revieweeId !== revieweeId) return false;
+  if (review.released !== undefined) return review.released;
+  return reviews.some(other => other.appointmentId === review.appointmentId && other.reviewerId === review.revieweeId && other.revieweeId === review.reviewerId);
+});

@@ -34,20 +34,24 @@ export interface ConversationSummary {
 }
 export interface ChatMessage { id: string; join_request_id: string; sender_id: string; content: string; created_at: string }
 export interface AppointmentSummary {
-  appointment_id: string; post_id: string; join_request_id: string; my_role: 'author' | 'companion'; status: 'confirmed' | 'completed';
+  appointment_id: string; post_id: string; join_request_id: string; my_role: 'author' | 'companion'; status: AppointmentStatus;
   confirmed_at: string; post_title: string; post_starts_at: string; post_ends_at: string; post_public_area: string;
   counterpart_masked_name: string; counterpart_avatar_url: string | null; server_now: string;
 }
+export type AppointmentStatus = 'confirmed' | 'completed' | 'disputed' | 'no_show' | 'cancelled';
 export interface AppointmentState {
-  appointment_id: string; join_request_id: string; my_role: 'author' | 'companion'; status: 'confirmed' | 'completed';
-  confirmed_at: string; completed_at: string | null; post_id: string; post_title: string; post_starts_at: string; post_ends_at: string;
+  appointment_id: string; join_request_id: string; my_role: 'author' | 'companion'; status: AppointmentStatus;
+  confirmed_at: string; completed_at: string | null; completion_method: 'manual' | 'automatic' | null;
+  completion_notified_at: string | null; dispute_deadline_at: string | null; completed_by_me: boolean; can_dispute: boolean;
+  dispute_status: 'open' | 'resolved' | null; post_id: string; post_title: string; post_starts_at: string; post_ends_at: string;
   post_public_area: string; counterpart_masked_name: string; counterpart_avatar_url: string | null;
   my_completion_at: string | null; peer_completion_at: string | null; can_confirm_completion: boolean; server_now: string;
 }
 export interface ReviewContent { rating: number; comment: string | null; submitted_at: string }
 export interface ReviewState {
-  appointment_id: string; my_completion_confirmed: boolean; deadline_at: string; can_write: boolean;
-  own_review: ReviewContent | null; peer_submitted: boolean; released: boolean; peer_review: ReviewContent | null; server_now: string;
+  appointment_id: string; appointment_completed: boolean; deadline_at: string | null; hold_until: string | null;
+  disputed: boolean; can_write: boolean; own_review: ReviewContent | null; peer_submitted: boolean;
+  released: boolean; release_reason: 'mutual' | 'deadline' | null; peer_review: ReviewContent | null; server_now: string;
 }
 
 async function unwrap<T>(promise: PromiseLike<{ data: T | null; error: any }>): Promise<T> {
@@ -97,6 +101,7 @@ export const liveApi = {
   appointments: () => unwrap<AppointmentSummary[]>(db().rpc('list_my_appointments')),
   appointmentState: async (id: string) => (await unwrap<AppointmentState[]>(db().rpc('get_appointment_state', { p_appointment_id: id })))[0],
   confirmCompletion: (id: string) => unwrap(db().rpc('confirm_appointment_completion', { p_appointment_id: id })),
+  raiseDispute: (id: string, reason: string) => unwrap(db().rpc('raise_appointment_dispute', { p_appointment_id: id, p_reason: reason })),
   reviewState: async (id: string) => (await unwrap<ReviewState[]>(db().rpc('get_appointment_review_state', { p_appointment_id: id })))[0],
   submitReview: async (id: string, rating: number, comment: string) => (await unwrap<ReviewState[]>(db().rpc('submit_appointment_review', { p_appointment_id: id, p_rating: rating, p_comment: comment.trim() || null })))[0],
 };

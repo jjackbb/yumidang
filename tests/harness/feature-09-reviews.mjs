@@ -1,4 +1,4 @@
-// Feature 9: blind mutual reviews — eligibility, single immutable submission, simultaneous release, no raw access.
+// Feature 9: blind reviews — 24h hold, mutual release after hold, one-sided release at 7d.
 import assert from 'node:assert/strict';
 import { anonClient } from './helpers/sessions.mjs';
 import { standalone } from './helpers/runner.mjs';
@@ -18,7 +18,7 @@ export async function feature09(ctx, feature) {
   const submit = (member, rating, comment) => member.sdk.rpc('submit_appointment_review', { p_appointment_id: id, p_rating: rating, p_comment: comment }).single();
   let reviewEvents;
 
-  await feature.step('no review before own completion (even after ends_at)', 'REMOTE', async () => {
+  await feature.step('no review before appointment completion (even after ends_at)', 'REMOTE', async () => {
     await waitUntil(target.endsAt);
     for (const member of [a, b]) assert.equal(expectError(await submit(member, 5, null), 'before completion').message, 'completion_required');
     assert.equal((await state(a)).data.can_write, false);
@@ -33,7 +33,8 @@ export async function feature09(ctx, feature) {
   });
   await feature.step('A completes and submits; validation and duplicate/changed resubmits handled', 'REMOTE', async () => {
     await a.sdk.rpc('confirm_appointment_completion', { p_appointment_id: id });
-    assert.equal((await state(a)).data.can_write, true, 'A may review without B completion');
+    assert.equal((await state(a)).data.can_write, true);
+    assert.equal((await state(b)).data.can_write, true, 'one participant completion opens reviews for both');
     for (const [rating, comment, message] of [[0, null, 'invalid_rating'], [6, null, 'invalid_rating'], [4, '가'.repeat(301), 'invalid_comment']])
       assert.equal(expectError(await submit(a, rating, comment), 'invalid').message, message);
     assert.equal((await state(a)).data.own_review, null, 'invalid attempts left no row');
@@ -51,7 +52,7 @@ export async function feature09(ctx, feature) {
     assert.equal(forB.data.peer_submitted, true);
     assert.equal(forB.data.peer_review, null);
     assert.equal(forB.data.own_review, null);
-    assert.equal(forB.data.can_write, false, 'B not completed yet');
+    assert.equal(forB.data.can_write, true, 'B may write after the appointment-level completion');
     const forA = await state(a);
     assert.equal(forA.data.peer_submitted, false);
     assert.equal(forA.data.peer_review, null);
@@ -69,46 +70,47 @@ export async function feature09(ctx, feature) {
     assert.equal(expectError(await submit(c, 5, null), 'C submit').message, 'appointment_unavailable');
   });
   let completionBefore;
-  await feature.step('B completes, submits blind; both see both reviews at once', 'REMOTE', async () => {
-    await b.sdk.rpc('confirm_appointment_completion', { p_appointment_id: id });
+  await feature.step('B submits blind during the 24h hold; both reviews remain hidden', 'REMOTE', async () => {
     completionBefore = (await a.sdk.from('appointment_completion_confirmations').select('user_id,confirmed_at').eq('appointment_id', id).order('user_id')).data;
+    assert.equal(completionBefore.length, 1);
     const before = await state(b);
     assert.equal(before.data.peer_review, null, 'still hidden right before B submits');
     const result = await submit(b, 4, commentB);
     assert.equal(result.error, null, result.error?.message);
-    assert.equal(result.data.released, true);
-    assert.equal(result.data.peer_review.rating, 5);
-    assert.equal(result.data.peer_review.comment, commentA);
+    assert.equal(result.data.released, false);
+    assert.equal(result.data.peer_review, null);
     const forA = await state(a);
-    assert.equal(forA.data.released, true);
-    assert.equal(forA.data.peer_review.rating, 4);
-    assert.equal(forA.data.peer_review.comment, commentB);
+    assert.equal(forA.data.released, false);
+    assert.equal(forA.data.peer_review, null);
+    assert.equal(Date.parse(forA.data.hold_until) - Date.parse(forA.data.server_now) > 0, true);
   });
   await feature.step('reviews did not modify completion rows or appointment status', 'REMOTE', async () => {
     const after = (await a.sdk.from('appointment_completion_confirmations').select('user_id,confirmed_at').eq('appointment_id', id).order('user_id')).data;
     assert.deepEqual(after, completionBefore);
     assert.equal((await a.sdk.from('appointments').select('status').eq('id', id).single()).data.status, 'completed');
   });
-  await feature.step('near-simultaneous submissions settle one consistent released state', 'REMOTE', async () => {
+  await feature.step('near-simultaneous submissions settle one consistent held state', 'REMOTE', async () => {
     const race = await shortAppointment(ctx, b, a, '동시평가');
     await waitUntil(race.endsAt);
     await Promise.all([a, b].map(member => member.sdk.rpc('confirm_appointment_completion', { p_appointment_id: race.appointmentId })));
     const results = await Promise.all([[a, 3], [b, 2]].map(([member, rating]) => member.sdk.rpc('submit_appointment_review', { p_appointment_id: race.appointmentId, p_rating: rating, p_comment: null }).single()));
     assert.ok(results.every(result => !result.error));
     const [sa, sb] = await Promise.all([a, b].map(member => member.sdk.rpc('get_appointment_review_state', { p_appointment_id: race.appointmentId }).single()));
-    assert.equal(sa.data.released, true);
-    assert.equal(sb.data.released, true);
-    assert.equal(sa.data.peer_review.rating, 2);
-    assert.equal(sb.data.peer_review.rating, 3);
+    assert.equal(sa.data.released, false);
+    assert.equal(sb.data.released, false);
+    assert.equal(sa.data.peer_review, null);
+    assert.equal(sb.data.peer_review, null);
   });
-  await feature.step('deadline boundary: open just before ends_at+7d, closed exactly at it (server function used by the RPC)', 'REMOTE', async () => {
-    const ends = new Date(target.post.post.ends_at);
-    const deadline = new Date(ends.getTime() + 7 * 24 * 3600 * 1000);
-    const open = await a.sdk.rpc('review_submission_open', { p_ends_at: ends.toISOString(), p_at: new Date(deadline.getTime() - 1).toISOString() });
-    const closed = await a.sdk.rpc('review_submission_open', { p_ends_at: ends.toISOString(), p_at: deadline.toISOString() });
+  await feature.step('deadline boundary is completed_at+7d and exact', 'REMOTE', async () => {
+    const current = await state(a);
+    const completion = (await a.sdk.from('appointments').select('completed_at,status').eq('id', id).single()).data;
+    const deadline = new Date(Date.parse(completion.completed_at) + 7 * 24 * 3600 * 1000);
+    const args = { p_completed_at: completion.completed_at, p_deadline_at: deadline.toISOString(), p_status: completion.status };
+    const open = await a.sdk.rpc('review_submission_open', { ...args, p_at: new Date(deadline.getTime() - 1).toISOString() });
+    const closed = await a.sdk.rpc('review_submission_open', { ...args, p_at: deadline.toISOString() });
     assert.equal(open.data, true);
     assert.equal(closed.data, false);
-    assert.equal(Date.parse((await state(a)).data.deadline_at), deadline.getTime());
+    assert.equal(Date.parse(current.data.deadline_at), deadline.getTime());
   });
   await feature.step('review responses contain no raw personal data or exact place', 'REMOTE', async () => {
     const text = JSON.stringify([(await state(a)).data, (await state(b)).data]);

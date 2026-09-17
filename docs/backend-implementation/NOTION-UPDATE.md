@@ -14,11 +14,11 @@ Notion 직접 반영: `NOT_RUN` (현재 Codex 세션에 Notion 연결 도구 없
 | 2 로그인 | Supabase Auth 세션, 미완성 프로필 복구, 내부 `next`만 허용 | 미가입 로그인 계정 생성 차단, 로그아웃 시 private 상태 제거 | REMOTE/BROWSER PASS |
 | 3 공고 | `posts` + `post_private_details`, 작성 RPC 원자 저장, `capacity=2` | 공개 시·구·동과 비공개 정확한 장소 분리 | REMOTE/BROWSER PASS |
 | 4 상대 프로필 | `post_id` 기반 공개 프로필 RPC | 로그인 사용자에게 마스킹 실명·만 나이·사진·소개만 반환 | REMOTE/BROWSER PASS |
-| 5 참여 요청 | `join_requests`, `(post_id, requester_id)` 중복 방지, 전용 상태 RPC | 작성자/신청자만 조회. 신청자와 성별 조건은 서버 계산 | REMOTE/BROWSER PASS |
+| 5 참여 요청 | pending 부분 UNIQUE, 철회 후 새 request ID, 거절 이력 재신청 차단 | 이전 요청·채팅 보존/읽기 전용. 작성자/신청자만 조회 | REMOTE/BROWSER PASS |
 | 6 매칭 채팅 | `chat_messages`, client UUID 중복 방지, `join_request_id` 대화 키 | 두 참가자만 읽기/쓰기, 종료 후 읽기 전용, Realtime | REMOTE/BROWSER PASS |
 | 7 최종 확정 | `appointments`, post/request UNIQUE, 확정 RPC 트랜잭션 | 작성자만 선택. 선택된 두 사람만 정확한 장소 조회 | REMOTE/BROWSER PASS |
-| 8 동행 완료 | `appointment_completion_confirmations` 복합 PK, `completed_at` | 서버 종료 시각 뒤 각자 본인 확인, 두 번째 확인과 완료 원자 처리 | REMOTE/BROWSER PASS |
-| 9 상호 평가 | `appointment_reviews`, `(appointment_id, reviewer_id)` UNIQUE, 별점 CHECK, 300자 제한 | 원본 테이블 직접 차단. 양측 제출 전 상대 내용 비공개 | REMOTE/BROWSER PASS |
+| 8 동행 완료 | 최초 수동 actor audit 또는 `ends_at+24h` Cron 자동완료, 24시간 분쟁 창 | 한 명 완료 즉시 전체 완료. 분쟁 판정은 private 운영자 함수 | REMOTE/BROWSER PASS |
+| 9 상호 평가 | `completed_at+7일`, 최초 24시간 보류, 분쟁 중 시계 동결 | 양쪽 평가는 보류 종료 후, 단독 평가는 기한에 공개. 원본 테이블 직접 차단 | REMOTE/BROWSER PASS |
 
 ## 기존 UI 통합 추가 계약
 
@@ -32,5 +32,6 @@ Notion 직접 반영: `NOT_RUN` (현재 Codex 세션에 Notion 연결 도구 없
 
 - `run-codex-preflight1`: 사전 검사 7/7 PASS.
 - `run-codex-fc4`: 기존 UI A/B/C/익명 전체 흐름 17단계와 콘솔 무오류 검사 PASS.
-- 로컬: 95/95 tests, TypeScript, production build, `git diff --check` PASS.
+- 후속 정책 원격 migration: `20260917005621 retry_completion_dispute_review_policy`.
+- 로컬: 96/96 tests, TypeScript, production build, `git diff --check` PASS.
 - 실제 SMS, Vercel 재배포/공개 URL, Git commit/push는 `NOT_RUN`이다.

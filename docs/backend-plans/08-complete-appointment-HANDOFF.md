@@ -1,5 +1,7 @@
 # 기능 8. 확정된 동행 완료 구현 인수인계
 
+> 2026-09-17 정책 변경으로 이 문서의 양쪽 확인 계약은 이전 이력이다. 현재 계약은 `docs/backend-implementation/POLICY-IMPLEMENTATION-2026-09-17.md`를 따른다.
+
 기준일: 2026-09-16 · 계획 원문: `08-complete-appointment.md` (PLAN_ONLY 보존)  
 상태: **구현·원격 적용·원격/브라우저 검증 PASS**
 

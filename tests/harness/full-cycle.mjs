@@ -163,7 +163,7 @@ export async function fullCycle(ctx, feature) {
       await gotoApp(anon.page, server.url);
     });
 
-    await feature.step('5. B requests A post once through the existing request modal; repeat is blocked', 'BROWSER', async () => {
+    await feature.step('5. B requests A post once through the existing request modal; repeat is idempotent', 'BROWSER', async () => {
       const detail = await openPostFromExplore(B, titleA);
       await detail.getByRole('button', { name: '1:1 동행 참여 신청하기' }).click();
       const modal = B.page.getByRole('dialog', { name: '동행 참여 신청' });
@@ -176,7 +176,7 @@ export async function fullCycle(ctx, feature) {
       assert.equal(await inPage(B, async (supabase, postId) => (await supabase.from('join_requests').select('id').eq('post_id', postId)).data.length, ids.postA), 1);
     });
 
-    await feature.step('6. A and B exchange messages in the existing chat room without reloading', 'BROWSER', async () => {
+    await feature.step('6. withdraw preserves the old read-only chat; reapply creates a new writable chat', 'BROWSER', async () => {
       await openRoom(B, ids.request);
       await openRoom(A, ids.request);
       await sleep(3000); // both Realtime channels join
@@ -188,7 +188,25 @@ export async function fullCycle(ctx, feature) {
       await sendChat(A, fromA);
       started = Date.now();
       await B.page.getByText(fromA).first().waitFor({ timeout: 25000 });
-      return { latencyBtoAms: latencyBA, latencyAtoBms: Date.now() - started };
+      const latencyAB = Date.now() - started;
+      ids.oldRequest = ids.request;
+      const withdrawn = await inPage(B, async (supabase, id) => (await supabase.rpc('withdraw_join_request', { p_request_id: id }).single()).data, ids.oldRequest);
+      assert.equal(withdrawn.status, 'withdrawn');
+      await B.page.getByText('새 메시지는 보낼 수 없어요').waitFor({ timeout: 25000 });
+      const detail = await openPostFromExplore(B, titleA);
+      await detail.getByRole('button', { name: '1:1 동행 참여 신청하기' }).click();
+      const modal = B.page.getByRole('dialog', { name: '동행 참여 신청' });
+      await modal.locator('textarea').fill('취소 뒤 새 대화로 다시 신청합니다.');
+      await modal.getByRole('button', { name: '1:1 동행 신청서 전달하기' }).click();
+      await modal.waitFor({ state: 'detached', timeout: 20000 });
+      ids.request = await inPage(B, async (supabase, postId) => (await supabase.from('join_requests').select('id').eq('post_id', postId).eq('status', 'pending').single()).data.id, ids.postA);
+      assert.notEqual(ids.request, ids.oldRequest);
+      await openRoom(B, ids.request);
+      await openRoom(A, ids.request);
+      const fresh = `재신청 새 대화 ${runId}`;
+      await sendChat(B, fresh);
+      await A.page.getByText(fresh).waitFor({ timeout: 25000 });
+      return { latencyBtoAms: latencyBA, latencyAtoBms: latencyAB, oldRequest: ids.oldRequest, newRequest: ids.request };
     });
 
     await feature.step('7. A accepts B in the chat room → server final match (post closed)', 'BROWSER', async () => {
@@ -241,32 +259,32 @@ export async function fullCycle(ctx, feature) {
       assert.equal(state.peer_review, null);
     });
 
-    await feature.step('12. B confirms completion → appointment completed', 'BROWSER', async () => {
-      await waitForCompletionButton(B);
-      await B.page.getByRole('button', { name: '내 동행 완료 확인' }).click();
+    await feature.step('12. A’s single confirmation already completed the appointment; B may review', 'BROWSER', async () => {
+      await B.page.getByRole('button', { name: '평가 남기기' }).waitFor({ timeout: 30000 });
+      await B.page.getByRole('button', { name: '평가 남기기' }).click();
       await B.page.getByRole('dialog', { name: '동행 평가' }).waitFor({ timeout: 20000 });
       const row = await inPage(B, async (supabase, id) => (await supabase.from('appointments').select('status').eq('id', id).single()).data, ids.appointment);
       assert.equal(row.status, 'completed');
+      assert.equal(await inPage(B, async (supabase, id) => (await supabase.from('appointment_completion_confirmations').select('user_id').eq('appointment_id', id)).data.length, ids.appointment), 1);
     });
 
-    await feature.step('13–14. B reviews blind; then both see each other’s review', 'BROWSER', async () => {
+    await feature.step('13–14. B reviews blind; both reviews remain hidden during the 24h hold', 'BROWSER', async () => {
       const review = B.page.getByRole('dialog', { name: '동행 평가' });
       assert.ok(!(await B.page.content()).includes(commentA), 'A comment visible before B submitted');
       await review.getByRole('button', { name: '4점' }).click();
       await review.locator('textarea').fill(commentB);
       await review.getByRole('button', { name: '평가 제출하기' }).click();
-      await review.getByText(commentA).waitFor({ timeout: 25000 });
+      await review.getByText('내 평가를 제출했어요').waitFor({ timeout: 25000 });
+      assert.ok(!(await B.page.content()).includes(commentA));
       await review.getByRole('button', { name: '닫기', exact: true }).click();
-      await A.page.getByRole('button', { name: '공개된 후기 보기' }).first().waitFor({ timeout: 30000 });
-      await A.page.getByRole('button', { name: '공개된 후기 보기' }).first().click();
-      await A.page.getByRole('dialog', { name: '동행 평가' }).getByText(commentB).waitFor({ timeout: 20000 });
-      await A.page.keyboard.press('Escape').catch(() => {});
+      const states = await Promise.all([A, B].map(member => inPage(member, async (supabase, id) => (await supabase.rpc('get_appointment_review_state', { p_appointment_id: id }).single()).data, ids.appointment)));
+      assert.ok(states.every(state => state.released === false && state.peer_review === null));
     });
 
     await feature.step('15. state survives reload, logout and re-login (protected /me return, external next ignored)', 'BROWSER', async () => {
       await A.page.reload();
       await openRoom(A, ids.request);
-      await A.page.getByRole('button', { name: '공개된 후기 보기' }).first().waitFor({ timeout: 30000 });
+      await A.page.getByRole('button', { name: '상대 평가 대기 중' }).first().waitFor({ timeout: 30000 });
       await gotoApp(B.page, new URL('/me', server.url).toString());
       await B.page.getByRole('button', { name: /로그아웃/ }).first().click();
       await B.page.locator('header').getByRole('button', { name: '로그인', exact: true }).waitFor({ timeout: 20000 });
@@ -284,7 +302,7 @@ export async function fullCycle(ctx, feature) {
       await B.page.waitForURL(url => new URL(url).origin === new URL(server.url).origin && new URL(url).pathname !== '/login', { timeout: 20000 });
       assert.notEqual(new URL(B.page.url()).hostname, 'evil.example');
       await openRoom(B, ids.request);
-      await B.page.getByRole('button', { name: '공개된 후기 보기' }).first().waitFor({ timeout: 30000 });
+      await B.page.getByRole('button', { name: '상대 평가 대기 중' }).first().waitFor({ timeout: 30000 });
     });
 
     await feature.step('16. C and anon cannot read the request, chat, appointment, exact place, completion or reviews', 'BROWSER', async () => {

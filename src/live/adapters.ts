@@ -3,7 +3,7 @@
 import type { Appointment, AppointmentReview, ChatMember, ChatRoom, CompletionConfirmation, JoinRequest, MeetupPost, PartnerGender } from '../types.ts';
 import { formatMeetupRange } from '../utils/meetupLifecycle.ts';
 import { PLACEHOLDER_AVATAR } from '../utils/profile.ts';
-import type { RequestStatus } from './api.ts';
+import type { AppointmentState, AppointmentStatus, RequestStatus, ReviewState } from './api.ts';
 
 export const NEW_USER_SUGAR_POLICY = 15; // existing app policy for real members (types.ts: 신규 가입 15)
 
@@ -14,13 +14,9 @@ export interface LivePostRow {
 }
 export interface AuthorCard { post_id: string; author_id: string; masked_name: string; avatar_url: string | null }
 export interface JoinRow { id: string; post_id: string; requester_id: string; message: string; status: RequestStatus; created_at: string; updated_at: string }
-export interface AppointmentRow { id: string; post_id: string; join_request_id: string; status: 'confirmed' | 'completed'; confirmed_at: string; completed_at: string | null }
+export interface AppointmentRow { id: string; post_id: string; join_request_id: string; status: AppointmentStatus; confirmed_at: string; completed_at: string | null }
 export interface MessageRow { id: string; join_request_id: string; sender_id: string; content: string; created_at: string }
-export interface ReviewStateRow {
-  appointment_id: string; peer_submitted: boolean; released: boolean;
-  own_review: { rating: number; comment: string | null; submitted_at: string } | null;
-  peer_review: { rating: number; comment: string | null; submitted_at: string } | null;
-}
+export type ReviewStateRow = ReviewState;
 
 export const avatarOrPlaceholder = (url: string | null | undefined) => url || PLACEHOLDER_AVATAR;
 
@@ -77,14 +73,15 @@ export function toJoinRequest(row: JoinRow, post: MeetupPost | undefined, reques
   };
 }
 
-export function toAppointment(row: AppointmentRow, post: MeetupPost, request: JoinRequest, viewerId: string, partner: ChatMember): Appointment {
+export function toAppointment(row: AppointmentRow, post: MeetupPost, request: JoinRequest, viewerId: string, partner: ChatMember, state?: AppointmentState, review?: ReviewStateRow): Appointment {
+  const screenStatus = row.status === 'completed' ? '동행 완료' : row.status === 'disputed' ? '이의 검토 중' : row.status === 'no_show' ? '불발' : row.status === 'cancelled' ? '동행 취소' : '매칭 확정';
   return {
     id: row.id,
     postId: row.post_id,
     scheduledAt: post.startsAt,
     endsAt: post.endsAt,
     participantIds: [post.authorId!, request.requesterId],
-    status: row.status === 'completed' ? '동행 완료' : '매칭 확정',
+    status: screenStatus,
     dDay: row.status === 'completed' ? '완료됨' : '',
     appointmentBadge: '1:1 매칭 확정',
     title: post.title,
@@ -99,6 +96,21 @@ export function toAppointment(row: AppointmentRow, post: MeetupPost, request: Jo
     confirmedGuests: 2,
     totalGuests: 2,
     companionType: 'free',
+    livePolicy: state ? {
+      completionMethod: state.completion_method,
+      completionNotifiedAt: state.completion_notified_at,
+      disputeDeadlineAt: state.dispute_deadline_at,
+      completedByMe: state.completed_by_me,
+      canComplete: state.can_confirm_completion,
+      canDispute: state.can_dispute,
+      disputeStatus: state.dispute_status,
+      reviewDeadlineAt: review?.deadline_at || null,
+      reviewHoldUntil: review?.hold_until || null,
+      reviewDisputed: review?.disputed || false,
+      reviewCanWrite: review?.can_write || false,
+      reviewsReleased: review?.released || false,
+      reviewReleaseReason: review?.release_reason || null,
+    } : undefined,
   };
 }
 
@@ -133,6 +145,7 @@ export function toAppointmentReviews(state: ReviewStateRow, viewerId: string, pa
     id: `review-${state.appointment_id}-${viewerId}`, appointmentId: state.appointment_id, reviewerId: viewerId, revieweeId: partnerId,
     rating: state.own_review.rating, positiveItems: [], negativeItems: [], comment: state.own_review.comment || '',
     submittedAt: state.own_review.submitted_at, variant: 'A',
+    released: state.released,
   });
   if (state.peer_submitted) reviews.push({
     id: `review-${state.appointment_id}-${partnerId}`, appointmentId: state.appointment_id, reviewerId: partnerId, revieweeId: viewerId,
@@ -141,6 +154,7 @@ export function toAppointmentReviews(state: ReviewStateRow, viewerId: string, pa
     comment: state.released && state.peer_review ? state.peer_review.comment || '' : '',
     submittedAt: state.released && state.peer_review ? state.peer_review.submitted_at : '',
     variant: 'A',
+    released: state.released,
   });
   return reviews;
 }

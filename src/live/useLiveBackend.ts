@@ -105,7 +105,7 @@ export function useLiveBackend(enabled: boolean, userId: string | null, self: Ch
       const me = selfRef.current;
 
       const sources: Record<string, { postId?: string; requestId?: string }> = {};
-      posts.forEach(post => { if (post.authorId && post.authorId !== userId) sources[post.authorId] ||= { postId: post.id }; });
+      posts.forEach(post => { if (post.authorId) sources[post.authorId] ||= { postId: post.id }; });
 
       const requests = joins.map(row => {
         const post = postById.get(row.post_id);
@@ -206,7 +206,7 @@ export function useLiveBackend(enabled: boolean, userId: string | null, self: Ch
 
   /** Loads the server-safe public profile (masked name, full age, photo, bio) for a member once. */
   const ensureProfile = useCallback(async (memberId: string) => {
-    if (!enabled || !userId || memberId === userId || profiles[memberId]) return;
+    if (!enabled || !userId || profiles[memberId]) return;
     const source = profileSource.current[memberId];
     if (!source) return;
     try {
@@ -216,7 +216,7 @@ export function useLiveBackend(enabled: boolean, userId: string | null, self: Ch
         ...previous,
         [memberId]: {
           id: memberId, displayName: profile.masked_name, avatar: avatarOrPlaceholder(profile.avatar_url), bio: profile.bio || '',
-          neighborhood: '', ageGroup: typeof profile.age === 'number' ? `${profile.age}살` : '', hobbies: [], traits: [],
+          neighborhood: '', ageGroup: typeof profile.age === 'number' ? `만 ${profile.age}세` : '', gender: profile.gender, hobbies: [], traits: [],
           sugarContent: NEW_USER_SUGAR_POLICY, isPhoneVerified: false, isKycVerified: false, isSample: false, reviews: [],
         },
       }));

@@ -135,7 +135,8 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({
                       호스트
                     </span>
                   </div>
-                  <span className="text-xs text-gray-500">{profile.sugarContent === null ? '당도 정보 없음' : `당도 ${profile.sugarContent} 🍯`}{profile.isPhoneVerified ? ' · 휴대폰 인증' : ' · 인증 전'}{[profile.neighborhood, profile.ageGroup].filter(Boolean).length ? ` · ${[profile.neighborhood, profile.ageGroup].filter(Boolean).join(' · ')}` : ''}</span>
+                  <span className="text-xs text-gray-500">{profile.sugarContent === null ? '당도 정보 없음' : `당도 ${profile.sugarContent} 🍯`}{profile.isPhoneVerified ? ' · 휴대폰 인증' : ' · 인증 전'}{profile.neighborhood ? ` · ${profile.neighborhood}` : ''}</span>
+                  {currentUser && profile.gender && profile.ageGroup.startsWith('만 ') && <p data-author-demographics className="mt-1 text-xs font-bold text-[#6c2cf5]">{profile.gender === 'female' ? '여성' : '남성'} · {profile.ageGroup}</p>}
                   <p className="text-xs text-gray-500 mt-1 line-clamp-1">{profile.bio || '자세한 프로필을 확인해 보세요.'}</p>
                 </div>
               </div>

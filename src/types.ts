@@ -140,6 +140,8 @@ export interface PublicUserProfile {
   bio: string;
   neighborhood: string;
   ageGroup: string;
+  /** Safe demographic returned only by an authenticated post-detail profile RPC. */
+  gender?: 'female' | 'male';
   hobbies: string[];
   traits: string[];
   sugarContent: number | null;

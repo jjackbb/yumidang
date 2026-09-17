@@ -37,19 +37,36 @@ export async function signIn(phone, mode = 'signup') {
   return { sdk, userId: data.user.id, phone };
 }
 
-/** Logs in a persona and makes sure its basic profile exists (owner INSERT, like the app). */
+async function completeFemale(member, spec) {
+  const result = await member.sdk.rpc('complete_signup', {
+    p_real_name: spec.realName, p_birth_date: spec.birthDate, p_gender: 'female',
+    p_method: 'female_direct', p_referral_code: null,
+  });
+  if (result.error) throw result.error;
+}
+
+/** Logs in a persona and makes sure its basic profile exists through the production signup RPC. */
 export async function persona(name) {
   const spec = PERSONAS[name];
   const member = await signIn(spec.phone, 'signup');
   const existing = await member.sdk.from('profiles').select('id,gender').eq('id', member.userId).maybeSingle();
   if (existing.error) throw existing.error;
   if (!existing.data) {
-    const inserted = await member.sdk.from('profiles').insert({ id: member.userId, real_name: spec.realName, birth_date: spec.birthDate, gender: spec.gender });
-    if (inserted.error) throw inserted.error;
-  } else if (!existing.data.gender) {
-    // Accounts created before the gender column: the owner fills it once.
-    const updated = await member.sdk.from('profiles').update({ gender: spec.gender }).eq('id', member.userId);
-    if (updated.error) throw updated.error;
+    if (spec.gender === 'female') await completeFemale(member, spec);
+    else {
+      const femaleSpec = PERSONAS.A;
+      const female = await signIn(femaleSpec.phone, 'signup');
+      const femaleProfile = await female.sdk.from('profiles').select('id').eq('id', female.userId).maybeSingle();
+      if (femaleProfile.error) throw femaleProfile.error;
+      if (!femaleProfile.data) await completeFemale(female, femaleSpec);
+      const referral = await female.sdk.rpc('get_or_create_my_referral_code');
+      if (referral.error) throw referral.error;
+      const completed = await member.sdk.rpc('complete_signup', {
+        p_real_name: spec.realName, p_birth_date: spec.birthDate, p_gender: 'male',
+        p_method: 'female_referral', p_referral_code: referral.data,
+      });
+      if (completed.error) throw completed.error;
+    }
   }
   return { ...member, name, ...spec };
 }

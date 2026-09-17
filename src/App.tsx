@@ -1346,6 +1346,7 @@ export default function App() {
               onOpenOwnPost={id => setSelectedPostForDetail(meetupPosts.find(post => post.id === id) || null)}
               onOpenRequestPost={(postId) => setSelectedPostForDetail(meetupPosts.find(post => post.id === postId) || null)}
               currentUser={currentUser}
+              referralCodeEnabled={!demoMode}
               onOpenAuth={() => setIsAuthModalOpen(true)}
               onOpenKyc={() => demoMode ? setIsKycModalOpen(true) : setLifecycleNotice(NOT_READY_NOTICE)}
               onLogout={handleLogout}

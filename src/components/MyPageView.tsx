@@ -12,6 +12,7 @@ import { NotificationSettingsCard } from './NotificationSettingsCard';
 import { completionReviewState, releasedReviewsFor } from '../utils/reviews';
 import { SafetySettingsPanel } from './SafetySettingsPanel';
 import { FutureFeatureLab } from './FutureFeatureLab';
+import { ReferralCodeCard } from './ReferralCodeCard';
 import type { ExploreFilters } from '../utils/explore';
 
 interface MyPageViewProps {
@@ -61,6 +62,7 @@ interface MyPageViewProps {
   onUnblock: (targetId: string) => void;
   onApplyAiFilters: (filters: ExploreFilters) => void;
   acceptBlockedReason?: (request: JoinRequest) => string | null;
+  referralCodeEnabled?: boolean;
 }
 
 export const MyPageView: React.FC<MyPageViewProps> = ({
@@ -77,6 +79,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
   onPreviewProfile,
   reviews = [],
   escrowPayments = [],
+  referralCodeEnabled = false,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'info' | 'reviews' | 'escrow'>('info');
   const [activityTab, setActivityTab] = useState<ActivityTab>('confirmed');
@@ -119,6 +122,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
 
   return (
     <div className="px-5 pt-3 pb-24 text-left space-y-4">
+      {referralCodeEnabled && currentUser.gender === 'female' && <ReferralCodeCard />}
       {profileMissing.length > 0 && <section aria-label="프로필 완성 안내" data-profile-incomplete className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-950 space-y-2">
         <p className="font-bold text-sm">프로필을 완성해 주세요</p>
         <p>남은 단계: {profileMissing.map(step => profileStepLabel[step]).join(' · ')}. 완성 전에는 동행 신청과 공고 작성이 제한돼요.</p>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, ArrowRight, Check, Clock, Phone, ShieldCheck, X } from 'lucide-react';
+import { AlertCircle, ArrowRight, Check, Clock, Mail, Phone, ShieldCheck, Ticket, X } from 'lucide-react';
 
 import { getSupabaseClient } from '../lib/supabase';
 import {
@@ -15,6 +15,16 @@ import { koreaToday, validatePhone } from '../utils/profile';
 import { PhoneInput } from './PhoneInput';
 import { maskRealName } from '../utils/maskName';
 import { isTestPhoneAuthEnabled, testPhoneAuth } from '../auth/testPhone';
+import {
+  completeSignup,
+  eligibilityErrorMessage,
+  normalizeInstitutionalEmail,
+  TEST_INSTITUTIONAL_EMAIL_CODE,
+  testInstitutionalEmail,
+  type MaleSignupMethod,
+  validateInstitutionalEmail,
+  validateReferralCode,
+} from '../auth/signupEligibility';
 
 export interface AuthModalProps {
   isOpen: boolean;
@@ -24,7 +34,7 @@ export interface AuthModalProps {
   now?: Date;
 }
 
-type AuthStep = 'terms' | 'phone' | 'basic' | 'complete';
+type AuthStep = 'terms' | 'phone' | 'basic' | 'eligibility' | 'complete';
 
 const TEST_OTP = '123456';
 
@@ -49,6 +59,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [realName, setRealName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [gender, setGender] = useState<'female' | 'male' | null>(null);
+  const [maleMethod, setMaleMethod] = useState<MaleSignupMethod>('female_referral');
+  const [referralCode, setReferralCode] = useState('');
+  const [institutionalEmail, setInstitutionalEmail] = useState('');
+  const [emailCode, setEmailCode] = useState('');
+  const [emailRequested, setEmailRequested] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
@@ -68,7 +84,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen && profileIncomplete && step !== 'complete') {
+    if (isOpen && profileIncomplete && (step === 'phone' || step === 'terms')) {
       setMode('signup');
       setStep('basic');
     }
@@ -171,6 +187,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
+  const finishSignup = async (method: 'female_direct' | MaleSignupMethod, code?: string) => {
+    await completeSignup({ realName, birthDate, gender: gender!, method, referralCode: code });
+    await onProfileSaved();
+    setStep('complete');
+    setInfoMessage('가입 조건을 확인하고 기본 프로필을 안전하게 저장했어요.');
+  };
+
   const saveProfile = async (event: React.FormEvent) => {
     event.preventDefault();
     const problem = validateSignupProfile(realName, birthDate, now, gender);
@@ -189,27 +212,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         throw new Error('인증 세션이 만료됐어요. 휴대폰 번호 확인부터 다시 진행해 주세요.');
       }
 
-      const payload = {
-        id: sessionData.session.user.id,
-        real_name: realName.trim(),
-        gender,
-        birth_date: birthDate,
-        avatar_url: null,
-        bio: null,
-      };
-      let profile: SignupProfile | null = null;
-      const inserted = await supabase.from('profiles').insert(payload).select(PROFILE_COLUMNS).single<SignupProfile>();
-      if (inserted.error) {
-        if (inserted.error.code !== '23505') throw inserted.error;
-        const existing = await supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', payload.id).maybeSingle<SignupProfile>();
-        if (existing.error) throw existing.error;
-        profile = existing.data;
-      } else profile = inserted.data;
-      if (!profile) throw new Error('저장된 프로필을 확인하지 못했어요.');
-
-      await onProfileSaved();
-      setStep('complete');
-      setInfoMessage('Supabase에 기본 프로필을 저장했고 가입을 완료했어요.');
+      if (gender === 'male') {
+        setStep('eligibility');
+        setInfoMessage('남성 회원은 기존 여성 회원 추천 코드 또는 학교·직장 이메일 확인이 필요해요.');
+      } else {
+        await finishSignup('female_direct');
+      }
     } catch (error: any) {
       const message = error instanceof Error && error.message.startsWith('인증 세션')
         ? error.message
@@ -220,8 +228,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const title = mode === 'login' && step === 'phone' ? '로그인' : step === 'terms' ? '약관 확인' : step === 'phone' ? '휴대폰 번호 확인' : step === 'basic' ? '기본 프로필 입력' : '회원가입 완료';
-  const progress = step === 'terms' ? 1 : step === 'phone' ? 2 : 3;
+  const requestEmailCode = async () => {
+    const problem = validateInstitutionalEmail(institutionalEmail);
+    if (problem) { setErrorMessage(problem); return; }
+    setBusy(true); setErrorMessage('');
+    try {
+      const result = await testInstitutionalEmail('request', institutionalEmail);
+      setInstitutionalEmail(normalizeInstitutionalEmail(institutionalEmail));
+      setEmailRequested(true); setEmailVerified(false); setEmailCode('');
+      setInfoMessage(result.message);
+    } catch (error) { setErrorMessage(error instanceof Error ? error.message : '이메일 확인을 요청하지 못했어요.'); }
+    finally { setBusy(false); }
+  };
+
+  const verifyEmailCode = async () => {
+    if (!emailRequested) { setErrorMessage('같은 이메일로 확인 코드를 먼저 요청해 주세요.'); return; }
+    setBusy(true); setErrorMessage('');
+    try {
+      const result = await testInstitutionalEmail('verify', institutionalEmail, emailCode);
+      setEmailVerified(Boolean(result.verified)); setInfoMessage(result.message);
+    } catch (error) { setErrorMessage(error instanceof Error ? error.message : '이메일을 확인하지 못했어요.'); }
+    finally { setBusy(false); }
+  };
+
+  const saveEligibility = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (maleMethod === 'female_referral') {
+      const problem = validateReferralCode(referralCode);
+      if (problem) { setErrorMessage(problem); return; }
+    } else if (!emailVerified) { setErrorMessage('기관 이메일 확인을 먼저 완료해 주세요.'); return; }
+    setBusy(true); setErrorMessage('');
+    try { await finishSignup(maleMethod, maleMethod === 'female_referral' ? referralCode : undefined); }
+    catch (error) { setErrorMessage(eligibilityErrorMessage(error)); }
+    finally { setBusy(false); }
+  };
+
+  const title = mode === 'login' && step === 'phone' ? '로그인' : step === 'terms' ? '약관 확인' : step === 'phone' ? '휴대폰 번호 확인' : step === 'basic' ? '기본 프로필 입력' : step === 'eligibility' ? '가입 조건 확인' : '회원가입 완료';
+  const progress = step === 'terms' ? 1 : step === 'phone' ? 2 : step === 'basic' ? 3 : 4;
   const age = exactAgeLabel(birthDate, now);
   const dialogLabel = mode === 'login' && step === 'phone' ? '로그인' : '회원가입';
 
@@ -234,7 +277,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <button type="button" aria-label={`${dialogLabel} 창 닫기`} onClick={onClose} className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100"><X className="w-5 h-5" /></button>
       </div>
 
-      {mode === 'signup' && step !== 'complete' && <div className="px-5 pt-3"><div className="flex gap-1.5">{[1, 2, 3].map(item => <span key={item} className={`h-1.5 flex-1 rounded-full ${item <= progress ? 'bg-[#6c2cf5]' : 'bg-gray-200'}`} />)}</div><p className="mt-2 text-[11px] text-gray-400">회원가입 {progress}/3</p></div>}
+      {mode === 'signup' && step !== 'complete' && <div className="px-5 pt-3"><div className="flex gap-1.5">{[1, 2, 3, 4].map(item => <span key={item} className={`h-1.5 flex-1 rounded-full ${item <= progress ? 'bg-[#6c2cf5]' : 'bg-gray-200'}`} />)}</div><p className="mt-2 text-[11px] text-gray-400">회원가입 {progress}/4</p></div>}
       {errorMessage && <div role="alert" className="mx-5 mt-4 p-3 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-700 flex gap-2"><AlertCircle className="w-4 h-4 shrink-0" /><span>{errorMessage}</span></div>}
       {infoMessage && <div role="status" className="mx-5 mt-4 p-3 bg-purple-50 border border-purple-100 rounded-xl text-xs text-purple-700 flex gap-2"><Check className="w-4 h-4 shrink-0" /><span>{infoMessage}</span></div>}
 
@@ -264,10 +307,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       {step === 'basic' && <form onSubmit={saveProfile} className="p-5 space-y-4" noValidate>
         <div><label htmlFor="auth-real-name" className="block text-xs font-bold mb-1.5">실명</label><input id="auth-real-name" value={realName} maxLength={20} autoComplete="name" onChange={event => { setRealName(event.target.value); setErrorMessage(''); }} placeholder="예: 변종현" className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200" /><p className="mt-1 text-[11px] text-gray-400">원본 실명은 본인만 볼 수 있고, 다른 회원에게는 {realName.trim().length >= 2 ? maskRealName(realName) : '변*현'}처럼 가려진 이름만 보여요. 신분증 확인이나 실명 인증은 아니에요.</p></div>
         <div><span id="auth-gender-label" className="block text-xs font-bold mb-1.5">성별</span><div role="group" aria-labelledby="auth-gender-label" className="flex gap-2">{(['female', 'male'] as const).map(value => <button type="button" key={value} aria-pressed={gender === value} onClick={() => { setGender(value); setErrorMessage(''); }}
-          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${gender === value ? 'bg-[#f0edff] text-[#6c2cf5] border border-[#6c2cf5]/30' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{value === 'female' ? '여성' : '남성'}</button>)}</div><p className="mt-1 text-[11px] text-gray-400">다른 회원에게 공개하지 않고, 공고의 상대 성별 조건 확인에만 사용해요.</p></div>
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${gender === value ? 'bg-[#f0edff] text-[#6c2cf5] border border-[#6c2cf5]/30' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{value === 'female' ? '여성' : '남성'}</button>)}</div><p className="mt-1 text-[11px] text-gray-400">성별은 본인이 선택하며 별도 증명 절차는 없어요. 가입 후 로그인 회원에게 공고 상세에서만 표시돼요.</p>{gender === 'female' && <p className="mt-1 text-[11px] font-bold text-[#6c2cf5]">여성 회원은 기본정보 입력 후 바로 가입할 수 있어요.</p>}{gender === 'male' && <p className="mt-1 text-[11px] font-bold text-[#6c2cf5]">여성회원 추천 코드 또는 학교·직장 이메일 확인이 필요해요.</p>}</div>
         <div><div className="flex justify-between mb-1.5"><label htmlFor="auth-birth" className="text-xs font-bold">생년월일</label>{age && <span className="text-[11px] font-bold text-[#6c2cf5] bg-[#f0edff] rounded-full px-2 py-0.5">화면 표시: {age}</span>}</div><input id="auth-birth" type="date" min="1900-01-01" max={koreaToday(now)} value={birthDate} onChange={event => { setBirthDate(event.target.value); setErrorMessage(''); }} className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200" /><p className="mt-1 text-[11px] text-gray-400">원본 생년월일은 본인만 조회하며, 화면에는 현재 서울 날짜 기준 만 나이만 표시해요.</p></div>
-        <button type="submit" disabled={busy} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] disabled:bg-purple-300 text-white font-bold">{busy ? 'Supabase에 저장 중…' : '기본 프로필 저장하고 가입 완료'}</button>
+        <button type="submit" disabled={busy} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] disabled:bg-purple-300 text-white font-bold">{busy ? '확인 중…' : gender === 'male' ? '다음: 가입 조건 확인' : '기본 프로필 저장하고 가입 완료'}</button>
         <p className="text-[11px] text-gray-400">저장에 실패해도 인증 세션은 유지됩니다. 창을 다시 열거나 새로고침하면 이 단계부터 이어집니다.</p>
+      </form>}
+
+      {step === 'eligibility' && <form onSubmit={saveEligibility} className="p-5 space-y-4" noValidate>
+        <p className="text-sm text-gray-600 leading-relaxed">여성회원 추천 코드 또는 학교·직장 이메일 확인이 필요해요. 이메일과 추천 정보는 다른 회원에게 공개되지 않아요.</p>
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" aria-pressed={maleMethod === 'female_referral'} onClick={() => { setMaleMethod('female_referral'); setErrorMessage(''); }} className={`rounded-xl p-3 text-xs font-bold border ${maleMethod === 'female_referral' ? 'border-[#6c2cf5] bg-[#f0edff] text-[#6c2cf5]' : 'border-gray-200'}`}><Ticket className="w-4 h-4 mx-auto mb-1" />여성 회원 추천</button>
+          <button type="button" aria-pressed={maleMethod === 'institutional_email'} onClick={() => { setMaleMethod('institutional_email'); setErrorMessage(''); }} className={`rounded-xl p-3 text-xs font-bold border ${maleMethod === 'institutional_email' ? 'border-[#6c2cf5] bg-[#f0edff] text-[#6c2cf5]' : 'border-gray-200'}`}><Mail className="w-4 h-4 mx-auto mb-1" />학교·직장 이메일</button>
+        </div>
+        {maleMethod === 'female_referral' ? <div>
+          <label htmlFor="auth-referral" className="block text-xs font-bold mb-1.5">추천 코드</label>
+          <input id="auth-referral" value={referralCode} onChange={event => { setReferralCode(event.target.value.toUpperCase()); setErrorMessage(''); }} placeholder="YMD-12AB34CD" maxLength={12} className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 font-mono uppercase" />
+          <p className="mt-1 text-[11px] text-gray-400">유저테스트에서는 가입을 완료한 여성 회원의 한 코드를 여러 번 사용할 수 있어요.</p>
+        </div> : <div className="space-y-3">
+          <div><label htmlFor="auth-institution-email" className="block text-xs font-bold mb-1.5">학교·직장 이메일</label><div className="flex gap-2"><input id="auth-institution-email" type="email" value={institutionalEmail} onChange={event => { setInstitutionalEmail(event.target.value); setEmailRequested(false); setEmailVerified(false); setErrorMessage(''); }} placeholder="name@company.com" className="min-w-0 flex-1 px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200" /><button type="button" disabled={busy} onClick={requestEmailCode} className="px-3 rounded-xl bg-[#f0edff] text-[#6c2cf5] text-xs font-bold disabled:opacity-50">코드 요청</button></div></div>
+          {emailRequested && <div><label htmlFor="auth-email-code" className="block text-xs font-bold mb-1.5">확인 코드</label><div className="relative"><input id="auth-email-code" inputMode="numeric" maxLength={6} value={emailCode} onChange={event => { setEmailCode(event.target.value.replace(/\D/g, '').slice(0, 6)); setEmailVerified(false); setErrorMessage(''); }} className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-center tracking-widest font-mono font-bold" /><button type="button" onClick={() => setEmailCode(TEST_INSTITUTIONAL_EMAIL_CODE)} className="absolute right-2 top-2 px-2 py-1 text-[11px] font-bold text-[#6c2cf5] bg-[#f0edff] rounded-lg">테스트 코드 입력</button></div><button type="button" disabled={busy || emailCode.length !== 6 || emailVerified} onClick={verifyEmailCode} className="w-full mt-2 py-3 rounded-xl bg-gray-900 text-white text-xs font-bold disabled:bg-gray-300">{emailVerified ? '확인 완료' : '이메일 확인'}</button></div>}
+          <p className="rounded-xl bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-950"><strong>유저테스트용 인증입니다.</strong> 실제 이메일은 발송되지 않아요. 고정 확인 코드 246810은 서버가 검증하며, 요청 후 10분 동안만 유효해요.</p>
+        </div>}
+        <button type="submit" disabled={busy} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] disabled:bg-purple-300 text-white font-bold">{busy ? '가입 완료 중…' : '조건 확인하고 가입 완료'}</button>
+        <button type="button" onClick={() => { setStep('basic'); setErrorMessage(''); setInfoMessage(''); }} className="w-full text-xs font-bold text-gray-500">기본 정보로 돌아가기</button>
       </form>}
 
       {step === 'complete' && <div className="p-6 text-center space-y-4"><div className="mx-auto w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center"><Check className="w-7 h-7" /></div><p className="font-bold">회원가입이 완료됐어요.</p><p className="text-sm text-gray-600">{maskRealName(realName)} · {age}</p><button type="button" onClick={onClose} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] text-white font-bold">유미당 시작하기</button></div>}

@@ -46,6 +46,7 @@ export function publicProfileOf(member: ChatMember, directory: Record<string, Cu
     ...base, displayName: account.maskedName, avatar: avatarSrc(account.avatar), bio: account.bio,
     // Only the age band derived from the birth date is public, never the date itself.
     neighborhood: account.neighborhood, ageGroup: ageGroupOf(account.birthDate) || account.ageGroup,
+    gender: account.gender === 'female' || account.gender === 'male' ? account.gender : undefined,
     hobbies: account.hobbies || [], traits: account.traits || [],
     sugarContent: Number.isFinite(account.sugarContent) ? account.sugarContent : NEW_USER_SUGAR,
     isPhoneVerified: account.isPhoneVerified, isKycVerified: account.isKycVerified,

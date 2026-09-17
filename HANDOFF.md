@@ -4,6 +4,15 @@
 작업 폴더: `/Users/b/Documents/Antigravity/yumidang`  
 현재 상태: **기존 `App.tsx` UI를 유지한 채 사용자 흐름 1~9 (회원가입 → 로그인 → 공고 → 상대 프로필 → 참여 요청 → 매칭 채팅 → 최종 확정 → 동행 완료 → 블라인드 상호 평가)을 Supabase에 연결했고, 원격 A/B/C/익명 브라우저 전체 사이클까지 PASS했다.** 최종 결과는 `docs/backend-implementation/HARNESS-REPORT.md`. 아래 "과거 기록" 절들은 기능 1·2 당시 기록이며 `nickname`, `3번부터 미구현` 등은 더 이상 최신이 아니다.
 
+## 최신 추가 구현: 회원가입 성별 분기·작성자 성별/만 나이 (2026-09-17, Codex)
+
+- 원격 `20260917043418_signup_eligibility_author_demographics.sql` 적용. 기존 4개 프로필은 `legacy`, 신규 여성은 직접 완료, 신규 남성은 여성 추천 코드 또는 기관 이메일 확인을 `complete_signup`이 원자적으로 강제한다.
+- 직접 profile INSERT와 gender UPDATE를 차단했고 private 가입/추천/이메일 테이블은 deny-all RLS로 잠갔다. 기존 허용 profile 편집과 기존 계정 로그인은 유지한다.
+- `test-institutional-email-auth`를 JWT 검증 enabled로 배포하고 별도 flag/expiry를 2026-09-24 09:00 KST까지 설정했다. 기존 `test-phone-auth`는 변경하지 않았다.
+- 모바일 원격 스모크: 익명 RPC 0회/정보 미표시, 기존 5555 계정 로그인 후 `남성 · 만 30세`, 지정 공고 6개 존재 PASS. 신규 원격 가입은 fixture를 남기지 않기 위해 NOT_RUN.
+- 실제 기준 수량은 요청서의 1/1/6과 달리 적용 전후 4 Auth / 4 profile / 10 post였으며 삭제·축소하지 않았다.
+- 상세 결과: `docs/backend-implementation/SIGNUP-ELIGIBILITY-AUTHOR-DEMO-2026-09-17.md`.
+
 ## 최신 재개 결과: 기존 UI 통합 완료 (2026-09-17, Codex)
 
 - 별도 `LiveApp` 화면으로 교체했던 방향을 폐기하고 기존 홈·탐색·신청 모달·채팅·마이페이지 UI에 `src/live/useLiveBackend.ts`와 어댑터를 연결했다. 삭제된 `src/live/*` 화면 파일은 이 통합 과정의 의도된 결과다.

@@ -37,12 +37,17 @@ export async function feature01(ctx, feature) {
     const other = await probe.sdk.from('profiles').insert({ id: a.userId, real_name: probeName, birth_date: '1999-03-01' });
     assert.ok(other.error, 'foreign id insert must be rejected');
   });
-  await feature.step('owner saves real_name/birth_date; DB manages timestamps; no phone column', 'REMOTE', async () => {
-    const saved = await probe.sdk.from('profiles').insert({ id: probe.userId, real_name: ` ${probeName} `.trim(), birth_date: '1999-03-01' }).select().single();
+  await feature.step('owner completes signup atomically; DB manages timestamps; retry is idempotent', 'REMOTE', async () => {
+    const saved = await probe.sdk.rpc('complete_signup', {
+      p_real_name: probeName, p_birth_date: '1999-03-01', p_gender: 'female', p_method: 'female_direct', p_referral_code: null,
+    }).single();
     assert.equal(saved.error, null, saved.error?.message);
     assert.deepEqual(Object.keys(saved.data).sort(), ['avatar_url', 'bio', 'birth_date', 'created_at', 'gender', 'id', 'real_name', 'updated_at']);
-    const again = await probe.sdk.from('profiles').insert({ id: probe.userId, real_name: probeName, birth_date: '1999-03-01' });
-    assert.equal(again.error?.code, '23505', 'duplicate signup keeps one row');
+    const again = await probe.sdk.rpc('complete_signup', {
+      p_real_name: probeName, p_birth_date: '1999-03-01', p_gender: 'female', p_method: 'female_direct', p_referral_code: null,
+    }).single();
+    assert.equal(again.error, null);
+    assert.equal(again.data.id, saved.data.id, 'retry returns the same profile');
     const touched = await probe.sdk.from('profiles').update({ updated_at: '2001-01-01T00:00:00Z' }).eq('id', probe.userId);
     assert.ok(touched.error, 'updated_at write must be rejected');
     const bio = await probe.sdk.from('profiles').update({ bio: '하네스 소개' }).eq('id', probe.userId).select('updated_at,created_at').single();
@@ -54,7 +59,7 @@ export async function feature01(ctx, feature) {
     for (const real_name of ['변', '  ', ' 변종현 '])
       assert.ok((await probe.sdk.from('profiles').update({ real_name }).eq('id', probe.userId)).error, 'invalid real_name accepted');
     assert.ok((await probe.sdk.from('profiles').update({ gender: 'other' }).eq('id', probe.userId)).error, 'invalid gender accepted');
-    assert.equal((await probe.sdk.from('profiles').update({ gender: 'female' }).eq('id', probe.userId)).error, null);
+    assert.ok((await probe.sdk.from('profiles').update({ gender: 'female' }).eq('id', probe.userId)).error, 'signup gender must be immutable');
   });
   await feature.step('A/B/C personas have profiles (idempotent setup)', 'REMOTE', async () => {
     for (const name of ['A', 'B', 'C']) {

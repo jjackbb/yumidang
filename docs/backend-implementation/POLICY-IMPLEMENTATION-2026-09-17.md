@@ -1,5 +1,7 @@
 # 재신청·완료·평가 정책 구현 기록 — 2026-09-17
 
+> 후속 상태: 회원가입 성별 분기, 여성 추천/기관 이메일 자격, 작성자 성별·서버 만 나이 정책은 원격 migration `20260917043418`로 추가 적용했다. 기존 4개 profile은 `legacy`, 원격 총량 4 Auth / 4 profile / 10 post를 보존했다. 구현·검증·배포 제한은 [SIGNUP-ELIGIBILITY-AUTHOR-DEMO-2026-09-17.md](SIGNUP-ELIGIBILITY-AUTHOR-DEMO-2026-09-17.md)를 기준으로 한다. 자동 생성 `STATE.md`는 이번 변경으로 수동 갱신하지 않았다.
+
 ## 적용 대상
 
 - 프로젝트: `bndguguarijmghnkenvt` (`https://bndguguarijmghnkenvt.supabase.co`)

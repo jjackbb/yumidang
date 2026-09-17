@@ -12,7 +12,7 @@ export interface Post {
   status: 'recruiting' | 'closed' | 'expired' | 'deleted'; created_at: string; updated_at: string;
 }
 export interface PostFilters { query: string; date: string; category: string; area: string }
-export interface PublicProfile { masked_name: string; age: number | null; avatar_url: string | null; bio: string | null }
+export interface PublicProfile { masked_name: string; gender?: 'female' | 'male'; age: number | null; avatar_url: string | null; bio: string | null }
 export type RequestStatus = 'pending' | 'withdrawn' | 'declined' | 'matched' | 'not_selected';
 export interface SentRequest {
   id: string; post_id: string; post_title: string; post_starts_at: string; post_ends_at: string; post_public_area: string;

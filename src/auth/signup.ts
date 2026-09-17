@@ -9,7 +9,7 @@ export interface SignupProfile {
   id: string;
   /** Private source; other members only receive the server-masked name. */
   real_name: string;
-  /** Private; used only by the server to check a post's partner gender condition. Null for older accounts. */
+  /** Self-declared; exposed only as a safe label on authenticated post detail. Null for older accounts. */
   gender: 'female' | 'male' | null;
   birth_date: string;
   avatar_url: string | null;

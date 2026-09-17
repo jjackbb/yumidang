@@ -71,3 +71,28 @@ POLICY_RUN_ID=<full-cycle-run-id> \
 - 단독 공개 fixture는 `completed_at+7일`이 지난 평가 1건을 사용한다.
 - 자동 하네스의 작성 기한 경계는 서버 함수 `review_submission_open(completed_at, deadline_at, status, at)`으로 검사한다.
 - 실제 자동완료는 활성 Cron job `yumidang-auto-complete-appointments`가 매분 `private.complete_due_appointments`를 호출한다.
+
+## 프로필 사진 운영 회귀
+
+아래 명령은 실제 원격 데이터를 변경한다. `bndguguarijmghnkenvt`와 `https://yumidang.vercel.app`을 다시 확인하고, 미사용 폐기용 `0199…` 번호만 사용한다. 전화번호·토큰·추천 코드를 로그나 증거 파일에 남기지 않는다.
+
+```bash
+CHECK_URL=https://yumidang.vercel.app/ \
+LIVE_PROFILE_PHONE=<unused-0199-number> \
+LIVE_PROFILE_GENDER=female \
+node tests/browser/signup-profile-photo-production.cjs
+
+CHECK_URL=https://yumidang.vercel.app/ \
+LIVE_PROFILE_PHONE=<unused-0199-number> \
+LIVE_PROFILE_GENDER=male \
+LIVE_REFERRER_PHONE=<controlled-female-test-number> \
+node tests/browser/signup-profile-photo-production.cjs
+
+LIVE_OWNER_PHONE=<controlled-photo-test-number> \
+LIVE_OTHER_PHONE=<different-controlled-test-number> \
+node --experimental-strip-types --no-warnings tests/profile-images-remote.mjs
+```
+
+- Production 브라우저 검사는 신규 Auth/profile을 보존하지만 가입·교체 사진은 마지막 삭제 단계에서 정리한다.
+- 중간 실패로 객체가 남으면 해당 테스트 계정으로 로그인해 `clear_my_profile_avatar` 성공 후 Storage API로 그 계정의 이전 경로만 삭제한다. 기존 사용자 객체나 `storage.objects` SQL DELETE는 사용하지 않는다.
+- `profile-images`의 authenticated 전체 SELECT는 현재 계약이다. anonymous read와 타인 경로 INSERT/DELETE는 반드시 거부되어야 한다.

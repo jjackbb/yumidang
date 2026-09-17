@@ -36,8 +36,27 @@ try {
   assert.equal(posts.error, null, 'existing public post list must remain readable');
   assert.ok((posts.data?.length || 0) > 0, 'existing public post list must not be empty');
 
-  const ownProfile = await a.sdk.from('profiles').select('id,avatar_url').eq('id', a.userId).single();
+  const ownProfile = await a.sdk.from('profiles').select('id,real_name,birth_date,gender,avatar_url').eq('id', a.userId).single();
   assert.equal(ownProfile.error, null, 'existing member profile must remain readable');
+
+  const legacySignup = await a.sdk.rpc('complete_signup', {
+    p_real_name: ownProfile.data.real_name,
+    p_birth_date: ownProfile.data.birth_date,
+    p_gender: ownProfile.data.gender,
+    p_method: null,
+    p_referral_code: null,
+  });
+  assert.ok(legacySignup.error, 'authenticated legacy no-photo signup RPC must be revoked');
+
+  const versionedSignup = await a.sdk.rpc('complete_signup_with_avatar', {
+    p_real_name: ownProfile.data.real_name,
+    p_birth_date: ownProfile.data.birth_date,
+    p_gender: ownProfile.data.gender,
+    p_avatar_path: 'existing-profile-idempotent-check',
+    p_method: null,
+    p_referral_code: null,
+  });
+  assert.equal(versionedSignup.error, null, 'versioned signup RPC must remain executable for an existing profile');
 
   const directAvatarUpdate = await a.sdk.from('profiles').update({ avatar_url: ownPath }).eq('id', a.userId);
   assert.ok(directAvatarUpdate.error, 'direct avatar_url update must stay denied');
@@ -80,6 +99,8 @@ try {
     result: 'PASS',
     publicPostsReadable: posts.data.length,
     existingLogin: true,
+    legacySignupRevoked: true,
+    versionedSignupExecutable: true,
     ownerUploadDelete: true,
     anonymousReadDenied: true,
     foreignWriteDeleteDenied: true,

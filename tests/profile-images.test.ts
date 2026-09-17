@@ -159,6 +159,18 @@ test('contraction revokes only authenticated legacy signup execution', () => {
   assert.doesNotMatch(sql, /drop function public\.complete_signup/);
 });
 
+test('production and reusable harness signup paths no longer call the legacy RPC', () => {
+  const production = readFileSync(new URL('../src/auth/signupEligibility.ts', import.meta.url), 'utf8');
+  const sessions = readFileSync(new URL('./harness/helpers/sessions.mjs', import.meta.url), 'utf8');
+  const feature01 = readFileSync(new URL('./harness/feature-01-auth.mjs', import.meta.url), 'utf8');
+  for (const source of [production, sessions, feature01]) {
+    assert.doesNotMatch(source, /\.rpc\(['"]complete_signup['"]/);
+  }
+  assert.match(production, /\.rpc\('complete_signup_with_avatar'/);
+  assert.match(sessions, /\.rpc\('complete_signup_with_avatar'/);
+  assert.match(feature01, /\.rpc\('complete_signup_with_avatar'/);
+});
+
 test('storage adapter requests JPEG upload without upsert and centralizes signed URL creation', () => {
   const source = readFileSync(new URL('../src/profile/avatarStorage.ts', import.meta.url), 'utf8');
   assert.match(source, /contentType: 'image\/jpeg'/);

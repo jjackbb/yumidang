@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { loadEnv } from './env.mjs';
 
 export const TEST_CODE = '123456';
+const HARNESS_AVATAR_JPEG = Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABBQJ//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwF//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQAGPwJ//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyF//9oADAMBAAIAAwAAABD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAEDAQE/EB//xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/EB//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/EB//2Q==', 'base64');
 
 // Persistent harness accounts. Names/birth dates are test data, not verified real names.
 export const PERSONAS = {
@@ -37,9 +38,27 @@ export async function signIn(phone, mode = 'signup') {
   return { sdk, userId: data.user.id, phone };
 }
 
+export async function ensureHarnessAvatar(member) {
+  const avatarPath = `${member.userId}/${member.userId}.jpg`;
+  const existing = await member.sdk.storage.from('profile-images').list(member.userId, {
+    search: `${member.userId}.jpg`,
+    limit: 1,
+  });
+  if (existing.error) throw existing.error;
+  if (!existing.data.some(object => object.name === `${member.userId}.jpg`)) {
+    const uploaded = await member.sdk.storage.from('profile-images').upload(avatarPath, HARNESS_AVATAR_JPEG, {
+      contentType: 'image/jpeg',
+      upsert: false,
+    });
+    if (uploaded.error) throw uploaded.error;
+  }
+  return avatarPath;
+}
+
 async function completeFemale(member, spec) {
-  const result = await member.sdk.rpc('complete_signup', {
-    p_real_name: spec.realName, p_birth_date: spec.birthDate, p_gender: 'female',
+  const avatarPath = await ensureHarnessAvatar(member);
+  const result = await member.sdk.rpc('complete_signup_with_avatar', {
+    p_real_name: spec.realName, p_birth_date: spec.birthDate, p_gender: 'female', p_avatar_path: avatarPath,
     p_method: 'female_direct', p_referral_code: null,
   });
   if (result.error) throw result.error;
@@ -61,8 +80,9 @@ export async function persona(name) {
       if (!femaleProfile.data) await completeFemale(female, femaleSpec);
       const referral = await female.sdk.rpc('get_or_create_my_referral_code');
       if (referral.error) throw referral.error;
-      const completed = await member.sdk.rpc('complete_signup', {
-        p_real_name: spec.realName, p_birth_date: spec.birthDate, p_gender: 'male',
+      const avatarPath = await ensureHarnessAvatar(member);
+      const completed = await member.sdk.rpc('complete_signup_with_avatar', {
+        p_real_name: spec.realName, p_birth_date: spec.birthDate, p_gender: 'male', p_avatar_path: avatarPath,
         p_method: 'female_referral', p_referral_code: referral.data,
       });
       if (completed.error) throw completed.error;

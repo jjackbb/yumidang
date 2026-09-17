@@ -2,11 +2,11 @@
   "features": {
     "preflight": {
       "status": "pass",
-      "runId": "run-20260917T032717-d70f",
-      "updatedAt": "2026-09-17T03:27:18.860Z",
+      "runId": "release-profile-final2-20260917",
+      "updatedAt": "2026-09-17T10:01:36.201Z",
       "lastPassedStep": "local migrations are named with remote versions",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-20260917T032717-d70f/preflight.json",
+      "evidence": "docs/backend-implementation/evidence/release-profile-final2-20260917/preflight.json",
       "counts": {
         "PASS": 7
       }
@@ -122,5 +122,5 @@
       }
     }
   },
-  "lastRunId": "run-20260917T032717-d70f"
+  "lastRunId": "release-profile-final2-20260917"
 }

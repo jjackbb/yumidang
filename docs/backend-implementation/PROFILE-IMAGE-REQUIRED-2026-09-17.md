@@ -2,10 +2,22 @@
 
 ## 현재 상태
 
-- 구현과 검증은 로컬 작업공간에만 있다. 커밋, 푸시, 배포, 원격 migration apply는 하지 않았다.
-- 신규 마이그레이션은 `supabase/migrations/20260917052827_profile_images_required.sql`이며 **UNAPPLIED** 상태다.
-- 허용된 원격 프로젝트는 `bndguguarijmghnkenvt` 하나뿐이다. 구현 전에 프로젝트 URL, migration 목록, Storage bucket, Storage policy, 가입 RPC 원문, 표 개수를 읽기 전용으로 확인했다.
-- 확인 당시 원격은 `auth.users=4`, `public.profiles=4`, `public.posts=10`, Storage bucket 0개, `storage.objects` policy 0개였다. 사전 문서의 1/1/6 예상치와 다르므로 어떤 행도 정리하거나 덮어쓰지 않았다.
+- 프로필 사진 기능 커밋 `fb8de7a`는 `origin/main`과 Vercel Production에 이미 배포되어 있었다. 실제 Vercel 프로젝트는 `yumidang`이며 오래된 `yumidang6` 로컬 링크를 실제 프로젝트 ID로 바로잡았다. 새 프로젝트는 만들지 않았다.
+- Expansion `20260917052827_profile_images_required`와 Contraction `20260917094753_disable_legacy_signup_without_avatar`를 대상 `bndguguarijmghnkenvt`에 적용했다. 원격 migration history와 로컬 파일 version이 일치한다.
+- Expansion은 private `profile-images` bucket, Storage 정책 3개, 검증/가입/사진 변경·삭제 RPC를 만들었다. Contraction은 `authenticated`의 구 `complete_signup(text,date,text,text,text)` 실행만 회수하고 `service_role`과 함수 소유자 권한은 유지했다.
+- 시작 기준은 Auth 14 / profile 13 / post 36이었다. 실제 Production 검증 후 Auth 19 / profile 17 / post 36이며, 증가는 폐기 가능한 통제 테스트 Auth 5개와 가입 완료 profile 4개다. 중단된 남성 테스트 Auth 1개에는 profile이 없다.
+- 시작 시점의 profile 13개와 post 36개의 식별 체크섬은 최종에도 동일하다. 기존 공고·신청·메시지·동행·평가를 삭제하거나 보정하지 않았고, 검증 종료 후 `profile-images` 객체는 0개다.
+
+## 유저 인터뷰 추가 개선사항
+
+- 이번 완료 프롬프트의 추가 개선사항은 `없음`으로 확정되어 임의 UI/정책 변경을 추가하지 않았다.
+- 이전 인터뷰 후 수정한 재사용 경로 검증과 삭제 실패 문구 분리는 단위 테스트와 Production 실패 복구 흐름에서 유지됨을 확인했다.
+
+## 실제 적용 중 복구 기록
+
+- 첫 Expansion 시도는 `assert_owned_profile_image`의 인라인 `CASE` 조건이 PL/pgSQL에서 SQLSTATE `42601`로 실패했다. migration 전체가 롤백되어 bucket·policy·RPC·데이터가 적용 전과 동일함을 확인했다.
+- 아직 적용되지 않은 migration에서 MIME과 size 형식/범위 검사를 분리하고 전체 로컬 검사를 재실행한 뒤, 같은 version으로 한 번 재적용해 성공했다.
+- Production 스모크의 초기 실패 두 건은 앱 장애가 아니라 테스트 대기 조건이었다. 가입 후 인증 갱신으로 모달이 닫히는 정상 동작과 삭제 직후 CDN 다운로드 캐시를 반영해, 완료 상태 전이와 Storage 목록을 기준으로 검증하도록 수정했다.
 
 ## 사용자 흐름과 실패 복구
 
@@ -95,13 +107,17 @@ authenticated 자기 경로 INSERT/DELETE, authenticated signed read, anonymous 
 
 ## 이번 세션 검증 범위
 
-- 실행: TypeScript lint, 전체 Node 테스트, production build, Storage/RPC 정적 계약 테스트, 네트워크 완전 mock 브라우저 가입 테스트
-- 브라우저 mock: 첫 업로드 실패 시 RPC 0회, 다음 업로드 성공/RPC 실패, 같은 경로 RPC 재시도 성공, 후속 사진 단계 생략
-- 미실행: 원격 migration apply, 원격 bucket/policy/RPC 생성, 원격 실제 가입·업로드·삭제, 원격 브라우저 mutation, 로컬 Docker Supabase migration 실행, Vercel 배포, git commit/push
+- 로컬 자동화: TypeScript lint, 전체 Node 테스트 113/113, production build, `git diff --check`, 사진 전용 테스트 12/12 PASS. 기존 500 kB Vite chunk 경고만 유지된다.
+- mock 브라우저: 첫 업로드 실패 시 RPC 0회, 다음 업로드 성공/RPC 실패, 같은 경로 RPC 재시도 성공, 후속 사진 단계 생략 PASS.
+- 실제 Supabase: private bucket 제한, policy/RPC/열 권한, 본인 INSERT·DELETE, 타인 쓰기·삭제 거부, anonymous read 거부, authenticated read, signed URL, 구 RPC 차단 PASS.
+- 실제 Production 모바일 브라우저: 기존 회원 로그인과 모집 중 공고 5개, 작성자 성별·만 나이, 여성 직접 가입, 남성 추천 가입, 파일 거부·재선택, 업로드/RPC 실패 재시도, signed 재표시, 사진 교체·삭제와 로그인 유지 PASS.
+- 지정 공고 6개는 DB에 모두 보존됐다. 그중 1개는 현재 `closed`라 공개 기본 목록에서는 정상적으로 제외되고 나머지 5개가 표시된다.
+- Production UI의 미사용 구 가입 helper를 제거하고, 재사용 원격 하네스 fixture도 사진 객체를 준비해 `complete_signup_with_avatar`만 호출하도록 전환했다. 구 RPC 직접 호출은 권한 거부를 확인하는 음성 테스트에만 남겼다.
+- 로컬 Docker Supabase migration 실행은 환경에 Docker가 없어 NOT_RUN이다. 실제 대상 프로젝트의 CLI dry-run과 원격 적용/사후 SQL 계약으로 대체했으며 이를 로컬 Docker PASS로 표현하지 않는다.
 
 ## 잔여 위험
 
-- expansion과 프런트 배포 사이에는 기존 `complete_signup`이 사진 없이 호출 가능한 전환기 우회 경로다. 4단계 smoke 후 5단계 contraction을 빠뜨리면 안 된다.
 - authenticated 회원 전체에 bucket SELECT를 허용하므로 signed URL 생성에 필요한 읽기는 가능하지만 object 목록 노출 범위도 넓다. 더 좁은 서버 발급 방식이 필요하면 별도 Edge/RPC 설계를 검토한다.
 - DB 변경과 Storage object 삭제는 단일 트랜잭션이 아니어서 실패 시 안전한 orphan이 생길 수 있다. 위 24시간 dry-run 정리 기준이 필요하다.
-- migration은 실제 프로젝트에 적용하지 않았으므로 Storage의 실 metadata 형태와 policy 동작은 원격 검증 전까지 미확인이다.
+- 테스트 인증은 공유 OTP를 쓰는 통제 환경이며 실제 전화번호 소유 인증이 아니다. 공개 운영 전 테스트 인증을 비활성화하는 별도 운영 결정이 필요하다.
+- Vercel의 최종 소스는 실제 프로젝트 `yumidang`에서 확인해야 한다. `yumidang6`을 다시 만들거나 대상으로 사용하지 않는다.

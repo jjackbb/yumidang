@@ -16,26 +16,6 @@ export function eligibilityErrorMessage(error: unknown, fallback = '가입 조�
   return safeSignupMessages[message] || fallback;
 }
 
-export async function completeSignup(input: {
-  realName: string;
-  birthDate: string;
-  gender: 'female' | 'male';
-  method?: 'female_direct' | MaleSignupMethod;
-  referralCode?: string;
-}) {
-  const { data, error } = await getSupabaseClient().rpc('complete_signup', {
-    p_real_name: input.realName.trim(),
-    p_birth_date: input.birthDate,
-    p_gender: input.gender,
-    p_method: input.method ?? null,
-    p_referral_code: input.referralCode ? normalizeReferralCode(input.referralCode) : null,
-  });
-  if (error) throw error;
-  const profile = (Array.isArray(data) ? data[0] : data) as SignupProfile | null;
-  if (!profile) throw new Error(`missing_${PROFILE_COLUMNS}`);
-  return profile;
-}
-
 export async function assertSignupEligibility(method: MaleSignupMethod, referralCode?: string) {
   const { data, error } = await getSupabaseClient().rpc('check_signup_eligibility', {
     p_method: method,

@@ -4,6 +4,18 @@
 작업 폴더: `/Users/b/Documents/Antigravity/yumidang`  
 현재 상태: **기존 `App.tsx` UI를 유지한 채 사용자 흐름 1~9 (회원가입 → 로그인 → 공고 → 상대 프로필 → 참여 요청 → 매칭 채팅 → 최종 확정 → 동행 완료 → 블라인드 상호 평가)을 Supabase에 연결했고, 원격 A/B/C/익명 브라우저 전체 사이클까지 PASS했다.** 최종 결과는 `docs/backend-implementation/HARNESS-REPORT.md`. 아래 "과거 기록" 절들은 기능 1·2 당시 기록이며 `nickname`, `3번부터 미구현` 등은 더 이상 최신이 아니다.
 
+## 최신 완료: 프로필 사진 필수 원격 적용·운영 검증 (2026-09-17, Codex)
+
+- 대상은 Supabase `bndguguarijmghnkenvt`와 Vercel `jjackbb-projects/yumidang`이다. 존재하지 않는 `yumidang6`을 만들지 않았고 `.vercel/project.json`을 실제 `yumidang` 프로젝트 ID로 정정했다.
+- Expansion `20260917052827_profile_images_required` 적용: private JPEG 2MB bucket, authenticated read/본인 INSERT·DELETE, 객체 소유·MIME·크기 검증, 사진 포함 가입과 변경/삭제 RPC, 직접 avatar 열 변경 차단.
+- 첫 Expansion은 SQLSTATE `42601`로 전체 롤백됐다. size 검사를 명시적인 형식/범위 조건으로 분리하고 전체 로컬 검사를 다시 통과한 뒤 같은 version으로 적용했다. 부분 적용이나 데이터 변경은 없었다.
+- Production은 이미 기능 커밋 `fb8de7a`/READY였고 공개 번들의 Supabase ref가 대상과 일치했다. 여성 직접 가입과 남성 추천 가입에서 실제 Storage 업로드, 통제 업로드/RPC 실패 재시도, stable path, signed URL 재로딩, 교체, 삭제, 로그인 유지를 모두 확인했다.
+- Contraction `20260917094753_disable_legacy_signup_without_avatar` 적용: Production READY 이후 구 RPC 호출 0회와 실제 사진 가입 PASS를 확인한 뒤 `authenticated`의 구 `complete_signup` 실행만 회수했다. `service_role`은 유지했다.
+- 최종 원격: Auth 19 / profile 17 / post 36 / join request 14 / message 176 / appointment 11 / review 10 / profile image object 0. 시작 Auth 14 / profile 13 / post 36 대비 통제 테스트 Auth +5, profile +4뿐이다. 기존 profile 13개와 post 36개의 체크섬은 동일하다.
+- 기존 회원 `5555` 로그인, 익명/로그인 공고, 모집 중 지정 공고 5개, 작성자 `남성 · 만 30세`를 Contraction 후에도 재확인했다. 지정 6번째 공고는 삭제가 아니라 `closed` 상태라 기본 목록에서 제외된다.
+- authenticated 전체 bucket SELECT 범위는 인터뷰에서 더 좁은 공개 계약이 정해지지 않아 그대로 유지했다. 비로그인 공개는 차단되지만 로그인 회원 사이 객체 목록 범위가 넓은 운영 위험은 남는다.
+- 상세 기록: `docs/backend-implementation/PROFILE-IMAGE-REQUIRED-2026-09-17.md`. 실제 테스트 명령은 `tests/browser/signup-profile-photo-production.cjs`, `tests/profile-images-remote.mjs`.
+
 ## 최신 추가 구현: 회원가입 성별 분기·작성자 성별/만 나이 (2026-09-17, Codex)
 
 - 원격 `20260917043418_signup_eligibility_author_demographics.sql` 적용. 기존 4개 프로필은 `legacy`, 신규 여성은 직접 완료, 신규 남성은 여성 추천 코드 또는 기관 이메일 확인을 `complete_signup`이 원자적으로 강제한다.

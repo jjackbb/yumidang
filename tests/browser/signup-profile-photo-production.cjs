@@ -9,6 +9,8 @@ dotenv.config({ path: path.resolve('.env.local') });
 
 const appUrl = process.env.CHECK_URL || 'https://yumidang.vercel.app/';
 const phone = process.env.LIVE_PROFILE_PHONE;
+const profileGender = process.env.LIVE_PROFILE_GENDER || 'female';
+const referrerPhone = process.env.LIVE_REFERRER_PHONE;
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const executablePath = process.env.BROWSER_EXECUTABLE || '/Users/b/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell';
@@ -18,6 +20,8 @@ assert.equal(new URL(appUrl).origin, 'https://yumidang.vercel.app', 'production 
 assert.equal(supabaseUrl, expectedProjectUrl, 'unexpected Supabase project');
 assert.match(publishableKey || '', /^sb_publishable_/, 'missing publishable key');
 assert.match(phone || '', /^0199\d{7}$/, 'LIVE_PROFILE_PHONE must be a disposable 0199 test number');
+assert.ok(['female', 'male'].includes(profileGender), 'LIVE_PROFILE_GENDER must be female or male');
+if (profileGender === 'male') assert.match(referrerPhone || '', /^\d{11}$/, 'male smoke requires an existing controlled female referrer');
 
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR42mP8z8AARAwMjDAGCAYAKkQCBf3W5ikAAAAASUVORK5CYII=', 'base64');
 const sessionFrom = page => page.evaluate(() => {
@@ -58,6 +62,22 @@ async function waitForObject(sdk, objectPath, expected) {
     body: JSON.stringify({ action: 'verify', phone, code: '123456', mode: 'login' }),
   });
   assert.equal(precheck.status, 404, 'disposable phone must be unused before the signup smoke');
+
+  let referralCode = '';
+  if (profileGender === 'male') {
+    const referrerAuth = await fetch(`${supabaseUrl}/functions/v1/test-phone-auth`, {
+      method: 'POST',
+      headers: { apikey: publishableKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'verify', phone: referrerPhone, code: '123456', mode: 'login' }),
+    });
+    assert.equal(referrerAuth.status, 200, 'controlled female referrer must be login-ready');
+    const referrerSession = await referrerAuth.json();
+    const referrerSdk = await sdkFor(referrerSession);
+    const referral = await referrerSdk.rpc('get_or_create_my_referral_code');
+    assert.equal(referral.error, null, 'controlled female referrer code must be available');
+    referralCode = referral.data;
+    await referrerSdk.auth.signOut({ scope: 'local' });
+  }
 
   const browser = await chromium.launch({ headless: true, executablePath: fs.existsSync(executablePath) ? executablePath : undefined });
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'ko-KR', timezoneId: 'Asia/Seoul' });
@@ -107,8 +127,8 @@ async function waitForObject(sdk, objectPath, expected) {
     await dialog.getByRole('button', { name: 'Supabase에서 인증 확인', exact: true }).click();
     await dialog.locator('#auth-real-name').waitFor();
 
-    const submit = dialog.getByRole('button', { name: '사진과 기본 프로필 저장하고 가입 완료', exact: true });
-    assert.equal(await submit.isDisabled(), true, 'signup must be disabled without a photo');
+    const initialSubmit = dialog.getByRole('button', { name: '사진과 기본 프로필 저장하고 가입 완료', exact: true });
+    assert.equal(await initialSubmit.isDisabled(), true, 'signup must be disabled without a photo');
 
     await dialog.locator('#auth-profile-photo').setInputFiles({ name: 'invalid.gif', mimeType: 'image/gif', buffer: Buffer.from('GIF89a') });
     assert.match(await dialog.getByRole('alert').innerText(), /JPG, JPEG, PNG/);
@@ -125,16 +145,25 @@ async function waitForObject(sdk, objectPath, expected) {
       return image?.getAttribute('src') && image.getAttribute('src') !== previous;
     }, firstPreview);
 
-    await dialog.locator('#auth-real-name').fill('배포검증');
-    await dialog.getByRole('button', { name: '여성', exact: true }).click();
+    await dialog.locator('#auth-real-name').fill(profileGender === 'male' ? '배포검증남' : '배포검증');
+    await dialog.getByRole('button', { name: profileGender === 'male' ? '남성' : '여성', exact: true }).click();
     await dialog.locator('#auth-birth').fill('2000-09-17');
 
-    await submit.click();
+    let completionButton = profileGender === 'male'
+      ? dialog.getByRole('button', { name: '다음: 가입 조건 확인', exact: true })
+      : dialog.getByRole('button', { name: '사진과 기본 프로필 저장하고 가입 완료', exact: true });
+    if (profileGender === 'male') {
+      await completionButton.click();
+      await dialog.locator('#auth-referral').fill(referralCode);
+      completionButton = dialog.getByRole('button', { name: '조건 확인하고 사진 업로드 · 가입 완료', exact: true });
+    }
+
+    await completionButton.click();
     await dialog.getByRole('alert').filter({ hasText: '사진 업로드에 실패했어요' }).waitFor();
     assert.equal(uploadCalls, 1);
     assert.equal(signupRpcCalls, 0, 'signup RPC must not run after upload failure');
 
-    await submit.click();
+    await completionButton.click();
     await dialog.getByRole('alert').filter({ hasText: '사진 경로를 프로필에 저장하지 못했어요' }).waitFor();
     assert.equal(uploadCalls, 2);
     assert.equal(signupRpcCalls, 1);
@@ -146,7 +175,7 @@ async function waitForObject(sdk, objectPath, expected) {
     assert.equal(beforeRetry.error, null);
     assert.equal(beforeRetry.data, null, 'failed completion must not create a profile');
 
-    await submit.click();
+    await completionButton.click();
     const completeMessage = dialog.getByText('회원가입이 완료됐어요.', { exact: true });
     await Promise.race([
       completeMessage.waitFor(),
@@ -207,6 +236,7 @@ async function waitForObject(sdk, objectPath, expected) {
     console.log(JSON.stringify({
       result: 'PASS',
       target: 'yumidang-production',
+      gender: profileGender,
       uploadAttempts: uploadCalls,
       signupRpcAttempts: signupRpcCalls,
       rpcRetryReusedPath: true,

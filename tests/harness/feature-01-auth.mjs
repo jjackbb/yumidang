@@ -1,7 +1,7 @@
 // Feature 1 audit/regression: signup, incomplete-profile recovery, session restore, own-row RLS, masking.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { anonClient, signIn, PERSONAS } from './helpers/sessions.mjs';
+import { anonClient, ensureHarnessAvatar, signIn, PERSONAS } from './helpers/sessions.mjs';
 import { standalone } from './helpers/runner.mjs';
 import { loadEnv } from './helpers/env.mjs';
 import { createClient } from '@supabase/supabase-js';
@@ -38,13 +38,16 @@ export async function feature01(ctx, feature) {
     assert.ok(other.error, 'foreign id insert must be rejected');
   });
   await feature.step('owner completes signup atomically; DB manages timestamps; retry is idempotent', 'REMOTE', async () => {
-    const saved = await probe.sdk.rpc('complete_signup', {
-      p_real_name: probeName, p_birth_date: '1999-03-01', p_gender: 'female', p_method: 'female_direct', p_referral_code: null,
+    const avatarPath = await ensureHarnessAvatar(probe);
+    const saved = await probe.sdk.rpc('complete_signup_with_avatar', {
+      p_real_name: probeName, p_birth_date: '1999-03-01', p_gender: 'female', p_avatar_path: avatarPath,
+      p_method: 'female_direct', p_referral_code: null,
     }).single();
     assert.equal(saved.error, null, saved.error?.message);
     assert.deepEqual(Object.keys(saved.data).sort(), ['avatar_url', 'bio', 'birth_date', 'created_at', 'gender', 'id', 'real_name', 'updated_at']);
-    const again = await probe.sdk.rpc('complete_signup', {
-      p_real_name: probeName, p_birth_date: '1999-03-01', p_gender: 'female', p_method: 'female_direct', p_referral_code: null,
+    const again = await probe.sdk.rpc('complete_signup_with_avatar', {
+      p_real_name: probeName, p_birth_date: '1999-03-01', p_gender: 'female', p_avatar_path: avatarPath,
+      p_method: 'female_direct', p_referral_code: null,
     }).single();
     assert.equal(again.error, null);
     assert.equal(again.data.id, saved.data.id, 'retry returns the same profile');

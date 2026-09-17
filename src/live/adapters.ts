@@ -2,7 +2,7 @@
 // No sample values are invented: fields the backend does not have stay empty or use existing app policy defaults.
 import type { Appointment, AppointmentReview, ChatMember, ChatRoom, CompletionConfirmation, JoinRequest, MeetupPost, PartnerGender } from '../types.ts';
 import { formatMeetupRange } from '../utils/meetupLifecycle.ts';
-import { PLACEHOLDER_AVATAR } from '../utils/profile.ts';
+import { avatarSrc } from '../utils/profile.ts';
 import type { AppointmentState, AppointmentStatus, RequestStatus, ReviewState } from './api.ts';
 
 export const NEW_USER_SUGAR_POLICY = 15; // existing app policy for real members (types.ts: 신규 가입 15)
@@ -18,7 +18,7 @@ export interface AppointmentRow { id: string; post_id: string; join_request_id: 
 export interface MessageRow { id: string; join_request_id: string; sender_id: string; content: string; created_at: string }
 export type ReviewStateRow = ReviewState;
 
-export const avatarOrPlaceholder = (url: string | null | undefined) => url || PLACEHOLDER_AVATAR;
+export const avatarOrPlaceholder = (url: string | null | undefined) => avatarSrc(url || undefined);
 
 /** Backend request status → existing screen status. */
 export const REQUEST_STATUS_TO_SCREEN: Record<RequestStatus, JoinRequest['status']> = {

@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Camera, Check, X } from 'lucide-react';
 import type { ABVariant, CurrentUser, PublicUserProfile } from '../types';
 import { UserProfileModal } from './UserProfileModal';
-import { resizePhoto } from '../utils/imageResize';
+import { prepareProfileImage, type PreparedProfileImage } from '../utils/imageResize';
+import { clearMyProfileImage, commitMyProfileImage, profileImageDeleteNotice, profileImageErrorMessage, removeOwnProfileImage, uploadProfileImage } from '../profile/avatarStorage';
 import {
   BIO_MAX_CHARS, HOBBY_OPTIONS, MAX_HOBBIES, MAX_TRAITS, NEIGHBORHOOD_OPTIONS, TRAIT_OPTIONS,
   hasUsablePhoto, missingProfileSteps, validateBio, validatePhotoFile, type ProfileStep,
@@ -24,18 +25,24 @@ interface ProfileEditorProps {
   reason?: string;
   previewOf: (patch: ProfilePatch) => PublicUserProfile;
   onCommit: (patch: ProfilePatch) => void | boolean | Promise<boolean>;
+  /** Normal service mode persists only the photo through private Storage + RPC. */
+  storageBackedPhoto?: boolean;
+  photoOnly?: boolean;
+  onProfileChanged?: () => Promise<void> | void;
   onClose: () => void;
   onDone: () => void;
 }
 
-export function ProfileEditor({ user, mode, variant, showVariantLabel, initialStep, reason, previewOf, onCommit, onClose, onDone }: ProfileEditorProps) {
+export function ProfileEditor({ user, mode, variant, showVariantLabel, initialStep, reason, previewOf, onCommit, storageBackedPhoto = false, photoOnly = false, onProfileChanged, onClose, onDone }: ProfileEditorProps) {
   const [step, setStep] = useState<SetupStep>(initialStep || 'photo');
   const [reasonText, setReasonText] = useState(reason || '');
   const [hobbies, setHobbies] = useState<string[]>(user.hobbies || []);
   const [traits, setTraits] = useState<string[]>(user.traits || []);
   const [bio, setBio] = useState(user.bio || '');
   const [neighborhood, setNeighborhood] = useState(user.neighborhood || NEIGHBORHOOD_OPTIONS[0]);
-  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
+  const [pendingPhoto, setPendingPhoto] = useState<PreparedProfileImage | null>(null);
+  const [pendingPhotoUrl, setPendingPhotoUrl] = useState('');
+  const [uploadedPhotoPath, setUploadedPhotoPath] = useState('');
   const [photoBusy, setPhotoBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
@@ -43,11 +50,13 @@ export function ProfileEditor({ user, mode, variant, showVariantLabel, initialSt
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef('');
   const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => { titleRef.current?.focus(); }, [step]);
+  useEffect(() => () => { if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current); }, []);
 
   const draft: ProfilePatch = { hobbies, traits, bio, neighborhood };
-  const hasPhoto = hasUsablePhoto(user.avatar);
+  const hasPhoto = hasUsablePhoto(user.avatar) || Boolean(user.avatarPath);
   const dirty = JSON.stringify(draft) !== JSON.stringify({ hobbies: user.hobbies || [], traits: user.traits || [], bio: user.bio || '', neighborhood: user.neighborhood || NEIGHBORHOOD_OPTIONS[0] });
 
   const choosePhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,7 +68,15 @@ export function ProfileEditor({ user, mode, variant, showVariantLabel, initialSt
     if (invalid) { setError(invalid); return; }
     setPhotoBusy(true); setError('');
     try {
-      setPendingPhoto(await resizePhoto(file));
+      const prepared = await prepareProfileImage(file);
+      const nextUrl = URL.createObjectURL(prepared.blob);
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = nextUrl;
+      setPendingPhoto(prepared);
+      setPendingPhotoUrl(nextUrl);
+      const orphan = uploadedPhotoPath;
+      setUploadedPhotoPath('');
+      if (orphan) void removeOwnProfileImage(orphan).catch(() => {});
     } catch {
       setError('사진을 읽지 못했어요. 파일이 손상되지 않았는지 확인하고 다시 선택해 주세요.');
     } finally {
@@ -68,12 +85,41 @@ export function ProfileEditor({ user, mode, variant, showVariantLabel, initialSt
   };
   const savePhoto = async () => {
     if (!pendingPhoto) return;
-    if (await onCommit({ avatar: pendingPhoto }) === false) { setError('사진을 저장하지 못했어요. 다시 시도해 주세요.'); return; }
-    setPendingPhoto(null); setError(''); setNotice('사진을 저장했어요.');
+    setPhotoBusy(true); setError('');
+    let phase: 'upload' | 'save' = uploadedPhotoPath ? 'save' : 'upload';
+    try {
+      if (storageBackedPhoto) {
+        const path = await uploadProfileImage(pendingPhoto.blob, uploadedPhotoPath || undefined);
+        setUploadedPhotoPath(path);
+        phase = 'save';
+        await commitMyProfileImage(path);
+        await onProfileChanged?.();
+        if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+      } else {
+        if (await onCommit({ avatar: pendingPhotoUrl }) === false) throw new Error('profile_commit_failed');
+        // The in-memory demo profile owns this URL until the page reloads; it is never written as base64.
+        previewUrlRef.current = '';
+      }
+      setPendingPhoto(null); setPendingPhotoUrl(''); setUploadedPhotoPath('');
+      setNotice('사진을 저장했어요.');
+    } catch (error) {
+      setError(storageBackedPhoto ? profileImageErrorMessage(error, phase) : '사진을 저장하지 못했어요. 다시 시도해 주세요.');
+    } finally { setPhotoBusy(false); }
   };
   const deletePhoto = async () => {
-    if (await onCommit({ avatar: '' }) === false) { setError('사진을 삭제하지 못했어요.'); return; }
-    setConfirmDelete(false); setNotice('사진을 삭제했어요. 프로필 사진은 필수라 새 사진을 등록해 주세요.');
+    setPhotoBusy(true); setError(''); setNotice('');
+    try {
+      if (storageBackedPhoto) {
+        const result = await clearMyProfileImage();
+        await onProfileChanged?.();
+        setNotice(profileImageDeleteNotice(result.cleanup));
+      } else {
+        if (await onCommit({ avatar: '' }) === false) throw new Error('profile_commit_failed');
+        setNotice(profileImageDeleteNotice('not-needed'));
+      }
+      setConfirmDelete(false);
+    } catch (error) { setError(storageBackedPhoto ? profileImageErrorMessage(error, 'delete') : '사진을 삭제하지 못했어요.'); }
+    finally { setPhotoBusy(false); }
   };
   const toggle = (list: string[], set: (next: string[]) => void, value: string, max: number, label: string) => {
     setNotice('');
@@ -110,7 +156,7 @@ export function ProfileEditor({ user, mode, variant, showVariantLabel, initialSt
 
   const photoSection = <section aria-label="프로필 사진" className="space-y-3">
     <div className="flex flex-col items-center gap-2">
-      <img src={pendingPhoto || (hasPhoto ? user.avatar : undefined) || 'data:image/gif;base64,R0lGODlhAQABAAAAACw='} alt={pendingPhoto ? '선택한 사진 미리보기' : hasPhoto ? '저장된 프로필 사진' : ''}
+      <img src={pendingPhotoUrl || (hasPhoto ? user.avatar : undefined) || 'data:image/gif;base64,R0lGODlhAQABAAAAACw='} alt={pendingPhoto ? '선택한 사진 미리보기' : hasPhoto ? '저장된 프로필 사진' : ''}
         className={`w-28 h-28 rounded-full object-cover ring-4 ${pendingPhoto ? 'ring-amber-200' : 'ring-purple-100'} bg-[#ede9fe]`} />
       <p data-photo-state={pendingPhoto ? 'preview' : hasPhoto ? 'saved' : 'empty'} className="text-[11px] text-gray-500">
         {photoBusy ? '사진을 준비하는 중…' : pendingPhoto ? '미리보기 · 아직 저장되지 않았어요' : hasPhoto ? '저장된 사진' : '등록된 사진이 없어요 (필수)'}
@@ -118,8 +164,8 @@ export function ProfileEditor({ user, mode, variant, showVariantLabel, initialSt
     </div>
     <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" aria-label="프로필 사진 파일 선택" className="sr-only" onChange={choosePhoto} />
     {pendingPhoto ? <div className="grid grid-cols-2 gap-2">
-      <button type="button" onClick={() => { setPendingPhoto(null); fileRef.current?.click(); }} className="rounded-xl bg-gray-100 py-2.5 text-xs font-bold">다시 선택</button>
-      <button type="button" onClick={savePhoto} className="rounded-xl bg-[#6c2cf5] text-white py-2.5 text-xs font-bold">이 사진으로 저장</button>
+      <button type="button" disabled={photoBusy} onClick={() => fileRef.current?.click()} className="rounded-xl bg-gray-100 py-2.5 text-xs font-bold disabled:opacity-50">다시 선택</button>
+      <button type="button" disabled={photoBusy} onClick={savePhoto} className="rounded-xl bg-[#6c2cf5] text-white py-2.5 text-xs font-bold disabled:opacity-50">{photoBusy ? '저장 중…' : '이 사진으로 저장'}</button>
     </div> : hasPhoto ? <div className="grid grid-cols-2 gap-2">
       <button type="button" onClick={() => fileRef.current?.click()} className="rounded-xl bg-gray-100 py-2.5 text-xs font-bold flex items-center justify-center gap-1"><Camera size={13} />사진 변경</button>
       <button type="button" onClick={() => setConfirmDelete(true)} className="rounded-xl bg-rose-50 text-rose-600 py-2.5 text-xs font-bold">사진 삭제</button>
@@ -194,20 +240,20 @@ export function ProfileEditor({ user, mode, variant, showVariantLabel, initialSt
             <button type="button" onClick={onClose} className="w-full text-xs text-gray-500 underline">나중에 이어서 하기</button>
             <p className="text-[11px] text-gray-400 text-center">완성 전에는 신청·공고 작성이 제한돼요. Me에서 이어서 작성할 수 있어요.</p>
           </> : <>
-            {photoSection}{interestsSection}{bioSection}
+            {photoSection}{!photoOnly && interestsSection}{!photoOnly && bioSection}
             {confirmDiscard && <div role="alertdialog" aria-label="편집 취소 확인" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs space-y-2">
               <p>저장하지 않은 취미·성향·소개 변경이 사라져요. 사진 변경은 이미 저장됐어요.</p>
               <div className="flex justify-end gap-2"><button type="button" onClick={() => setConfirmDiscard(false)} className="rounded-lg bg-white border px-3 py-1.5">계속 편집</button><button type="button" onClick={onClose} className="rounded-lg bg-amber-700 text-white px-3 py-1.5 font-bold">변경 버리기</button></div>
             </div>}
-            <div className="grid grid-cols-2 gap-2 sticky bottom-0 bg-white pt-2 pb-1">
+            {photoOnly ? <button type="button" onClick={onClose} className="w-full rounded-xl bg-gray-900 text-white py-3 text-sm font-bold">닫기</button> : <div className="grid grid-cols-2 gap-2 sticky bottom-0 bg-white pt-2 pb-1">
               <button type="button" onClick={() => setPreviewOpen(true)} className="rounded-xl border border-gray-200 py-3 text-sm font-bold">공개 미리보기</button>
               <button type="button" onClick={saveEdit} className="rounded-xl bg-[#6c2cf5] text-white py-3 text-sm font-bold">변경 저장</button>
-            </div>
+            </div>}
           </>}
         </div>
       </div>
     </div>
-    {previewOpen && <UserProfileModal profile={previewOf({ ...draft, avatar: pendingPhoto || user.avatar })} variant={variant} selfPreview showVariantLabel={showVariantLabel}
+    {previewOpen && <UserProfileModal profile={previewOf({ ...draft, avatar: pendingPhotoUrl || user.avatar })} variant={variant} selfPreview showVariantLabel={showVariantLabel}
       backLabel="편집으로 돌아가기" onClose={() => setPreviewOpen(false)} />}
   </>;
 }

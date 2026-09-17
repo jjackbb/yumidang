@@ -248,6 +248,8 @@ export interface CurrentUser {
   isPhoneVerified: boolean;
   isKycVerified: boolean;
   avatar: string;
+  /** Stable private Storage object path. Never use this value directly as an img src. */
+  avatarPath?: string;
   bio: string;
   joinedAt: string;
   birthDate?: string;

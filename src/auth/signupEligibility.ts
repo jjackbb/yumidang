@@ -36,6 +36,37 @@ export async function completeSignup(input: {
   return profile;
 }
 
+export async function assertSignupEligibility(method: MaleSignupMethod, referralCode?: string) {
+  const { data, error } = await getSupabaseClient().rpc('check_signup_eligibility', {
+    p_method: method,
+    p_referral_code: referralCode ? normalizeReferralCode(referralCode) : null,
+  });
+  if (error) throw error;
+  if (data !== true) throw new Error('male_eligibility_required');
+}
+
+export async function completeSignupWithAvatar(input: {
+  realName: string;
+  birthDate: string;
+  gender: 'female' | 'male';
+  avatarPath: string;
+  method?: 'female_direct' | MaleSignupMethod;
+  referralCode?: string;
+}) {
+  const { data, error } = await getSupabaseClient().rpc('complete_signup_with_avatar', {
+    p_real_name: input.realName.trim(),
+    p_birth_date: input.birthDate,
+    p_gender: input.gender,
+    p_avatar_path: input.avatarPath,
+    p_method: input.method ?? null,
+    p_referral_code: input.referralCode ? normalizeReferralCode(input.referralCode) : null,
+  });
+  if (error) throw error;
+  const profile = (Array.isArray(data) ? data[0] : data) as SignupProfile | null;
+  if (!profile?.avatar_url) throw new Error(`missing_avatar_${PROFILE_COLUMNS}`);
+  return profile;
+}
+
 export async function testInstitutionalEmail(action: 'request' | 'verify', email: string, code?: string) {
   const { data, error } = await getSupabaseClient().functions.invoke('test-institutional-email-auth', {
     body: { action, email: normalizeInstitutionalEmail(email), code },

@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Appointment, AppointmentReview, ChatMember, ChatRoom, CompletionConfirmation, JoinRequest, MeetupPost, PublicUserProfile } from '../types';
 import { getSupabaseClient } from '../lib/supabase';
+import { resolveProfileAvatar } from '../profile/avatarStorage';
 import { toLiveError } from './errors';
 import { liveApi, type AppointmentState, type SentRequest, type ReceivedRequest } from './api';
 import {
@@ -92,6 +93,13 @@ export function useLiveBackend(enabled: boolean, userId: string | null, self: Ch
           if (state.appointment) appointmentStates.push(state.appointment);
           if (state.review) reviewStates.push(state.review);
         });
+
+        const signed = (value: string | null) => resolveProfileAvatar(value, userId).catch(() => '');
+        cards = await Promise.all(cards.map(async card => ({ ...card, avatar_url: await signed(card.avatar_url) })));
+        received = await Promise.all(received.map(async request => ({ ...request, requester_avatar_url: await signed(request.requester_avatar_url) })));
+        await Promise.all(appointmentStates.map(async state => {
+          state.counterpart_avatar_url = await signed(state.counterpart_avatar_url);
+        }));
       }
       if (current !== sequence.current) return;
 
@@ -212,10 +220,11 @@ export function useLiveBackend(enabled: boolean, userId: string | null, self: Ch
     try {
       const profile = source.requestId ? await liveApi.counterpartProfile(source.requestId) : await liveApi.authorProfile(source.postId!);
       if (!profile) return;
+      const avatar = await resolveProfileAvatar(profile.avatar_url, userId).catch(() => '');
       setProfiles(previous => ({
         ...previous,
         [memberId]: {
-          id: memberId, displayName: profile.masked_name, avatar: avatarOrPlaceholder(profile.avatar_url), bio: profile.bio || '',
+          id: memberId, displayName: profile.masked_name, avatar: avatarOrPlaceholder(avatar), bio: profile.bio || '',
           neighborhood: '', ageGroup: typeof profile.age === 'number' ? `만 ${profile.age}세` : '', gender: profile.gender, hobbies: [], traits: [],
           sugarContent: NEW_USER_SUGAR_POLICY, isPhoneVerified: false, isKycVerified: false, isSample: false, reviews: [],
         },

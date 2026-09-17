@@ -44,7 +44,7 @@ import { ChatListView } from './components/ChatListView';
 import { UserProfileModal } from './components/UserProfileModal';
 import { ProfileEditor, type ProfilePatch } from './components/ProfileEditor';
 import { BlockUserDialog, ReportUserDialog } from './components/SafetyEntryDialogs';
-import { avatarSrc, missingProfileSteps, profileStepLabel, type ProfileStep } from './utils/profile';
+import { avatarSrc, missingProfileSteps, profileStepLabel, profileStepsForMode, type ProfileStep } from './utils/profile';
 import { isSavedBy, notificationSettingsFor } from './utils/relations';
 import { canInviteToPost, invitationStatusForPost, shouldNotifyInvitation } from './utils/invitations';
 import { publicProfileForMember, publicProfileForPost } from './data/publicProfiles';
@@ -116,7 +116,7 @@ export default function App() {
   const currentUser = demoMode
     ? localUser
     : supabaseAuth.user && supabaseAuth.profile
-      ? currentUserFromProfile(supabaseAuth.user, supabaseAuth.profile)
+      ? currentUserFromProfile(supabaseAuth.user, supabaseAuth.profile, new Date(), supabaseAuth.avatarUrl)
       : null;
   const privateAreaAllowed = demoMode
     ? Boolean(currentUser?.isLoggedIn)
@@ -564,7 +564,7 @@ export default function App() {
     setNotifications((prev) => prev.map((n) => n.recipientId === currentUser?.id ? { ...n, read: true } : n));
   };
 
-  const profileMissing = demoMode && currentUser ? missingProfileSteps(currentUser) : [];
+  const profileMissing = currentUser ? profileStepsForMode(currentUser, demoMode) : [];
   /** Requests and posts need the basic profile; sends the member back to the first missing step. */
   const requireCompleteProfile = (action: string) => {
     if (!profileMissing.length) return true;
@@ -1351,7 +1351,9 @@ export default function App() {
               onOpenKyc={() => demoMode ? setIsKycModalOpen(true) : setLifecycleNotice(NOT_READY_NOTICE)}
               onLogout={handleLogout}
               profileMissing={profileMissing}
-              onEditProfile={step => demoMode ? setProfileEditor(profileMissing.length ? { mode: 'setup', step: step || profileMissing[0] } : { mode: 'edit' }) : setLifecycleNotice(NOT_READY_NOTICE)}
+              onEditProfile={step => demoMode
+                ? setProfileEditor(profileMissing.length ? { mode: 'setup', step: step || profileMissing[0] } : { mode: 'edit' })
+                : setProfileEditor({ mode: 'edit', step: 'photo' })}
               onPreviewProfile={() => setIsProfilePreviewOpen(true)}
               reviews={reviews}
               escrowPayments={escrowPayments}
@@ -1563,6 +1565,9 @@ export default function App() {
           variant={demoSettings.variants.profile} showVariantLabel={demoMode}
           previewOf={patch => withReleasedReviews(publicProfileForMember(selfMember(currentUser), { ...currentUser, ...patch }, users))}
           onCommit={commitProfile}
+          storageBackedPhoto={!demoMode}
+          photoOnly={!demoMode}
+          onProfileChanged={supabaseAuth.refresh}
           onClose={() => setProfileEditor(null)}
           onDone={() => { setProfileEditor(null); setLifecycleNotice(profileEditor.mode === 'setup' ? '프로필을 저장했어요. 이제 동행을 신청하거나 공고를 올릴 수 있어요.' : '프로필 변경을 저장했어요.'); }}
         />}

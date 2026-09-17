@@ -1,5 +1,6 @@
 import type { CurrentUser } from '../types.ts';
 import { OVERSIZED_IMAGE } from './prototypeStore.ts';
+import { isProfileImagePath } from '../profile/avatarPath.ts';
 
 // Signup and profile rules shared by the signup modal, the profile editor and tests.
 // These are front-end checks for the prototype, not a server filter.
@@ -138,8 +139,15 @@ export function missingProfileSteps(user: Pick<CurrentUser, 'avatar' | 'hobbies'
 
 export const isProfileComplete = (user: Pick<CurrentUser, 'avatar' | 'hobbies' | 'traits' | 'bio'>) => missingProfileSteps(user).length === 0;
 
+/** Existing service members are grandfathered; the post-signup editor is a demo-only completion funnel. */
+export const profileStepsForMode = (user: Pick<CurrentUser, 'avatar' | 'hobbies' | 'traits' | 'bio'>, demoMode: boolean) => (
+  demoMode ? missingProfileSteps(user) : []
+);
+
 export const profileStepLabel: Record<ProfileStep, string> = { photo: '사진', interests: '취미·성향', bio: '소개' };
 
 /** Neutral placeholder so an unregistered photo never looks like someone's real picture. */
 export const PLACEHOLDER_AVATAR = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" fill="#ede9fe"/><circle cx="40" cy="31" r="14" fill="#c4b5fd"/><path d="M14 72c3-15 14-23 26-23s23 8 26 23" fill="#c4b5fd"/></svg>')}`;
-export const avatarSrc = (avatar: string | undefined) => (hasUsablePhoto(avatar) ? avatar! : PLACEHOLDER_AVATAR);
+export const avatarSrc = (avatar: string | undefined) => (
+  hasUsablePhoto(avatar) && !isProfileImagePath(avatar) ? avatar! : PLACEHOLDER_AVATAR
+);

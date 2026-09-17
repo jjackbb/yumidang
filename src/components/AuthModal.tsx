@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { AlertCircle, ArrowRight, Check, Clock, Mail, Phone, ShieldCheck, Ticket, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AlertCircle, ArrowRight, Camera, Check, Clock, Mail, Phone, ShieldCheck, Ticket, X } from 'lucide-react';
 
 import { getSupabaseClient } from '../lib/supabase';
 import {
@@ -11,12 +11,16 @@ import {
   type AuthMode,
   type SignupProfile,
 } from '../auth/signup';
-import { koreaToday, validatePhone } from '../utils/profile';
+import { koreaToday, PLACEHOLDER_AVATAR, validatePhone, validatePhotoFile } from '../utils/profile';
+import { prepareProfileImage, type PreparedProfileImage } from '../utils/imageResize';
+import { profileImageErrorMessage, removeOwnProfileImage, uploadProfileImage } from '../profile/avatarStorage';
+import { PhotoSignupFlowError, runPhotoSignup } from '../auth/signupPhotoFlow';
 import { PhoneInput } from './PhoneInput';
 import { maskRealName } from '../utils/maskName';
 import { isTestPhoneAuthEnabled, testPhoneAuth } from '../auth/testPhone';
 import {
-  completeSignup,
+  assertSignupEligibility,
+  completeSignupWithAvatar,
   eligibilityErrorMessage,
   normalizeInstitutionalEmail,
   TEST_INSTITUTIONAL_EMAIL_CODE,
@@ -68,20 +72,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
+  const [preparedPhoto, setPreparedPhoto] = useState<PreparedProfileImage | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState('');
+  const [uploadedPhotoPath, setUploadedPhotoPath] = useState('');
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef('');
 
   const allAgreed = agreedAge && agreedService && agreedPrivacy && agreedSafety;
   const testPhoneMode = isTestPhoneAuthEnabled();
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = '';
+      setPhotoPreviewUrl('');
+      setPreparedPhoto(null);
+      setUploadedPhotoPath('');
+      return;
+    }
     setMode(profileIncomplete ? 'signup' : 'login');
     setStep(profileIncomplete ? 'basic' : 'phone');
     setOtpSent(false);
     setOtpCode('');
     setRequestedPhone('');
     setErrorMessage('');
-    setInfoMessage(profileIncomplete ? '휴대폰 확인은 완료됐어요. 기본 프로필을 저장하면 가입이 완료됩니다.' : '');
+    setInfoMessage(profileIncomplete ? '휴대폰 확인은 완료됐어요. 새로고침 뒤에는 사진을 보관하지 않으므로 다시 선택해 주세요.' : '');
   }, [isOpen]);
+
+  useEffect(() => () => {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+  }, []);
 
   useEffect(() => {
     if (isOpen && profileIncomplete && (step === 'phone' || step === 'terms')) {
@@ -114,6 +135,39 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setRequestedPhone('');
     setErrorMessage('');
     setInfoMessage('');
+    if (nextMode === 'signup') {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = '';
+      setPhotoPreviewUrl('');
+      setPreparedPhoto(null);
+      setUploadedPhotoPath('');
+    }
+  };
+
+  const choosePhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    const invalid = validatePhotoFile(file);
+    if (invalid) { setErrorMessage(invalid); return; }
+    setPhotoBusy(true);
+    setErrorMessage('');
+    try {
+      const prepared = await prepareProfileImage(file);
+      const nextPreview = URL.createObjectURL(prepared.blob);
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = nextPreview;
+      setPhotoPreviewUrl(nextPreview);
+      setPreparedPhoto(prepared);
+      const orphan = uploadedPhotoPath;
+      setUploadedPhotoPath('');
+      if (orphan) void removeOwnProfileImage(orphan).catch(() => {});
+      setInfoMessage('사진을 준비했어요. 가입 완료 전까지 이 창 안에서만 유지됩니다.');
+    } catch {
+      setErrorMessage('사진을 읽지 못했어요. 비어 있거나 손상된 파일인지 확인하고 다시 선택해 주세요.');
+    } finally {
+      setPhotoBusy(false);
+    }
   };
 
   const requestOtp = async () => {
@@ -188,7 +242,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const finishSignup = async (method: 'female_direct' | MaleSignupMethod, code?: string) => {
-    await completeSignup({ realName, birthDate, gender: gender!, method, referralCode: code });
+    if (!preparedPhoto) throw new Error('프로필 사진을 선택해 주세요.');
+    try {
+      await runPhotoSignup(preparedPhoto.blob, uploadedPhotoPath, {
+        upload: blob => uploadProfileImage(blob),
+        complete: avatarPath => completeSignupWithAvatar({ realName, birthDate, gender: gender!, avatarPath, method, referralCode: code }),
+      }, setUploadedPhotoPath);
+      setUploadedPhotoPath('');
+    } catch (error) {
+      const original = error instanceof PhotoSignupFlowError ? error.original : error;
+      const eligibilityMessage = eligibilityErrorMessage(original, '');
+      const action = error instanceof PhotoSignupFlowError && error.phase === 'upload' ? 'upload' : 'save';
+      throw new Error(eligibilityMessage || profileImageErrorMessage(original, action));
+    }
     await onProfileSaved();
     setStep('complete');
     setInfoMessage('가입 조건을 확인하고 기본 프로필을 안전하게 저장했어요.');
@@ -196,7 +262,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const saveProfile = async (event: React.FormEvent) => {
     event.preventDefault();
-    const problem = validateSignupProfile(realName, birthDate, now, gender);
+    const problem = validateSignupProfile(realName, birthDate, now, gender) || (!preparedPhoto ? '프로필 사진을 선택해 주세요.' : null);
     if (problem) {
       setErrorMessage(problem);
       return;
@@ -219,9 +285,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         await finishSignup('female_direct');
       }
     } catch (error: any) {
-      const message = error instanceof Error && error.message.startsWith('인증 세션')
-        ? error.message
-        : authErrorMessage(error, 'profile', 'signup');
+      const message = error instanceof Error && (error.message.startsWith('인증 세션') || /사진|네트워크|권한/.test(error.message))
+        ? error.message : authErrorMessage(error, 'profile', 'signup');
       setErrorMessage(message);
     } finally {
       setBusy(false);
@@ -258,8 +323,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       if (problem) { setErrorMessage(problem); return; }
     } else if (!emailVerified) { setErrorMessage('기관 이메일 확인을 먼저 완료해 주세요.'); return; }
     setBusy(true); setErrorMessage('');
-    try { await finishSignup(maleMethod, maleMethod === 'female_referral' ? referralCode : undefined); }
-    catch (error) { setErrorMessage(eligibilityErrorMessage(error)); }
+    try {
+      await assertSignupEligibility(maleMethod, maleMethod === 'female_referral' ? referralCode : undefined);
+      await finishSignup(maleMethod, maleMethod === 'female_referral' ? referralCode : undefined);
+    }
+    catch (error) {
+      const direct = error instanceof Error && /사진|네트워크|권한/.test(error.message) ? error.message : '';
+      setErrorMessage(direct || eligibilityErrorMessage(error));
+    }
     finally { setBusy(false); }
   };
 
@@ -305,11 +376,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       </div>}
 
       {step === 'basic' && <form onSubmit={saveProfile} className="p-5 space-y-4" noValidate>
+        <section aria-labelledby="auth-photo-label" className="rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-3">
+          <div className="flex items-center gap-4">
+            <img src={photoPreviewUrl || PLACEHOLDER_AVATAR} alt={photoPreviewUrl ? '선택한 프로필 사진 미리보기' : ''}
+              className="h-20 w-20 shrink-0 rounded-full object-cover bg-purple-100 ring-4 ring-white" />
+            <div className="min-w-0 flex-1">
+              <p id="auth-photo-label" className="text-xs font-bold">프로필 사진 (필수)</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-gray-500">JPG·JPEG·PNG, 원본 10MB 이하. 긴 변 480px JPEG로 줄여 비공개 저장소에 올려요.</p>
+              <input ref={photoInputRef} id="auth-profile-photo" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                aria-describedby="auth-photo-help" className="sr-only" onChange={choosePhoto} />
+              <button type="button" disabled={busy || photoBusy} onClick={() => photoInputRef.current?.click()}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-white border border-gray-200 px-3 py-2 text-xs font-bold disabled:opacity-50">
+                <Camera className="h-3.5 w-3.5" />{photoBusy ? '사진 준비 중…' : photoPreviewUrl ? '다시 선택' : '사진 선택'}
+              </button>
+            </div>
+          </div>
+          <p id="auth-photo-help" className="text-[11px] text-gray-400">선택한 사진은 이 가입 창의 다음 단계에서도 유지되지만, 새로고침하면 다시 선택해야 해요.</p>
+        </section>
         <div><label htmlFor="auth-real-name" className="block text-xs font-bold mb-1.5">실명</label><input id="auth-real-name" value={realName} maxLength={20} autoComplete="name" onChange={event => { setRealName(event.target.value); setErrorMessage(''); }} placeholder="예: 변종현" className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200" /><p className="mt-1 text-[11px] text-gray-400">원본 실명은 본인만 볼 수 있고, 다른 회원에게는 {realName.trim().length >= 2 ? maskRealName(realName) : '변*현'}처럼 가려진 이름만 보여요. 신분증 확인이나 실명 인증은 아니에요.</p></div>
         <div><span id="auth-gender-label" className="block text-xs font-bold mb-1.5">성별</span><div role="group" aria-labelledby="auth-gender-label" className="flex gap-2">{(['female', 'male'] as const).map(value => <button type="button" key={value} aria-pressed={gender === value} onClick={() => { setGender(value); setErrorMessage(''); }}
           className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${gender === value ? 'bg-[#f0edff] text-[#6c2cf5] border border-[#6c2cf5]/30' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{value === 'female' ? '여성' : '남성'}</button>)}</div><p className="mt-1 text-[11px] text-gray-400">성별은 본인이 선택하며 별도 증명 절차는 없어요. 가입 후 로그인 회원에게 공고 상세에서만 표시돼요.</p>{gender === 'female' && <p className="mt-1 text-[11px] font-bold text-[#6c2cf5]">여성 회원은 기본정보 입력 후 바로 가입할 수 있어요.</p>}{gender === 'male' && <p className="mt-1 text-[11px] font-bold text-[#6c2cf5]">여성회원 추천 코드 또는 학교·직장 이메일 확인이 필요해요.</p>}</div>
         <div><div className="flex justify-between mb-1.5"><label htmlFor="auth-birth" className="text-xs font-bold">생년월일</label>{age && <span className="text-[11px] font-bold text-[#6c2cf5] bg-[#f0edff] rounded-full px-2 py-0.5">화면 표시: {age}</span>}</div><input id="auth-birth" type="date" min="1900-01-01" max={koreaToday(now)} value={birthDate} onChange={event => { setBirthDate(event.target.value); setErrorMessage(''); }} className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200" /><p className="mt-1 text-[11px] text-gray-400">원본 생년월일은 본인만 조회하며, 화면에는 현재 서울 날짜 기준 만 나이만 표시해요.</p></div>
-        <button type="submit" disabled={busy} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] disabled:bg-purple-300 text-white font-bold">{busy ? '확인 중…' : gender === 'male' ? '다음: 가입 조건 확인' : '기본 프로필 저장하고 가입 완료'}</button>
+        <button type="submit" disabled={busy || photoBusy || !preparedPhoto} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold">{busy ? '확인 중…' : gender === 'male' ? '다음: 가입 조건 확인' : '사진과 기본 프로필 저장하고 가입 완료'}</button>
         <p className="text-[11px] text-gray-400">저장에 실패해도 인증 세션은 유지됩니다. 창을 다시 열거나 새로고침하면 이 단계부터 이어집니다.</p>
       </form>}
 
@@ -328,7 +416,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {emailRequested && <div><label htmlFor="auth-email-code" className="block text-xs font-bold mb-1.5">확인 코드</label><div className="relative"><input id="auth-email-code" inputMode="numeric" maxLength={6} value={emailCode} onChange={event => { setEmailCode(event.target.value.replace(/\D/g, '').slice(0, 6)); setEmailVerified(false); setErrorMessage(''); }} className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-center tracking-widest font-mono font-bold" /><button type="button" onClick={() => setEmailCode(TEST_INSTITUTIONAL_EMAIL_CODE)} className="absolute right-2 top-2 px-2 py-1 text-[11px] font-bold text-[#6c2cf5] bg-[#f0edff] rounded-lg">테스트 코드 입력</button></div><button type="button" disabled={busy || emailCode.length !== 6 || emailVerified} onClick={verifyEmailCode} className="w-full mt-2 py-3 rounded-xl bg-gray-900 text-white text-xs font-bold disabled:bg-gray-300">{emailVerified ? '확인 완료' : '이메일 확인'}</button></div>}
           <p className="rounded-xl bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-950"><strong>유저테스트용 인증입니다.</strong> 실제 이메일은 발송되지 않아요. 고정 확인 코드 246810은 서버가 검증하며, 요청 후 10분 동안만 유효해요.</p>
         </div>}
-        <button type="submit" disabled={busy} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] disabled:bg-purple-300 text-white font-bold">{busy ? '가입 완료 중…' : '조건 확인하고 가입 완료'}</button>
+        <button type="submit" disabled={busy || !preparedPhoto} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold">{busy ? '가입 완료 중…' : '조건 확인하고 사진 업로드 · 가입 완료'}</button>
         <button type="button" onClick={() => { setStep('basic'); setErrorMessage(''); setInfoMessage(''); }} className="w-full text-xs font-bold text-gray-500">기본 정보로 돌아가기</button>
       </form>}
 

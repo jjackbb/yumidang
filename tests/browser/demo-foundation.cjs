@@ -57,9 +57,7 @@ const result = { url, mode: 'step-1 demo foundation', cases: [], errors: [], ext
   await run('S2', 'login, tab and role/time survive reload; existing header login still works', async page => {
     await page.goto(url, { waitUntil: 'networkidle' });
     await page.locator('header').getByRole('button', { name: '로그인', exact: true }).click();
-    await page.getByRole('button', { name: '인증번호 발송', exact: true }).click();
-    await page.getByRole('button', { name: '테스트코드 입력', exact: true }).click();
-    await page.getByRole('button', { name: '인증 확인 및 로그인', exact: true }).click();
+    await page.getByRole('button', { name: '체험 계정으로 바로 시작', exact: true }).click();
     assert.equal(await page.locator('[data-demo-role]').textContent(), '조*미');
     await page.locator('#nav-tab-chat').click();
     await page.locator('[data-room-id="room-req-sent-demo"]').waitFor();

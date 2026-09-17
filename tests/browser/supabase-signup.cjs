@@ -13,6 +13,7 @@ const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const livePhoneA = process.env.LIVE_SIGNUP_PHONE_A;
 const livePhoneB = process.env.LIVE_SIGNUP_PHONE_B;
 const unregisteredPhone = process.env.LIVE_UNREGISTERED_PHONE;
+const testOtp = process.env.TEST_PHONE_OTP;
 const executablePath = process.env.BROWSER_EXECUTABLE || '/Users/b/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell';
 const expectedProjectUrl = 'https://bndguguarijmghnkenvt.supabase.co';
 
@@ -21,6 +22,7 @@ assert.match(publishableKey || '', /^sb_publishable_/, 'missing publishable key'
 assert.match(livePhoneA || '', /^010000000(?:0[1-9]|1\d|20)$/, 'set LIVE_SIGNUP_PHONE_A to an unused configured test number');
 assert.match(livePhoneB || '', /^010000000(?:0[1-9]|1\d|20)$/, 'set LIVE_SIGNUP_PHONE_B to a different unused configured test number');
 assert.match(unregisteredPhone || '', /^010000000(?:0[1-9]|1\d|20)$/, 'set LIVE_UNREGISTERED_PHONE to an unused configured test number');
+assert.match(testOtp || '', /^\d{6}$/, 'set TEST_PHONE_OTP to the configured six-digit code');
 assert.notEqual(livePhoneA, livePhoneB, 'live test numbers must differ');
 assert.notEqual(unregisteredPhone, livePhoneA, 'unregistered login number must differ from signup numbers');
 assert.notEqual(unregisteredPhone, livePhoneB, 'unregistered login number must differ from signup numbers');
@@ -70,8 +72,8 @@ async function loginExisting(page, phone) {
   await dialog.locator('#auth-phone').fill(phone);
   await dialog.getByRole('button', { name: '인증번호 요청', exact: true }).click();
   await dialog.getByRole('status').waitFor();
-  await dialog.getByRole('button', { name: '테스트 OTP 입력', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Supabase에서 인증 확인', exact: true }).click();
+  await dialog.locator('#auth-otp').fill(testOtp);
+  await dialog.getByRole('button', { name: '인증하고 로그인', exact: true }).click();
   await dialog.waitFor({ state: 'detached' });
 }
 
@@ -85,7 +87,7 @@ async function requestAndVerify(page, phone, { exerciseErrors = false } = {}) {
   let rerequest = 'NOT_RUN';
   if (exerciseErrors) {
     await dialog.locator('#auth-otp').fill('000000');
-    await dialog.getByRole('button', { name: 'Supabase에서 인증 확인', exact: true }).click();
+    await dialog.getByRole('button', { name: '인증하고 가입 계속하기', exact: true }).click();
     const alert = dialog.getByRole('alert');
     await alert.waitFor();
     const invalidMessage = await alert.innerText();
@@ -104,9 +106,8 @@ async function requestAndVerify(page, phone, { exerciseErrors = false } = {}) {
     }
   }
 
-  await dialog.getByRole('button', { name: '테스트 OTP 입력', exact: true }).click();
-  assert.equal(await dialog.locator('#auth-otp').inputValue(), '123456');
-  await dialog.getByRole('button', { name: 'Supabase에서 인증 확인', exact: true }).click();
+  await dialog.locator('#auth-otp').fill(testOtp);
+  await dialog.getByRole('button', { name: '인증하고 가입 계속하기', exact: true }).click();
   await dialog.locator('#auth-real-name').waitFor();
   return rerequest;
 }
@@ -123,8 +124,6 @@ async function saveProfile(page, realName, birthDate) {
 (async () => {
   const evidence = {
     projectUrl: supabaseUrl,
-    firstPhone: livePhoneA,
-    secondPhone: livePhoneB,
     checks: [],
     notRun: ['유효했던 OTP가 시간 경과로 만료되는 경계 시각 대기 확인'],
   };
@@ -138,8 +137,8 @@ async function saveProfile(page, realName, birthDate) {
   try {
     await openSignup(pageA, { exerciseUnknownLogin: true });
     evidence.checks.push('기본 로그인 화면과 하단 회원가입 진입, 미가입 번호 로그인 차단');
-    evidence.rerequest = await requestAndVerify(pageA, evidence.firstPhone, { exerciseErrors: true });
-    evidence.checks.push('실제 OTP 요청, 잘못된 OTP에 대한 만료/오류 안내, 고정 OTP 123456 확인');
+    evidence.rerequest = await requestAndVerify(pageA, livePhoneA, { exerciseErrors: true });
+    evidence.checks.push('실제 OTP 요청, 잘못된 OTP에 대한 만료/오류 안내, 환경변수로 주입한 테스트 OTP 확인');
 
     let failInsertOnce = true;
     await pageA.route('**/rest/v1/profiles*', async route => {
@@ -198,7 +197,7 @@ async function saveProfile(page, realName, birthDate) {
     pageB.setDefaultTimeout(15_000);
     try {
       await openSignup(pageB);
-      await requestAndVerify(pageB, evidence.secondPhone);
+      await requestAndVerify(pageB, livePhoneB);
       await saveProfile(pageB, '실제가입B', '1996-09-16');
       await pageB.locator('header').getByText('실제가입B · 30살', { exact: true }).waitFor();
       const sessionB = await sessionFrom(pageB);
@@ -255,7 +254,7 @@ async function saveProfile(page, realName, birthDate) {
       await pageA.goto(new URL('/me', appUrl).toString(), { waitUntil: 'networkidle' });
       await pageA.getByTitle('로그아웃').click();
       await pageA.locator('header').getByRole('button', { name: '로그인', exact: true }).waitFor();
-      await loginExisting(pageA, evidence.firstPhone);
+      await loginExisting(pageA, livePhoneA);
       await pageA.locator('header').getByText('실제가입A수정 · 25살', { exact: true }).waitFor();
       evidence.checks.push('실제 로그아웃 후 기존 회원 OTP 로그인과 프로필 복구');
     } finally {

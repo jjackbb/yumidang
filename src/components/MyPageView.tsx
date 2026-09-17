@@ -249,11 +249,10 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
               style={{ width: `${Math.min(currentUser.sugarContent, 100)}%` }}
             />
           </div>
-          <p className="text-[11px] text-gray-400 mt-1">
-            {currentUser.isSample
-              ? '예시 회원의 샘플 당도예요. 합산·하한·갱신 시점은 논의 중이에요.'
-              : '신규 가입 당도 15에서 시작해요. 합산·하한·갱신 시점은 논의 중이에요.'}
-          </p>
+          <details className="mt-2 rounded-xl bg-gray-50 p-3 text-[11px] text-gray-500">
+            <summary className="cursor-pointer font-bold text-gray-700">당도는 어떤 정보인가요?</summary>
+            <p className="mt-2 leading-relaxed">{currentUser.isSample ? '체험 계정에는 화면 검증용 샘플 값이 표시돼요.' : '현재 신규 가입 시 부여된 기본값을 표시해요.'} 평가·신고에 따른 합산 방식과 갱신 시점은 아직 확정되지 않아 자동 반영하지 않아요.</p>
+          </details>
         </div>
 
         <div className="mt-4 pt-3 border-t border-gray-100 space-y-2 text-xs">

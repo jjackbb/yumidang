@@ -54,3 +54,11 @@ export function demoSchedule(offset: number, hour = 14) {
 export const formatSchedule = (iso: string) => new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit',
 }).format(new Date(iso));
+
+/** Formats server timestamps for people while leaving prototype labels such as "방금" intact. */
+export function formatUserDateTime(value: string | undefined) {
+  if (!value || !Number.isFinite(Date.parse(value))) return value || '';
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit',
+  }).format(new Date(value));
+}

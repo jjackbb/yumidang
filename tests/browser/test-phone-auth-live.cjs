@@ -2,6 +2,10 @@
 const assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/Users/b/.npm/_npx/e41f203b7505f1fb/node_modules/playwright');
 (async () => {
+  const phone = process.env.LIVE_TEST_PHONE;
+  const testOtp = process.env.TEST_PHONE_OTP;
+  assert.match(phone || '', /^\d{11}$/, 'LIVE_TEST_PHONE must contain a controlled test number');
+  assert.match(testOtp || '', /^\d{6}$/, 'TEST_PHONE_OTP must contain the configured six-digit code');
   const browser = await chromium.launch({ headless: true, executablePath: process.env.BROWSER_EXECUTABLE || '/Users/b/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell' });
   try {
     const page = await browser.newPage();
@@ -9,16 +13,15 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/Users/b/.npm/_np
     const session = () => page.evaluate(() => JSON.parse(localStorage.getItem('sb-bndguguarijmghnkenvt-auth-token') || 'null'));
     await page.goto(process.env.CHECK_URL || 'http://127.0.0.1:4192/');
     await page.locator('header').getByRole('button', { name: '로그인', exact: true }).click();
-    const phone = process.env.LIVE_TEST_PHONE || '01091610004';
     await page.locator('#auth-phone').fill(phone);
     assert.equal(await page.locator('#auth-phone').inputValue(), `${phone.slice(0, 3)}-${phone.slice(3, 7)}-${phone.slice(7)}`);
     await page.getByRole('button', { name: '인증번호 요청', exact: true }).click();
     await page.locator('#auth-otp').fill('000000');
-    await page.getByRole('button', { name: 'Supabase에서 인증 확인' }).click();
+    await page.getByRole('button', { name: '인증하고 로그인' }).click();
     await page.getByRole('alert').filter({ hasText: '인증번호가 맞지 않아요' }).waitFor();
     assert.equal(await session(), null);
-    await page.locator('#auth-otp').fill('123456');
-    await page.getByRole('button', { name: 'Supabase에서 인증 확인' }).click();
+    await page.locator('#auth-otp').fill(testOtp);
+    await page.getByRole('button', { name: '인증하고 로그인' }).click();
     await page.locator('#auth-real-name').waitFor();
     const before = await session();
     assert.ok(before.user.id);

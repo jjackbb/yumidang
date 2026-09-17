@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ShieldCheck, Check, AlertTriangle, PhoneCall, HeartHandshake } from 'lucide-react';
+import { X, ShieldCheck, Check, HeartHandshake } from 'lucide-react';
 
 interface SafetyRulesModalProps {
   isOpen: boolean;
@@ -20,7 +20,7 @@ export const SafetyRulesModal: React.FC<SafetyRulesModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
+    <div role="dialog" aria-modal="true" aria-label="안전 수칙" onClick={onClose} onKeyDown={event => { if (event.key === 'Escape') onClose(); }} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
       <div
         className="bg-white w-full max-w-[440px] rounded-t-[28px] sm:rounded-[28px] max-h-[90vh] overflow-y-auto shadow-2xl animate-in slide-in-from-bottom duration-300 text-left"
         onClick={(e) => e.stopPropagation()}
@@ -38,6 +38,7 @@ export const SafetyRulesModal: React.FC<SafetyRulesModalProps> = ({
           </div>
           <button
             onClick={onClose}
+            aria-label="안전 수칙 닫기"
             className="p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -67,7 +68,7 @@ export const SafetyRulesModal: React.FC<SafetyRulesModalProps> = ({
               <div>
                 <h4 className="font-bold text-gray-900 text-sm mb-0.5">음주 강요 및 과도한 음주 절대 금지</h4>
                 <p className="text-gray-600 leading-relaxed">
-                  상대방의 의사에 반하는 음주 권유나 2차 강요는 엄격히 금지됩니다. 적발 시 즉시 서비스 이용이 영구 정지됩니다.
+                  상대방의 의사에 반하는 음주 권유나 2차 강요는 하지 마세요. 불편하거나 위험한 행동은 상대 프로필에서 신고·차단할 수 있어요.
                 </p>
               </div>
             </div>
@@ -79,7 +80,7 @@ export const SafetyRulesModal: React.FC<SafetyRulesModalProps> = ({
               <div>
                 <h4 className="font-bold text-gray-900 text-sm mb-0.5">금전 거래 및 사적 개인정보 요구 금지</h4>
                 <p className="text-gray-600 leading-relaxed">
-                  선입금, 계좌이체, 투자 권유 또는 개인 전화번호 요구 대신 앱 내 안심 채팅 및 안심 통화 기능을 이용하세요.
+                  선입금, 계좌이체, 투자 권유 또는 개인 전화번호 요구에 응하지 말고, 약속 전 대화는 앱 채팅을 이용하세요.
                 </p>
               </div>
             </div>
@@ -101,9 +102,9 @@ export const SafetyRulesModal: React.FC<SafetyRulesModalProps> = ({
                 5
               </span>
               <div>
-                <h4 className="font-bold text-gray-900 text-sm mb-0.5">비상 상황 시 즉각 신고 센터 활용</h4>
+                <h4 className="font-bold text-gray-900 text-sm mb-0.5">위급하면 112에 먼저 신고</h4>
                 <p className="text-gray-600 leading-relaxed">
-                  불안한 상황이 발생하면 즉시 채팅방 내의 [긴급 SOS] 버튼 또는 경찰(112)에 도움을 요청하세요. 유미당 운영팀이 긴급 개입합니다.
+                  신변 위협 등 위급한 상황은 경찰(112)에 먼저 도움을 요청하세요. 서비스 안에서는 상대 프로필의 신고·차단 기능을 이용할 수 있어요.
                 </p>
               </div>
             </div>
@@ -113,7 +114,7 @@ export const SafetyRulesModal: React.FC<SafetyRulesModalProps> = ({
           <div className="p-3.5 bg-gray-50 rounded-2xl flex items-center gap-2.5">
             <HeartHandshake className="w-5 h-5 text-[#6c2cf5] shrink-0" />
             <p className="text-[11px] text-gray-600 leading-tight">
-              유미당은 본인인증(KYC)과 당도 지표를 통해 신뢰할 수 있는 이웃 문화를 함께 만들어갑니다.
+              휴대폰 확인 여부와 공개 프로필·후기를 살펴보고, 정확한 장소는 매칭이 확정된 상대에게만 공유하세요.
             </p>
           </div>
 

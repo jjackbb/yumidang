@@ -2,7 +2,7 @@ import { postStatusLabel } from '../utils/postLifecycle';
 import React from 'react';
 import { MapPin, Search, Calendar, RotateCcw, SearchX } from 'lucide-react';
 import { CategoryItem, MeetupPost } from '../types';
-import { EXPLORE_DATE_LABELS, EXPLORE_REGIONS, activeFilterLabels, emptyExploreFilters, filterPosts, type ExploreDateFilter, type ExploreFilters } from '../utils/explore';
+import { EXPLORE_DATE_LABELS, EXPLORE_REGIONS, activeFilterLabels, ageBand, emptyExploreFilters, filterPosts, type ExploreAgeFilter, type ExploreDateFilter, type ExploreFilters, type ExploreGenderFilter } from '../utils/explore';
 
 interface ExploreViewProps {
   posts: MeetupPost[];
@@ -14,9 +14,10 @@ interface ExploreViewProps {
   onSelectPost: (post: MeetupPost) => void;
   authorSugarOf: (post: MeetupPost) => number | null;
   onGoHome: () => void;
+  canFilterDemographics?: boolean;
 }
 
-export const ExploreView: React.FC<ExploreViewProps> = ({ posts, now, categories, filters, onChangeFilters, onSelectPost, authorSugarOf, onGoHome }) => {
+export const ExploreView: React.FC<ExploreViewProps> = ({ posts, now, categories, filters, onChangeFilters, onSelectPost, authorSugarOf, onGoHome, canFilterDemographics = false }) => {
   const update = (patch: Partial<ExploreFilters>) => onChangeFilters({ ...filters, ...patch });
   const results = filterPosts(posts, filters, now);
   const labels = activeFilterLabels(filters);
@@ -52,6 +53,19 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ posts, now, categories
             </select>
           </label>
         </div>
+        {canFilterDemographics && <div className="grid grid-cols-2 gap-2" data-demographic-filters>
+          <label className="text-[11px] font-bold text-gray-600">작성자 성별
+            <select aria-label="작성자 성별" value={filters.gender} onChange={e => update({ gender: e.target.value as ExploreGenderFilter })} className="mt-1 block w-full rounded-xl bg-white shadow-2xs px-2.5 py-2 text-xs font-normal">
+              <option value="all">전체 성별</option><option value="female">여성</option><option value="male">남성</option>
+            </select>
+          </label>
+          <label className="text-[11px] font-bold text-gray-600">작성자 연령대
+            <select aria-label="작성자 연령대" value={filters.age} onChange={e => update({ age: e.target.value as ExploreAgeFilter })} className="mt-1 block w-full rounded-xl bg-white shadow-2xs px-2.5 py-2 text-xs font-normal">
+              <option value="all">전체 연령대</option><option value="20s">20대</option><option value="30s">30대</option><option value="40plus">40대 이상</option>
+            </select>
+          </label>
+          <p className="col-span-2 text-[10px] text-gray-500">검색 편의를 위한 필터이며, 공고의 신청 가능 조건과는 별개예요.</p>
+        </div>}
         {filters.date === 'date' && <input type="date" aria-label="날짜 선택" value={filters.dateValue} onChange={e => update({ dateValue: e.target.value })} className="block w-full rounded-xl bg-white shadow-2xs px-3 py-2 text-xs" />}
         <div className="flex items-center justify-between gap-2 text-xs" data-filter-summary>
           <p className="min-w-0 text-gray-600" aria-live="polite">
@@ -100,6 +114,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ posts, now, categories
                   <div className="flex items-center gap-2 min-w-0">
                     <img src={post.avatar} alt="" className="w-6 h-6 rounded-full object-cover shadow-2xs" />
                     <span className="font-bold text-gray-800 truncate">{post.author}</span>
+                    {canFilterDemographics && (post.authorGender || post.authorAge) && <span className="text-gray-500 text-[11px] shrink-0">{[post.authorGender === 'female' ? '여성' : post.authorGender === 'male' ? '남성' : '', ageBand(post.authorAge)].filter(Boolean).join(' · ')}</span>}
                     <span className="text-[#6c2cf5] font-semibold text-[11px] shrink-0">{sugar === null ? '당도 정보 없음' : `당도 ${sugar} 🍯`}</span>
                   </div>
                   <span className="font-bold text-[#6c2cf5] shrink-0">상세보기 &gt;</span>

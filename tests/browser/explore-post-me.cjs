@@ -179,6 +179,8 @@ const pick = post => Object.fromEntries(SAVED_FIELDS.map(key => [key, post[key]]
     assert.equal(created.eventId, eventId);
     assert.equal(created.authorId, YUMI);
     assert.equal(created.status, 'recruiting');
+    assert.match(await postDetail(page).innerText(), /E2 행사 연결 공고/, 'successful create opens the saved detail');
+    await closeDetail(page);
     assert.equal(await relatedCards.count(), 3, 'new post appears in the same event list');
     await relatedCards.filter({ hasText: 'E2 행사 연결 공고' }).click();
     assert.match(await postDetail(page).innerText(), /연결 행사:/);
@@ -238,6 +240,7 @@ const pick = post => Object.fromEntries(SAVED_FIELDS.map(key => [key, post[key]]
     assert.equal(postA.partnerGender, 'male');
     assert.equal(postA.recruitmentEndsAt, new Date(`${day1}T12:00:00+09:00`).toISOString());
     assert.equal(postA.endsAt, new Date(`${day2}T20:00:00+09:00`).toISOString());
+    await closeDetail(page);
 
     await (await openOwnPost(page, /E3 A안 공고/)).getByRole('button', { name: '공고 수정', exact: true }).click();
     let edit = page.getByRole('dialog', { name: '동행 공고 수정', exact: true });
@@ -280,6 +283,7 @@ const pick = post => Object.fromEntries(SAVED_FIELDS.map(key => [key, post[key]]
     data = await until(page, d => d.posts.some(post => post.title === 'E3 B안 공고'), 'B saved');
     const postB = data.posts.find(post => post.title === 'E3 B안 공고');
     assert.deepEqual(pick(postB), pick(postA), 'A and B save the same fields');
+    await closeDetail(page);
 
     await (await openOwnPost(page, /E3 B안 공고/)).getByRole('button', { name: '공고 수정', exact: true }).click();
     edit = page.getByRole('dialog', { name: '동행 공고 수정', exact: true });

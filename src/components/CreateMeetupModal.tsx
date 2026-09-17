@@ -37,6 +37,7 @@ const FIELD_IDS: Record<PostFormField, string> = {
   secretLocation: 'meetup-secret-location', partnerGender: 'meetup-partner-gender', partnerPreferences: 'meetup-partner-preferences', tags: 'meetup-tags',
 };
 const inputClass = 'w-full px-3 py-2 rounded-xl bg-gray-50 focus:bg-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-200 aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-red-300';
+const formSignature = (values: PostFormValues, companionType: 'free' | 'pro', extras: unknown[]) => JSON.stringify([values, companionType, ...extras]);
 
 export const CreateMeetupModal: React.FC<CreateMeetupModalProps> = ({
   isOpen, onClose, onCreateMeetup, onUpdatePost, editPost, currentUser, now, variant, showVariantLabel = false, initialCategory, linkedEvent,
@@ -46,6 +47,8 @@ export const CreateMeetupModal: React.FC<CreateMeetupModalProps> = ({
   const [errors, setErrors] = useState<PostFormErrors>({});
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [initialSignature, setInitialSignature] = useState('');
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const validate = (form: PostFormValues, fields?: PostFormField[]) => validatePostForm(form, now, fields, { serviceMode });
 
   // Paid option is a separate preview experience, not part of the shared field contract.
@@ -61,19 +64,27 @@ export const CreateMeetupModal: React.FC<CreateMeetupModalProps> = ({
   const eventTitle = linkedEvent?.title;
 
   useLayoutEffect(() => {
+    const initialValues = editPost ? postFormFromPost(editPost, now) : defaultPostForm(now, initialCategory || '식사', serviceMode);
+    const initialType = editPost?.companionType || 'free';
+    const initialRate = editPost?.proDetails?.hourlyRate ?? 25000;
+    const initialSpecialty = editPost?.proDetails?.specialty ?? '스냅 촬영 & 감성 보정';
+    const initialCurriculum = editPost?.proDetails?.curriculum.join('\n') ?? '10분: 촬영 컨셉 상담\n40분: 스냅 촬영\n10분: 사진 모니터링';
+    const initialIncluded = editPost?.proDetails?.included.join(', ') ?? '보정본 10장, 원본 전체';
+    const initialExcluded = editPost?.proDetails?.excluded.join(', ') ?? '카페 음료비 개인 부담';
     setErrors({}); setStep(0);
-    setValues(editPost ? postFormFromPost(editPost, now) : defaultPostForm(now, initialCategory || '식사', serviceMode));
-    setCompanionType(editPost?.companionType || 'free');
-    if (editPost?.proDetails) {
-      setHourlyRate(editPost.proDetails.hourlyRate);
-      setSpecialty(editPost.proDetails.specialty);
-      setCurriculum(editPost.proDetails.curriculum.join('\n'));
-      setIncluded(editPost.proDetails.included.join(', '));
-      setExcluded(editPost.proDetails.excluded.join(', '));
-    }
-  }, [editPost, isOpen]);
+    setValues(initialValues); setCompanionType(initialType); setHourlyRate(initialRate); setSpecialty(initialSpecialty);
+    setCurriculum(initialCurriculum); setIncluded(initialIncluded); setExcluded(initialExcluded); setConfirmDiscard(false);
+    setInitialSignature(formSignature(initialValues, initialType, [initialRate, initialSpecialty, initialCurriculum, initialIncluded, initialExcluded]));
+  }, [editPost, isOpen, initialCategory, serviceMode]);
 
   if (!isOpen) return null;
+
+  const dirty = formSignature(values, companionType, [hourlyRate, specialty, curriculum, included, excluded]) !== initialSignature;
+  const requestClose = () => {
+    if (saving) return;
+    if (dirty) { setConfirmDiscard(true); return; }
+    onClose();
+  };
 
   const set = <K extends PostFormField>(field: K, value: PostFormValues[K]) => {
     setValues(prev => ({ ...prev, [field]: value }));
@@ -287,11 +298,18 @@ export const CreateMeetupModal: React.FC<CreateMeetupModalProps> = ({
     <p className="truncate">[{values.category}] {values.title}</p>
     <p>{values.startDate} {values.startTime} ~ {values.endDate} {values.endTime} · 마감 {values.deadline ? values.deadline.replace('T', ' ') : '시작 시각과 같음'}</p>
   </section>;
+  const confirmation = variant === 'B' && step === 1 && <section aria-label="등록 전 최종 확인" className="rounded-2xl border border-purple-100 bg-purple-50/60 p-3 text-[11px] text-gray-700 space-y-1">
+    <b className="block text-gray-900">등록 전 최종 확인</b>
+    <p>[{values.category}] {values.title}</p>
+    <p>{values.startDate} {values.startTime} ~ {values.endDate} {values.endTime}</p>
+    <p>공개 지역: {values.location || '입력 필요'} · 상세 장소 {values.secretLocation ? '입력 완료' : '입력 필요'}</p>
+    <p>상대 조건: {PARTNER_GENDERS.find(option => option.value === values.partnerGender)?.label}</p>
+  </section>;
 
   const submitLabel = isEditing ? '공고 수정 완료' : '1:1 동행 등록 완료';
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={isEditing ? '동행 공고 수정' : '동행 공고 작성'} data-post-form-variant={variant} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
+    <div role="dialog" aria-modal="true" aria-label={isEditing ? '동행 공고 수정' : '동행 공고 작성'} data-post-form-variant={variant} onClick={requestClose} onKeyDown={event => { if (event.key === 'Escape') requestClose(); }} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-[440px] rounded-t-[28px] sm:rounded-[28px] max-h-[92vh] overflow-y-auto shadow-2xl animate-in slide-in-from-bottom duration-300 text-left" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white/95 backdrop-blur-md px-5 py-4 flex items-center justify-between shadow-xs z-10">
           <div className="min-w-0">
@@ -300,7 +318,7 @@ export const CreateMeetupModal: React.FC<CreateMeetupModalProps> = ({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {showVariantLabel && <span className="text-[10px] font-bold rounded bg-amber-100 text-amber-900 px-1.5 py-0.5">04 {variant}안</span>}
-            <button type="button" onClick={onClose} aria-label="공고 작성 창 닫기" className="p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"><X className="w-5 h-5" /></button>
+            <button type="button" onClick={requestClose} aria-label="공고 작성 창 닫기" className="p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"><X className="w-5 h-5" /></button>
           </div>
         </div>
 
@@ -320,6 +338,7 @@ export const CreateMeetupModal: React.FC<CreateMeetupModalProps> = ({
 
           {variant === 'A' || step === 0 ? <>{basics}{schedule}</> : summary}
           {(variant === 'A' || step === 1) && <>{place}{partner}{companion}</>}
+          {confirmation}
           {isEditing && <p className="text-[11px] text-amber-800 bg-amber-50 rounded-xl p-3">일정·장소·활동 내용이나 상대 조건을 바꾸면 기존 신청자에게 다시 확인을 받아요. 동의만으로 확정되지 않고 작성자 수락이 필요해요. 확정된 동행은 채팅의 변경 제안을 이용해 주세요.</p>}
           {Object.keys(errors).length > 0 && <p className="text-xs text-red-600" data-form-error-count={Object.keys(errors).length}>입력 내용을 확인해 주세요. 표시된 항목 {Object.keys(errors).length}개를 고치면 저장할 수 있어요.</p>}
 
@@ -357,6 +376,13 @@ export const CreateMeetupModal: React.FC<CreateMeetupModalProps> = ({
           </div>
         </div>
       )}
+      {confirmDiscard && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4" onClick={event => event.stopPropagation()}>
+        <div role="alertdialog" aria-modal="true" aria-label="작성 내용 삭제 확인" className="w-full max-w-sm rounded-3xl bg-white p-5 text-left shadow-2xl">
+          <h4 className="font-bold">작성 중인 내용을 삭제할까요?</h4>
+          <p className="mt-2 text-xs text-gray-500">지금 닫으면 입력한 내용은 저장되지 않아요.</p>
+          <div className="mt-5 grid grid-cols-2 gap-2"><button type="button" onClick={() => setConfirmDiscard(false)} className="rounded-xl bg-gray-100 py-3 text-sm font-bold">계속 작성</button><button type="button" onClick={onClose} className="rounded-xl bg-rose-600 py-3 text-sm font-bold text-white">내용 삭제</button></div>
+        </div>
+      </div>}
     </div>
   );
 };

@@ -64,13 +64,7 @@ fs.mkdirSync(out, { recursive: true });
       .locator('header')
       .getByRole('button', { name: '로그인', exact: true })
       .click();
-    await p.getByRole('button', { name: '인증번호 발송', exact: true }).click();
-    await p
-      .getByRole('button', { name: '테스트코드 입력', exact: true })
-      .click();
-    await p
-      .getByRole('button', { name: '인증 확인 및 로그인', exact: true })
-      .click();
+    await p.getByRole('button', { name: '체험 계정으로 바로 시작', exact: true }).click();
   }
   const nav = (p, id) => p.locator('#nav-tab-' + id).click();
   const room = (p) =>
@@ -558,6 +552,9 @@ fs.mkdirSync(out, { recursive: true });
         .getByRole('button', { name: '확인했어요 · 계속 진행' })
         .click();
       assert.equal(await form.count(), 0);
+      const createdDetail = p.getByRole('dialog', { name: '동행 공고 상세', exact: true });
+      assert.match(await createdDetail.innerText(), /일정 경고 검증용 공고/);
+      await createdDetail.getByRole('button', { name: '공고 상세 닫기' }).click();
       await nav(p, 'me');
       const own = p.getByRole('region', { name: '내가 쓴 공고' });
       assert.equal(

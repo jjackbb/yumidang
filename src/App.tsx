@@ -62,7 +62,6 @@ import { useSupabaseAuth } from './auth/useSupabaseAuth';
 import { currentUserFromProfile } from './auth/user';
 import { getSupabaseClient } from './lib/supabase';
 import { useLiveBackend } from './live/useLiveBackend';
-import { NEW_USER_SUGAR_POLICY } from './live/adapters';
 
 import { mockCategories } from './data/mockData';
 import { Appointment, AppointmentReview, BlockRelation, CategoryItem, ChatMember, CompletionConfirmation, DemoSettings, EventBannerItem, FavoriteFriend, Invitation, MeetupPost, CurrentUser, JoinRequest, ReviewItem, EscrowPayment, NotificationItem, NotificationSettings, ChatRoom, ScheduleProposal } from './types';
@@ -317,6 +316,17 @@ export default function App() {
   const [profileEditor, setProfileEditor] = useState<{ mode: 'setup' | 'edit'; step?: ProfileStep; reason?: string } | null>(null);
   const [isProfilePreviewOpen, setIsProfilePreviewOpen] = useState(false);
   const [safetyDialog, setSafetyDialog] = useState<{ kind: 'report' | 'block'; member: ChatMember } | null>(null);
+  useEffect(() => {
+    const closeTopDetail = () => {
+      if (selectedChatProfile) setSelectedChatProfile(null);
+      else if (selectedPostForDetail) setSelectedPostForDetail(null);
+      else if (selectedEvent) setSelectedEvent(null);
+      else if (selectedCategory) setSelectedCategory(null);
+      else if (isEventsOpen) setIsEventsOpen(false);
+    };
+    window.addEventListener('popstate', closeTopDetail);
+    return () => window.removeEventListener('popstate', closeTopDetail);
+  }, [selectedChatProfile, selectedPostForDetail, selectedEvent, selectedCategory, isEventsOpen]);
   const previousIdentity = useRef<string | null>(null);
   const prototypeSignInSucceeded = useRef(false);
   useEffect(() => {
@@ -454,6 +464,7 @@ export default function App() {
     if (demoMode) return;
     setMeetupPosts(live.data.posts); setJoinRequests(live.data.requests); setAppointments(live.data.appointments);
     setCompletions(live.data.completions); setAppointmentReviews(live.data.appointmentReviews);
+    setNotifications(live.data.notifications);
     // Server refreshes must not wipe a message the member is still typing.
     setChatRooms(previous => live.data.rooms.map(room => ({ ...room, draft: previous.find(item => item.id === room.id)?.draft || '' })));
   }, [demoMode, live.data]);
@@ -560,8 +571,16 @@ export default function App() {
   const unreadNotifCount = myNotifications.filter((n) => !n.read).length;
 
   const handleMarkAllNotificationsAsRead = () => {
-
     setNotifications((prev) => prev.map((n) => n.recipientId === currentUser?.id ? { ...n, read: true } : n));
+    if (!demoMode) void live.actions.markAllNotificationsRead().then(result => {
+      if ('error' in result) setLifecycleNotice(`알림 읽음 상태를 저장하지 못했어요. ${result.error}`);
+    });
+  };
+  const markNotificationRead = (id: string) => {
+    setNotifications(prev => prev.map(value => value.id === id ? { ...value, read: true } : value));
+    if (!demoMode) void live.actions.markNotificationRead(id).then(result => {
+      if ('error' in result) setLifecycleNotice(`알림 읽음 상태를 저장하지 못했어요. ${result.error}`);
+    });
   };
 
   const profileMissing = currentUser ? profileStepsForMode(currentUser, demoMode) : [];
@@ -602,6 +621,9 @@ export default function App() {
       });
       if ('error' in result) { setLifecycleNotice(result.error); return false; }
       setIsCreateModalOpen(false); setCreateContext(null);
+      const savedPost = { ...newPost, id: newPost.id.replace(/^post-/, '') };
+      setSelectedPostForDetail(savedPost);
+      setLifecycleNotice('공고를 등록했어요. 등록된 내용을 상세 화면에서 확인해 주세요.');
       return true;
     })();
     setMeetupPosts((prev) => [newPost, ...prev]);
@@ -634,6 +656,8 @@ export default function App() {
       ...prev,
     ]);
     setIsCreateModalOpen(false); setCreateContext(null);
+    setSelectedPostForDetail(newPost);
+    setLifecycleNotice('공고를 등록했어요. 등록된 내용을 상세 화면에서 확인해 주세요.');
     return true;
   };
 
@@ -884,7 +908,7 @@ export default function App() {
       noshow: '20분 이상 미출현 (노쇼 발생)',
       harassment: '불쾌한 언행 / 비매너 / 성희롱',
       commercial: '금전 요구 / 상업적 영업 / 종교 포교',
-      danger: '위급 상황 / 신변 위협 (긴급 SOS)',
+      danger: '위급 상황 / 신변 위협',
     };
     const reasonLabel = reasonMap[reasonType] || reasonType;
 
@@ -1130,10 +1154,10 @@ export default function App() {
   });
   const profileForMember = (member: ChatMember, viewer = currentUser) => {
     if (demoMode) return withReleasedReviews(publicProfileForMember(member, viewer, users));
-    // Normal runs: server-masked name/age/photo/bio only; no sample hobbies, badges or reviews.
+    // Normal runs: server-masked profile plus only reviews already released by the server policy.
     const loaded = live.profiles[member.id];
     const base = publicProfileForMember(member, viewer, users);
-    return loaded || { ...base, sugarContent: NEW_USER_SUGAR_POLICY };
+    return withReleasedReviews(loaded || { ...base, sugarContent: null });
   };
   const profileForPost = (post: MeetupPost) => demoMode
     ? withReleasedReviews(publicProfileForPost(post, currentUser, users))
@@ -1151,7 +1175,7 @@ export default function App() {
   const openNotificationTarget = (item: NotificationItem) => {
 
     if (!currentUser || item.recipientId !== currentUser.id) return;
-    setNotifications(prev => prev.map(value => value.id === item.id ? { ...value, read: true } : value));
+    markNotificationRead(item.id);
     setIsNotificationsOpen(false);
     if (item.targetType === 'invitation' && item.targetId) {
       const invitation = invitations.find(value => value.id === item.targetId);
@@ -1242,7 +1266,7 @@ export default function App() {
             <button type="button" onClick={resetPrototype} className="rounded-lg bg-red-600 text-white px-2.5 py-1 font-bold">저장 데이터 초기화</button>
           </div>
         </div>}
-        {!demoMode && <div ref={serviceBannerRef} role="status" className="bg-amber-50 px-4 py-2 text-xs text-amber-950 border-b border-amber-100">휴대폰 로그인·회원가입 · 테스트 번호는 Supabase가 고정 OTP 123456을 검증하며 실제 문자는 발송하지 않아요.</div>}
+        {!demoMode && <div ref={serviceBannerRef} role="status" className="bg-amber-50 px-4 py-2 text-xs text-amber-950 border-b border-amber-100">휴대폰 로그인·회원가입 테스트 환경입니다. 테스트 계정과 인증값은 별도 운영 안내에서 확인해 주세요.</div>}
         {/* Top Header */}
         <Header
           unreadCount={unreadNotifCount}
@@ -1294,7 +1318,12 @@ export default function App() {
         {activeTab === 'explore' && (
           <div className="flex-1 overflow-y-auto">
             <ExploreView
-              posts={activeMeetupPosts}
+              posts={activeMeetupPosts.map(post => {
+                if (!demoMode || !post.authorId) return post;
+                const author = userById(post.authorId);
+                const bandAge = author?.ageGroup.startsWith('20') ? 25 : author?.ageGroup.startsWith('30') ? 35 : author?.ageGroup ? 45 : undefined;
+                return { ...post, authorGender: author?.gender === 'undisclosed' ? undefined : author?.gender, authorAge: bandAge };
+              })}
               now={now}
               categories={mockCategories}
               filters={exploreFilters}
@@ -1302,6 +1331,7 @@ export default function App() {
               onSelectPost={(post) => setSelectedPostForDetail(post)}
               authorSugarOf={authorSugarOf}
               onGoHome={() => setActiveTab('home')}
+              canFilterDemographics={privateDataReady}
             />
           </div>
         )}
@@ -1447,7 +1477,7 @@ export default function App() {
           editPost={editingPost}
           currentUser={privateDataReady ? currentUser : null}
           now={now}
-          variant={demoSettings.variants.postForm}
+          variant={demoMode ? demoSettings.variants.postForm : 'B'}
           showVariantLabel={demoMode}
           initialCategory={createContext?.category}
           serviceMode={!demoMode}
@@ -1528,9 +1558,7 @@ export default function App() {
             const room = chatRooms.find(item => item.id === roomId); if (room) openRoom(room);
           }}
           onOpenMatchRequests={(notificationId) => {
-            setNotifications((prev) =>
-              prev.map((item) => item.id === notificationId ? { ...item, read: true } : item)
-            );
+            markNotificationRead(notificationId);
             setIsNotificationsOpen(false);
             setRequestTab('received');
             setActiveTab('me');
@@ -1580,7 +1608,7 @@ export default function App() {
         {privateDataReady && postAction && <LifecycleConfirmDialog title={postAction.mode === 'deleted' ? '공고 삭제' : '모집 마감'} description={postAction.mode === 'deleted' ? '공고를 목록에서 지우고 남아 있는 신청을 종료합니다. 기존 신청·대화 기록은 보존돼요.' : '새 신청을 받지 않고 미확정 신청을 함께 종료합니다. 동행이 확정되는 것은 아니에요.'} actionLabel={postAction.mode === 'deleted' ? '공고 삭제하기' : '모집 마감하기'} onClose={() => setPostAction(null)} onConfirm={confirmPostAction} />}
         {privateDataReady && cancellationTarget && <CancellationDialog key={cancellationTarget.id} kind={cancellationTarget.kind} title={cancellationTarget.title} onClose={() => setCancellationTarget(null)} onConfirm={confirmCancellation} />}
         {privateDataReady && conflictPrompt && <ScheduleConflictDialog conflicts={conflictPrompt.conflicts} onClose={() => setConflictPrompt(null)} onContinue={continueConflict} />}
-        {lifecycleNotice && <div role="alert" className="fixed bottom-24 left-5 right-5 mx-auto max-w-sm bg-gray-900 text-white p-4 rounded-2xl z-[95] text-xs leading-relaxed shadow-lg">{lifecycleNotice}<button onClick={() => setLifecycleNotice(null)} className="block ml-auto mt-2 font-bold underline">안내 닫기</button></div>}
+        {lifecycleNotice && <div role="alert" className="pointer-events-none fixed bottom-24 left-5 right-5 mx-auto max-w-sm bg-gray-900 text-white p-4 rounded-2xl z-[95] text-xs leading-relaxed shadow-lg">{lifecycleNotice}<button onClick={() => setLifecycleNotice(null)} className="pointer-events-auto block mr-auto mt-2 font-bold underline">안내 닫기</button></div>}
         {/* Modal: 회원가입 / 휴대폰 본인확인 (Phase 1) */}
         {demoMode ? <DemoAuthModal
           isOpen={isAuthModalOpen}

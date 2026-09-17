@@ -40,7 +40,6 @@ export interface AuthModalProps {
 
 type AuthStep = 'terms' | 'phone' | 'basic' | 'eligibility' | 'complete';
 
-const TEST_OTP = '123456';
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -119,6 +118,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
+  const requestClose = () => {
+    const hasDraft = Boolean(phone || otpCode || realName || birthDate || gender || preparedPhoto || referralCode || institutionalEmail || emailCode || agreedAge || agreedService || agreedPrivacy || agreedSafety);
+    if (!hasDraft || window.confirm('입력 중인 내용을 삭제하고 인증 창을 닫을까요?')) onClose();
+  };
+
   const toggleAll = () => {
     const next = !allAgreed;
     setAgreedAge(next);
@@ -195,7 +199,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setOtpSent(true);
       setOtpCode('');
       setTimerSeconds(180);
-      setInfoMessage(testPhoneMode ? '실제 문자는 보내지 않아요. 인증번호 123456을 입력해 주세요.' : 'Supabase가 인증번호 요청을 받았어요. 등록된 테스트 번호는 문자 대신 고정 OTP로 확인합니다.');
+      setInfoMessage(testPhoneMode ? '실제 문자는 보내지 않아요. 테스트 환경에서 제공받은 인증값을 입력해 주세요.' : 'Supabase가 인증번호 요청을 받았어요. 등록된 테스트 번호는 운영 안내에 따라 확인합니다.');
     } catch (error: any) {
       setErrorMessage(testPhoneMode ? error.message : authErrorMessage(error, 'send', mode));
     } finally {
@@ -340,12 +344,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const dialogLabel = mode === 'login' && step === 'phone' ? '로그인' : '회원가입';
 
   return <div role="dialog" aria-modal="true" aria-label={dialogLabel}
-    onKeyDown={event => { if (event.key === 'Escape') onClose(); }}
+    onClick={requestClose}
+    onKeyDown={event => { if (event.key === 'Escape') requestClose(); }}
     className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
-    <div className="bg-white w-full max-w-[440px] rounded-t-[28px] sm:rounded-[28px] max-h-[92vh] overflow-y-auto shadow-2xl text-left">
+    <div onClick={event => event.stopPropagation()} className="bg-white w-full max-w-[440px] rounded-t-[28px] sm:rounded-[28px] max-h-[92vh] overflow-y-auto shadow-2xl text-left">
       <div className="sticky top-0 bg-white/95 backdrop-blur-md px-5 py-4 flex items-center justify-between shadow-xs z-10">
         <div className="flex items-center gap-2"><span className="w-7 h-7 rounded-lg bg-[#6c2cf5] text-white flex items-center justify-center"><ShieldCheck className="w-4 h-4" /></span><h3 className="text-[17px] font-bold">{title}</h3></div>
-        <button type="button" aria-label={`${dialogLabel} 창 닫기`} onClick={onClose} className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100"><X className="w-5 h-5" /></button>
+        <button type="button" aria-label={`${dialogLabel} 창 닫기`} onClick={requestClose} className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100"><X className="w-5 h-5" /></button>
       </div>
 
       {mode === 'signup' && step !== 'complete' && <div className="px-5 pt-3"><div className="flex gap-1.5">{[1, 2, 3, 4].map(item => <span key={item} className={`h-1.5 flex-1 rounded-full ${item <= progress ? 'bg-[#6c2cf5]' : 'bg-gray-200'}`} />)}</div><p className="mt-2 text-[11px] text-gray-400">회원가입 {progress}/4</p></div>}
@@ -369,8 +374,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       {step === 'phone' && <div className="p-5 space-y-4">
         <div><label htmlFor="auth-phone" className="block text-xs font-bold text-gray-700 mb-1.5">휴대폰 번호</label><div className="flex gap-2"><div className="relative flex-1"><Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" /><PhoneInput id="auth-phone" value={phone} onValueChange={digits => { setPhone(digits); setOtpSent(false); setRequestedPhone(''); setOtpCode(''); setErrorMessage(''); setInfoMessage(''); }} className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#6c2cf5]/30" /></div><button type="button" disabled={busy} onClick={requestOtp} className="px-3.5 rounded-xl bg-[#f0edff] text-[#6c2cf5] font-bold text-xs disabled:opacity-50">{otpSent ? '재요청' : '인증번호 요청'}</button></div><p className="mt-1.5 text-[11px] text-gray-400">숫자 11자리를 입력하면 하이픈이 자동으로 표시돼요.</p></div>
-        {otpSent && <div className="space-y-2.5"><div className="flex justify-between"><label htmlFor="auth-otp" className="text-xs font-bold">인증번호 6자리</label><span className="text-xs text-rose-500 flex items-center gap-1"><Clock className="w-3.5 h-3.5" />화면 안내 {Math.floor(Math.max(timerSeconds, 0) / 60)}:{String(Math.max(timerSeconds, 0) % 60).padStart(2, '0')}</span></div><div className="relative"><input id="auth-otp" inputMode="numeric" maxLength={6} value={otpCode} onChange={event => { setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6)); setErrorMessage(''); }} className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-center tracking-widest font-mono font-bold" /><button type="button" onClick={() => setOtpCode(TEST_OTP)} className="absolute right-2 top-2 px-2 py-1 text-[11px] font-bold text-[#6c2cf5] bg-[#f0edff] rounded-lg">테스트 OTP 입력</button></div><button type="button" disabled={busy || otpCode.length !== 6} onClick={verifyOtp} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] disabled:bg-purple-300 text-white font-bold">Supabase에서 인증 확인</button></div>}
-        <div className="p-3.5 rounded-2xl bg-amber-50 text-[11px] leading-relaxed text-amber-950"><strong>테스트 인증</strong><p className="mt-1">{testPhoneMode ? '숫자 11자리와 인증번호 123456으로 테스트해요. 처음 쓰는 번호는 인증 후 기본 프로필을 입력합니다. 실제 문자는 발송되지 않으며, 누구나 같은 번호로 해당 테스트 계정에 접속할 수 있어요.' : '010-0000-0001~0020만 사용하며 실제 문자는 발송되지 않아요. 고정 OTP도 브라우저가 아니라 Supabase가 검증합니다.'}</p></div>
+        {otpSent && <div className="space-y-2.5"><div className="flex justify-between"><label htmlFor="auth-otp" className="text-xs font-bold">인증번호 6자리</label><span className="text-xs text-rose-500 flex items-center gap-1"><Clock className="w-3.5 h-3.5" />화면 안내 {Math.floor(Math.max(timerSeconds, 0) / 60)}:{String(Math.max(timerSeconds, 0) % 60).padStart(2, '0')}</span></div><input id="auth-otp" inputMode="numeric" maxLength={6} value={otpCode} onChange={event => { setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6)); setErrorMessage(''); }} className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-center tracking-widest font-mono font-bold" /><button type="button" disabled={busy || otpCode.length !== 6} onClick={verifyOtp} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] disabled:bg-purple-300 text-white font-bold">인증하고 {mode === 'login' ? '로그인' : '가입 계속하기'}</button></div>}
+        <div className="p-3.5 rounded-2xl bg-amber-50 text-[11px] leading-relaxed text-amber-950"><strong>테스트 인증 안내</strong><p className="mt-1">테스트 계정과 인증값은 별도 운영 안내에서 확인해 주세요. 화면에는 전화번호나 인증값을 노출하지 않아요.</p></div>
         {mode === 'login' ? <div className="pt-4 border-t border-gray-100 text-center space-y-2"><p className="text-xs text-gray-500">아직 유미당 계정이 없나요?</p><button type="button" onClick={() => switchMode('signup')} className="w-full py-3 rounded-xl border border-[#6c2cf5] text-[#6c2cf5] font-bold">회원가입</button></div>
           : <button type="button" onClick={() => switchMode('login')} className="w-full text-xs font-bold text-[#6c2cf5]">이미 계정이 있어요 · 로그인</button>}
       </div>}
@@ -393,7 +398,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
           <p id="auth-photo-help" className="text-[11px] text-gray-400">선택한 사진은 이 가입 창의 다음 단계에서도 유지되지만, 새로고침하면 다시 선택해야 해요.</p>
         </section>
-        <div><label htmlFor="auth-real-name" className="block text-xs font-bold mb-1.5">실명</label><input id="auth-real-name" value={realName} maxLength={20} autoComplete="name" onChange={event => { setRealName(event.target.value); setErrorMessage(''); }} placeholder="예: 변종현" className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200" /><p className="mt-1 text-[11px] text-gray-400">원본 실명은 본인만 볼 수 있고, 다른 회원에게는 {realName.trim().length >= 2 ? maskRealName(realName) : '변*현'}처럼 가려진 이름만 보여요. 신분증 확인이나 실명 인증은 아니에요.</p></div>
+        <div><label htmlFor="auth-real-name" className="block text-xs font-bold mb-1.5">실명</label><input id="auth-real-name" value={realName} maxLength={20} autoComplete="name" onChange={event => { setRealName(event.target.value); setErrorMessage(''); }} placeholder="한글 실명을 입력해 주세요" className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200" /><p className="mt-1 text-[11px] text-gray-400">원본 실명은 본인만 볼 수 있고, 다른 회원에게는 {realName.trim().length >= 2 ? maskRealName(realName) : '가려진 이름'}만 보여요. 신분증 확인이나 실명 인증은 아니에요.</p></div>
         <div><span id="auth-gender-label" className="block text-xs font-bold mb-1.5">성별</span><div role="group" aria-labelledby="auth-gender-label" className="flex gap-2">{(['female', 'male'] as const).map(value => <button type="button" key={value} aria-pressed={gender === value} onClick={() => { setGender(value); setErrorMessage(''); }}
           className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${gender === value ? 'bg-[#f0edff] text-[#6c2cf5] border border-[#6c2cf5]/30' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{value === 'female' ? '여성' : '남성'}</button>)}</div><p className="mt-1 text-[11px] text-gray-400">성별은 본인이 선택하며 별도 증명 절차는 없어요. 가입 후 로그인 회원에게 공고 상세에서만 표시돼요.</p>{gender === 'female' && <p className="mt-1 text-[11px] font-bold text-[#6c2cf5]">여성 회원은 기본정보 입력 후 바로 가입할 수 있어요.</p>}{gender === 'male' && <p className="mt-1 text-[11px] font-bold text-[#6c2cf5]">여성회원 추천 코드 또는 학교·직장 이메일 확인이 필요해요.</p>}</div>
         <div><div className="flex justify-between mb-1.5"><label htmlFor="auth-birth" className="text-xs font-bold">생년월일</label>{age && <span className="text-[11px] font-bold text-[#6c2cf5] bg-[#f0edff] rounded-full px-2 py-0.5">화면 표시: {age}</span>}</div><input id="auth-birth" type="date" min="1900-01-01" max={koreaToday(now)} value={birthDate} onChange={event => { setBirthDate(event.target.value); setErrorMessage(''); }} className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200" /><p className="mt-1 text-[11px] text-gray-400">원본 생년월일은 본인만 조회하며, 화면에는 현재 서울 날짜 기준 만 나이만 표시해요.</p></div>

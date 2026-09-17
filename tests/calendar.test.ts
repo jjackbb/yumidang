@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appointmentStart, eventsStartingInWeek, eventStatus, upcomingReminders, weekOfMonth, weeksInMonth } from '../src/utils/calendar.ts';
+import { appointmentStart, eventsStartingInWeek, eventStatus, formatUserDateTime, upcomingReminders, weekOfMonth, weeksInMonth } from '../src/utils/calendar.ts';
 import type { Appointment, EventBannerItem } from '../src/types.ts';
 
 const event = (startsOn: string, endsOn: string) => ({ id: startsOn, startsOn, endsOn } as EventBannerItem);
@@ -37,4 +37,9 @@ test('legacy and form schedules parse Korean times without relying on browser lo
   assert.equal(appointmentStart({ dateTime: '2026.9.21(월) 오후 2:00' }).toISOString(), '2026-09-21T05:00:00.000Z');
   assert.equal(appointmentStart({ dateTime: '2026-09-21 14:00' }).toISOString(), '2026-09-21T05:00:00.000Z');
   assert.ok(Number.isNaN(appointmentStart({ dateTime: '미정' }).getTime()));
+});
+test('server timestamps render as Korean local time while prototype relative labels stay intact', () => {
+  assert.match(formatUserDateTime('2026-09-17T10:00:00Z'), /9\. 17\./);
+  assert.match(formatUserDateTime('2026-09-17T10:00:00Z'), /7:00/);
+  assert.equal(formatUserDateTime('방금'), '방금');
 });

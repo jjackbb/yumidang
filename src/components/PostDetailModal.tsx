@@ -72,7 +72,7 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({
   if (post.status === 'deleted') return <div role="dialog" aria-modal="true" aria-label="삭제된 공고" className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-5"><div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4"><h2 className="text-lg font-bold">삭제된 공고예요</h2><p className="text-sm text-gray-500">{post.title}</p><p className="text-xs text-gray-500">새 신청은 할 수 없어요. Me와 채팅에서 이전 신청과 대화 기록은 확인할 수 있습니다.</p><button onClick={onClose} className="w-full bg-[#6c2cf5] text-white rounded-xl p-3 text-sm">이전 화면으로</button></div></div>;
 
   return (
-    <><div role="dialog" aria-modal="true" aria-label="동행 공고 상세" inert={isCovered} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
+    <><div role="dialog" aria-modal="true" aria-label="동행 공고 상세" inert={isCovered} onClick={onClose} onKeyDown={event => { if (event.key === 'Escape') onClose(); }} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
       <div
         className="bg-white w-full max-w-[440px] rounded-t-[28px] sm:rounded-[28px] max-h-[90vh] overflow-y-auto shadow-2xl animate-in slide-in-from-bottom duration-300 text-left"
         onClick={(e) => e.stopPropagation()}

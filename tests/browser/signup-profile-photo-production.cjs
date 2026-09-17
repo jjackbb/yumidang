@@ -11,6 +11,7 @@ const appUrl = process.env.CHECK_URL || 'https://yumidang.vercel.app/';
 const phone = process.env.LIVE_PROFILE_PHONE;
 const profileGender = process.env.LIVE_PROFILE_GENDER || 'female';
 const referrerPhone = process.env.LIVE_REFERRER_PHONE;
+const testOtp = process.env.TEST_PHONE_OTP;
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const executablePath = process.env.BROWSER_EXECUTABLE || '/Users/b/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell';
@@ -20,6 +21,7 @@ assert.equal(new URL(appUrl).origin, 'https://yumidang.vercel.app', 'production 
 assert.equal(supabaseUrl, expectedProjectUrl, 'unexpected Supabase project');
 assert.match(publishableKey || '', /^sb_publishable_/, 'missing publishable key');
 assert.match(phone || '', /^0199\d{7}$/, 'LIVE_PROFILE_PHONE must be a disposable 0199 test number');
+assert.match(testOtp || '', /^\d{6}$/, 'TEST_PHONE_OTP must contain the configured six-digit code');
 assert.ok(['female', 'male'].includes(profileGender), 'LIVE_PROFILE_GENDER must be female or male');
 if (profileGender === 'male') assert.match(referrerPhone || '', /^\d{11}$/, 'male smoke requires an existing controlled female referrer');
 
@@ -59,7 +61,7 @@ async function waitForObject(sdk, objectPath, expected) {
   const precheck = await fetch(`${supabaseUrl}/functions/v1/test-phone-auth`, {
     method: 'POST',
     headers: { apikey: publishableKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'verify', phone, code: '123456', mode: 'login' }),
+    body: JSON.stringify({ action: 'verify', phone, code: testOtp, mode: 'login' }),
   });
   assert.equal(precheck.status, 404, 'disposable phone must be unused before the signup smoke');
 
@@ -68,7 +70,7 @@ async function waitForObject(sdk, objectPath, expected) {
     const referrerAuth = await fetch(`${supabaseUrl}/functions/v1/test-phone-auth`, {
       method: 'POST',
       headers: { apikey: publishableKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'verify', phone: referrerPhone, code: '123456', mode: 'login' }),
+      body: JSON.stringify({ action: 'verify', phone: referrerPhone, code: testOtp, mode: 'login' }),
     });
     assert.equal(referrerAuth.status, 200, 'controlled female referrer must be login-ready');
     const referrerSession = await referrerAuth.json();
@@ -123,8 +125,8 @@ async function waitForObject(sdk, objectPath, expected) {
     await dialog.getByRole('button', { name: '동의하고 다음으로', exact: true }).click();
     await dialog.locator('#auth-phone').fill(phone);
     await dialog.getByRole('button', { name: '인증번호 요청', exact: true }).click();
-    await dialog.getByRole('button', { name: '테스트 OTP 입력', exact: true }).click();
-    await dialog.getByRole('button', { name: 'Supabase에서 인증 확인', exact: true }).click();
+    await dialog.locator('#auth-otp').fill(testOtp);
+    await dialog.getByRole('button', { name: '인증하고 가입 계속하기', exact: true }).click();
     await dialog.locator('#auth-real-name').waitFor();
 
     const initialSubmit = dialog.getByRole('button', { name: '사진과 기본 프로필 저장하고 가입 완료', exact: true });

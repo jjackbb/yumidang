@@ -20,7 +20,7 @@ export function EventsView({ now, onClose, onSelectEvent }: { now: Date; onClose
     setWeek(1);
   };
   const events = eventsStartingInWeek(sampleEventsForMonth(month.year, month.month), month.year, month.month, week);
-  return <div role="dialog" aria-modal="true" aria-label="이벤트 전체보기" className="fixed inset-0 z-40 mx-auto max-w-[440px] bg-white overflow-y-auto pb-10">
+  return <div role="dialog" aria-modal="true" aria-label="이벤트 전체보기" onKeyDown={event => { if (event.key === 'Escape') onClose(); }} className="fixed inset-0 z-40 mx-auto max-w-[440px] bg-white overflow-y-auto pb-10">
     <header className="h-16 flex items-center gap-3 px-4 border-b border-gray-100">
       <button aria-label="이벤트 전체보기 닫기" onClick={onClose} className="p-2"><ArrowLeft size={22} /></button>
       <h1 className="text-lg font-bold">주차별 이벤트</h1>

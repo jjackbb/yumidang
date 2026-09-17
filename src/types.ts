@@ -117,6 +117,10 @@ export interface MeetupPost {
   author: string;
   authorId?: string;
   avatar: string;
+  /** Authenticated discovery metadata. Never populated for anonymous visitors. */
+  authorGender?: 'female' | 'male';
+  /** Current full age returned by the server; list cards render only an age band. */
+  authorAge?: number;
   time: string;
   location: string;
   publicLocation?: string;
@@ -272,7 +276,8 @@ export interface JoinRequest {
   requesterId: string;
   requesterName: string;
   requesterAvatar: string;
-  requesterSugar: number;
+  requesterSugar: number | null;
+  requesterAge?: number;
   message: string;
   status: 'pending' | 'reconfirming' | 'accepted' | 'rejected' | 'cancelled' | 'matched_with_other' | 'post_closed' | 'post_expired' | 'post_deleted' | 'change_declined' | 'match_cancelled';
   conditionSnapshot?: PostConditions;

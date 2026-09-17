@@ -5,6 +5,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/Users/b/.npm/_np
 
 const executablePath = process.env.BROWSER_EXECUTABLE || '/Users/b/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell';
 const url = process.env.CHECK_URL || 'http://127.0.0.1:3000/';
+const testPhone = process.env.LIVE_TEST_PHONE;
+const testOtp = process.env.TEST_PHONE_OTP;
+assert.match(testPhone || '', /^\d{11}$/, 'LIVE_TEST_PHONE must contain a controlled test number');
+assert.match(testOtp || '', /^\d{6}$/, 'TEST_PHONE_OTP must contain the configured six-digit code');
 const defaultTitles = [
   '성수역 팝업스토어 같이 구경해요',
   '홍대 돈까스 저녁 식사 동행 구해요',
@@ -38,11 +42,11 @@ const targetTitle = process.env.TARGET_TITLE || expectedTitles[0];
     await detail.getByRole('button', { name: '공고 상세 닫기', exact: true }).click();
 
     await page.locator('header').getByRole('button', { name: '로그인', exact: true }).click();
-    await page.locator('#auth-phone').fill('01055555555');
+    await page.locator('#auth-phone').fill(testPhone);
     await page.getByRole('button', { name: '인증번호 요청', exact: true }).click();
     await page.locator('#auth-otp').waitFor();
-    await page.getByRole('button', { name: '테스트 OTP 입력', exact: true }).click();
-    await page.getByRole('button', { name: 'Supabase에서 인증 확인', exact: true }).click();
+    await page.locator('#auth-otp').fill(testOtp);
+    await page.getByRole('button', { name: '인증하고 로그인', exact: true }).click();
     await page.getByRole('dialog', { name: '로그인', exact: true }).waitFor({ state: 'detached' });
 
     await page.getByText(targetTitle, { exact: true }).first().click();

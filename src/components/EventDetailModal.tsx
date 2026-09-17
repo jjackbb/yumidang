@@ -29,7 +29,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
   const status = eventStatus(event, now);
   return (
-    <div role="dialog" aria-modal="true" aria-label="이벤트 상세" inert={isCovered} className="fixed inset-0 z-50 bg-[#f8f9fc] flex justify-center animate-in slide-in-from-right duration-250 text-left selection:bg-purple-100">
+    <div role="dialog" aria-modal="true" aria-label="이벤트 상세" inert={isCovered} onKeyDown={event => { if (event.key === 'Escape') onClose(); }} className="fixed inset-0 z-50 bg-[#f8f9fc] flex justify-center animate-in slide-in-from-right duration-250 text-left selection:bg-purple-100">
       {/* Mobile Page Container */}
       <div className="w-full max-w-[440px] h-full bg-[#f8f9fc] flex flex-col relative shadow-2xl overflow-hidden">
         {/* Top App Header */}

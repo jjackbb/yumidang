@@ -179,7 +179,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                     className="mt-0.5 text-red-600 focus:ring-red-500"
                   />
                   <div className="text-xs">
-                    <span className="font-bold block text-red-600">위급 상황 / 신변 위협 (긴급 SOS)</span>
+                    <span className="font-bold block text-red-600">위급 상황 / 신변 위협</span>
                     <span className="text-[11px] text-gray-500">
                       즉각적인 신변 위협 시 즉시 경찰(112)에 전화하세요.
                     </span>

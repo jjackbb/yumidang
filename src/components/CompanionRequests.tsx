@@ -5,6 +5,7 @@ import { ConditionReview } from './ConditionReview';
 import { DEMO_USER_ID } from '../data/demoIdentity';
 import { isOpenRequest } from '../utils/postLifecycle';
 import { requestStatusLabel } from '../utils/conversations';
+import { formatUserDateTime } from '../utils/calendar';
 import { requestEndedReason } from '../utils/myActivity';
 
 export type RequestTab = 'sent' | 'received';
@@ -105,7 +106,7 @@ export function CompanionRequests({
                 {labels[request.status]}
               </span>
               <span className="text-[11px] text-gray-400">
-                {request.createdAt}
+                {formatUserDateTime(request.createdAt)}
               </span>
             </div>
             <button
@@ -145,7 +146,7 @@ export function CompanionRequests({
                   {request.requesterName}
                 </span>
                 <span className="text-xs text-amber-600">
-                  당도 {request.requesterSugar}
+                  {request.requesterSugar === null ? '당도 정보 없음' : `당도 ${request.requesterSugar}`}{request.requesterAge ? ` · 만 ${request.requesterAge}세` : ''}
                 </span>
                 <span className="ml-auto text-[11px] text-[#6c2cf5]">
                   프로필 보기 →

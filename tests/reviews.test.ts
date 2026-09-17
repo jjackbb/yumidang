@@ -54,7 +54,11 @@ test('reviews stay hidden for 24 hours, then mutual or deadline release applies'
   assert.equal(deadlineState.reviewsReleased, true);
   assert.equal(deadlineState.releaseReason, 'deadline');
   const paired = [...oneSide, review('guest', 'host')];
-  assert.equal(completionReviewState(appointment, 'host', [completion('host')], paired, new Date(end.getTime() + REVIEW_HOLD_MS - 1)).reviewsReleased, false);
+  const pairedOnHold = completionReviewState(appointment, 'host', [completion('host')], paired, new Date(end.getTime() + REVIEW_HOLD_MS - 1));
+  assert.equal(pairedOnHold.reviewsReleased, false);
+  assert.equal(pairedOnHold.hasOtherReview, true);
+  assert.match(pairedOnHold.reason, /양쪽 평가가 모두 제출/);
+  assert.doesNotMatch(pairedOnHold.reason, /상대 평가.*도착하면/);
   assert.equal(completionReviewState(appointment, 'host', [completion('host')], paired, new Date(end.getTime() + REVIEW_HOLD_MS)).reviewsReleased, true);
   assert.deepEqual(releasedReviewsFor('guest', oneSide), []);
   assert.deepEqual(releasedReviewsFor('guest', paired).map(item => item.id), ['r-host']);

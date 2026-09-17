@@ -27,7 +27,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
   const visible = sortAndFilterNotifications(notifications, filter);
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="알림 목록" className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
+    <div role="dialog" aria-modal="true" aria-label="알림 목록" onClick={onClose} onKeyDown={event => { if (event.key === 'Escape') onClose(); }} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
       <div
         className="bg-white w-full max-w-[440px] rounded-t-[28px] sm:rounded-[28px] max-h-[85vh] overflow-y-auto shadow-2xl animate-in slide-in-from-bottom duration-300 text-left"
         onClick={(e) => e.stopPropagation()}

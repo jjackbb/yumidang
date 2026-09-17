@@ -27,6 +27,12 @@ import { ConditionReview } from './ConditionReview';
 import { isConfirmedAppointment, isOpenRequest } from '../utils/postLifecycle';
 import { DEMO_USER_ID } from '../data/demoIdentity';
 
+const GREETING_SUGGESTIONS = [
+  '안녕하세요! 공고 보고 연락드렸어요.',
+  '반가워요. 약속 시간과 장소를 확인하고 싶어요.',
+  '함께 즐거운 동행 만들어 봐요!',
+];
+
 interface ChatViewProps {
   room: ChatRoom;
   user: CurrentUser;
@@ -152,6 +158,9 @@ export function ChatView({
                 ? '프로필 보기'
                 : `당도 ${partner.sugarContent} · 프로필 보기`}
             </span>
+            {(partner.gender || partner.ageGroup) && <span className="block text-[10px] text-gray-500">
+              {[partner.gender === 'female' ? '여성' : partner.gender === 'male' ? '남성' : '', partner.ageGroup].filter(Boolean).join(' · ')}
+            </span>}
           </span>
         </button>
         {appointment && isConfirmedAppointment(appointment) && (
@@ -193,7 +202,7 @@ export function ChatView({
           <ChevronRight size={15} className="shrink-0 text-gray-400" />
         </button>
         <p className="text-[10px] text-gray-500 mt-1">
-          {appointment?.dateTime || post?.time || '삭제된 공고입니다.'}
+          {appointment?.dateTime || post?.time || '삭제된 공고입니다.'}{(appointment?.location || post?.location) ? ` · ${appointment?.location || post?.location}` : ''}
         </p>
         {pending && (
           <div className="flex gap-2 mt-3">
@@ -385,12 +394,16 @@ export function ChatView({
           {status.label} · 이전 대화는 볼 수 있지만 새 메시지는 보낼 수 없어요.
         </p>
       ) : (
+        <div className="bg-white border-t border-gray-100 shrink-0">
+          <div className="flex gap-1.5 overflow-x-auto px-3 pt-3 pb-1" aria-label="첫 인사말 추천">
+            {GREETING_SUGGESTIONS.map(greeting => <button key={greeting} type="button" onClick={() => onDraft(greeting)} className="shrink-0 rounded-full bg-purple-50 px-3 py-1.5 text-[11px] font-semibold text-[#6c2cf5]">{greeting}</button>)}
+          </div>
         <form
           onSubmit={(event) => {
             event.preventDefault();
             if (room.draft.trim()) onSend(room.draft.trim());
           }}
-          className="bg-white p-3 flex gap-2 items-end border-t border-gray-100 shrink-0"
+          className="p-3 flex gap-2 items-end"
         >
           {appointment && isConfirmedAppointment(appointment) && (
             <button
@@ -429,6 +442,7 @@ export function ChatView({
             <Send size={17} />
           </button>
         </form>
+        </div>
       )}
       {proposalOpen && (
         <div
@@ -436,10 +450,13 @@ export function ChatView({
           aria-modal="true"
           aria-label="일정 장소 변경 제안"
           className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+          onClick={() => setProposalOpen(false)}
+          onKeyDown={event => { if (event.key === 'Escape') setProposalOpen(false); }}
         >
           <form
             onSubmit={submitProposal}
             className="bg-white rounded-3xl p-5 max-w-[400px] w-full space-y-4"
+            onClick={event => event.stopPropagation()}
           >
             <div className="flex justify-between">
               <h2 className="font-bold text-sm">일정·장소 변경 제안</h2>

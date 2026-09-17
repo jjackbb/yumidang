@@ -1,7 +1,8 @@
 // Converts Supabase rows into the shapes the existing prototype screens already render.
 // No sample values are invented: fields the backend does not have stay empty or use existing app policy defaults.
-import type { Appointment, AppointmentReview, ChatMember, ChatRoom, CompletionConfirmation, JoinRequest, MeetupPost, PartnerGender } from '../types.ts';
+import type { Appointment, AppointmentReview, ChatMember, ChatRoom, CompletionConfirmation, JoinRequest, MeetupPost, NotificationItem, PartnerGender } from '../types.ts';
 import { formatMeetupRange } from '../utils/meetupLifecycle.ts';
+import { formatUserDateTime } from '../utils/calendar.ts';
 import { avatarSrc } from '../utils/profile.ts';
 import type { AppointmentState, AppointmentStatus, RequestStatus, ReviewState } from './api.ts';
 
@@ -12,8 +13,9 @@ export interface LivePostRow {
   starts_at: string; ends_at: string; recruitment_ends_at: string; public_area: string;
   preference_note: string | null; tags: string[]; status: MeetupPost['status']; partner_gender?: PartnerGender;
 }
-export interface AuthorCard { post_id: string; author_id: string; masked_name: string; avatar_url: string | null }
+export interface AuthorCard { post_id: string; author_id: string; masked_name: string; avatar_url: string | null; gender?: 'female' | 'male'; age?: number }
 export interface JoinRow { id: string; post_id: string; requester_id: string; message: string; status: RequestStatus; created_at: string; updated_at: string }
+export interface NotificationRow { id: string; recipient_id: string; kind: 'join_request'; join_request_id: string; created_at: string; read_at: string | null }
 export interface AppointmentRow { id: string; post_id: string; join_request_id: string; status: AppointmentStatus; confirmed_at: string; completed_at: string | null }
 export interface MessageRow { id: string; join_request_id: string; sender_id: string; content: string; created_at: string }
 export type ReviewStateRow = ReviewState;
@@ -42,6 +44,8 @@ export function toMeetupPost(row: LivePostRow, card: AuthorCard | undefined, exa
     author: card?.masked_name || '작성자',
     authorId: row.author_id,
     avatar: avatarOrPlaceholder(card?.avatar_url),
+    authorGender: card?.gender,
+    authorAge: card?.age,
     location: row.public_area,
     publicLocation: '',
     // Present only when RLS returned it (author or confirmed companion).
@@ -57,7 +61,7 @@ export function toMeetupPost(row: LivePostRow, card: AuthorCard | undefined, exa
   };
 }
 
-export function toJoinRequest(row: JoinRow, post: MeetupPost | undefined, requester: { name: string; avatar: string }): JoinRequest {
+export function toJoinRequest(row: JoinRow, post: MeetupPost | undefined, requester: { name: string; avatar: string; age?: number }): JoinRequest {
   return {
     id: row.id,
     hostId: post?.authorId || '',
@@ -66,10 +70,28 @@ export function toJoinRequest(row: JoinRow, post: MeetupPost | undefined, reques
     requesterId: row.requester_id,
     requesterName: requester.name,
     requesterAvatar: requester.avatar,
-    requesterSugar: NEW_USER_SUGAR_POLICY,
+    requesterSugar: null,
+    requesterAge: requester.age,
     message: row.message,
     status: REQUEST_STATUS_TO_SCREEN[row.status],
     createdAt: row.created_at,
+  };
+}
+
+export function toNotification(row: NotificationRow, request: JoinRequest | undefined): NotificationItem {
+  return {
+    id: row.id,
+    recipientId: row.recipient_id,
+    createdAt: row.created_at,
+    title: '새 동행 신청이 도착했어요',
+    description: request?.postTitle ? `“${request.postTitle}” 신청 내용을 확인하세요.` : '새 신청 내용을 확인하세요.',
+    time: formatUserDateTime(row.created_at),
+    read: Boolean(row.read_at),
+    type: 'matching',
+    action: 'match_requests',
+    roomId: `room-${row.join_request_id}`,
+    targetType: 'room',
+    targetId: `room-${row.join_request_id}`,
   };
 }
 

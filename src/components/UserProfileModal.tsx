@@ -94,6 +94,7 @@ export function UserProfileModal({ profile, onClose, backLabel = '공고로 돌�
   return <div role="dialog" aria-modal="true" aria-label={selfPreview ? '내 공개 프로필 미리보기' : `${profile.displayName}님의 상세 프로필`}
     data-profile-variant={variant} data-profile-id={profile.id}
     className="fixed inset-0 z-[60] flex justify-center bg-black/60 sm:p-4 sm:items-center"
+    onClick={onClose}
     onKeyDown={event => {
       if (event.key === 'Escape') { event.stopPropagation(); onClose(); }
       if (event.key !== 'Tab' || !panelRef.current) return;
@@ -103,7 +104,7 @@ export function UserProfileModal({ profile, onClose, backLabel = '공고로 돌�
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     }}>
-    <div ref={panelRef} className="w-full max-w-[440px] bg-[#f8f9fc] h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto sm:rounded-[28px] text-left shadow-2xl">
+    <div ref={panelRef} onClick={event => event.stopPropagation()} className="w-full max-w-[440px] bg-[#f8f9fc] h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto sm:rounded-[28px] text-left shadow-2xl">
       <header className="sticky top-0 bg-white/95 backdrop-blur-md p-4 border-b border-gray-100 z-10 flex items-center justify-between gap-2">
         <button ref={backRef} onClick={onClose} className="flex items-center gap-2 text-sm font-bold text-gray-800 rounded-lg focus-visible:outline-2 focus-visible:outline-purple-500">
           <ArrowLeft size={19} /> {backLabel}
@@ -138,7 +139,7 @@ export function UserProfileModal({ profile, onClose, backLabel = '공고로 돌�
           </section>
           <section className="bg-white rounded-3xl p-5"><h3 className="text-sm font-bold mb-3">받은 동행 후기 <span className="text-[#6c2cf5]">{profile.reviews.length}</span></h3><p data-review-summary className="text-xs text-gray-500 mb-1">{reviewSummary}</p><Reviews profile={profile} /></section>
         </>}
-        {!profile.isSample && profile.sugarContent !== null && <p className="text-[11px] text-gray-400">당도 합산·하한·갱신 시점은 논의 중이라 자동으로 바뀌지 않아요.</p>}
+        {!profile.isSample && <details className="rounded-xl bg-gray-100 p-3 text-[11px] text-gray-600"><summary className="cursor-pointer font-bold">당도는 어떤 정보인가요?</summary><p className="mt-2 leading-relaxed">현재 가입 시 부여된 기본값만 표시하며, 평가·신고에 따른 합산 방식과 갱신 시점은 아직 확정되지 않아 자동 반영하지 않아요. 값이 없으면 ‘당도 정보 없음’으로 표시합니다.</p></details>}
         {actionBar}
       </div>
     </div>

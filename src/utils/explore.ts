@@ -2,6 +2,8 @@ import type { MeetupPost } from '../types.ts';
 import { koreaDateKey } from './calendar.ts';
 
 export type ExploreDateFilter = 'all' | 'today' | 'week' | 'date';
+export type ExploreGenderFilter = 'all' | 'female' | 'male';
+export type ExploreAgeFilter = 'all' | '20s' | '30s' | '40plus';
 export interface ExploreFilters {
   category: string | null;
   region: string;
@@ -9,6 +11,9 @@ export interface ExploreFilters {
   /** `YYYY-MM-DD`, used with `date: 'date'`. */
   dateValue: string;
   query: string;
+  /** Discovery preferences only. Server-side application eligibility remains separate. */
+  gender: ExploreGenderFilter;
+  age: ExploreAgeFilter;
 }
 
 export const EXPLORE_REGIONS = [
@@ -21,7 +26,9 @@ export const EXPLORE_REGIONS = [
 ];
 export const EXPLORE_DATE_LABELS: Record<ExploreDateFilter, string> = { all: '전체 날짜', today: '오늘', week: '7일 이내', date: '날짜 지정' };
 
-export const emptyExploreFilters = (): ExploreFilters => ({ category: null, region: 'all', date: 'all', dateValue: '', query: '' });
+export const emptyExploreFilters = (): ExploreFilters => ({ category: null, region: 'all', date: 'all', dateValue: '', query: '', gender: 'all', age: 'all' });
+
+export const ageBand = (age: number | undefined) => !age || age < 20 ? '' : age < 30 ? '20대' : age < 40 ? '30대' : '40대 이상';
 
 export const addDaysToKey = (key: string, days: number) => {
   const [year, month, day] = key.split('-').map(Number);
@@ -49,6 +56,11 @@ export function filterPosts(posts: MeetupPost[], filters: ExploreFilters, now: D
       if (filters.date === 'date' && key !== filters.dateValue) return false;
     }
     if (query && ![post.title, post.location, post.publicLocation || '', ...post.tags].some(value => value.toLowerCase().includes(query))) return false;
+    if (filters.gender !== 'all' && post.authorGender !== filters.gender) return false;
+    if (filters.age !== 'all') {
+      const band = ageBand(post.authorAge);
+      if ((filters.age === '20s' && band !== '20대') || (filters.age === '30s' && band !== '30대') || (filters.age === '40plus' && band !== '40대 이상')) return false;
+    }
     return true;
   });
 }
@@ -60,5 +72,7 @@ export function activeFilterLabels(filters: ExploreFilters) {
   if (filters.date === 'date' && filters.dateValue) labels.push(filters.dateValue);
   else if (filters.date !== 'all' && filters.date !== 'date') labels.push(EXPLORE_DATE_LABELS[filters.date]);
   if (filters.query.trim()) labels.push(`“${filters.query.trim()}”`);
+  if (filters.gender !== 'all') labels.push(filters.gender === 'female' ? '여성 작성자' : '남성 작성자');
+  if (filters.age !== 'all') labels.push({ '20s': '20대 작성자', '30s': '30대 작성자', '40plus': '40대 이상 작성자' }[filters.age]);
   return labels;
 }

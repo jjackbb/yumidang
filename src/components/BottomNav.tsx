@@ -55,7 +55,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           </span>
         </button>
 
-        {/* Tab 2: U (주변/둘러보기) */}
+        {/* Tab 2: 둘러보기 */}
         <button
           id="nav-tab-explore"
           onClick={() => onChangeTab('explore')}
@@ -73,7 +73,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               activeTab === 'explore' ? 'font-bold text-[#6c2cf5]' : 'text-gray-600'
             }`}
           >
-            U
+            둘러보기
           </span>
         </button>
 

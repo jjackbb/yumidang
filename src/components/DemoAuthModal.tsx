@@ -24,13 +24,12 @@ type SignUpStep = 'terms' | 'phone' | 'basic';
 // Prototype-only codes. No SMS or email is ever sent.
 export const SAMPLE_OTP = '123456';
 export const SAMPLE_EMAIL_CODE = '246810';
-const SAMPLE_LOGIN_PHONE = '01000000001';
 
 export const DemoAuthModal: React.FC<DemoAuthModalProps> = ({ isOpen, onClose, onAuthSuccess, users, now = new Date() }) => {
   const [mode, setMode] = useState<AuthMode>('signin');
   const [step, setStep] = useState<SignUpStep>('terms');
 
-  const [phone, setPhone] = useState(SAMPLE_LOGIN_PHONE);
+  const [phone, setPhone] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [timerSeconds, setTimerSeconds] = useState(180);
@@ -70,7 +69,7 @@ export const DemoAuthModal: React.FC<DemoAuthModalProps> = ({ isOpen, onClose, o
   const resetOtp = () => { setOtpSent(false); setOtpCode(''); setTimerActive(false); setTimerSeconds(180); };
   const resetForm = (nextMode: AuthMode = 'signin') => {
     setMode(nextMode); setStep('terms');
-    setPhone(nextMode === 'signin' ? SAMPLE_LOGIN_PHONE : ''); resetOtp();
+    setPhone(''); resetOtp();
     setRealName(''); setBirthDate(''); setGender(null); setNeighborhood(NEIGHBORHOOD_OPTIONS[0]);
     setMaleRoute('referral'); setReferralCode(''); setWorkEmail(''); setEmailSent(false); setEmailCode('');
     setAgreedAge(false); setAgreedService(false); setAgreedPrivacy(false); setAgreedSafety(false);
@@ -82,6 +81,10 @@ export const DemoAuthModal: React.FC<DemoAuthModalProps> = ({ isOpen, onClose, o
   if (!isOpen) return null;
 
   const close = () => { onClose(); resetForm(); };
+  const requestClose = () => {
+    const hasDraft = Boolean(phone || otpCode || realName || birthDate || gender || referralCode || workEmail || emailCode || agreedAge || agreedService || agreedPrivacy || agreedSafety);
+    if (!hasDraft || window.confirm('입력 중인 내용을 삭제하고 인증 창을 닫을까요?')) close();
+  };
   const existingByPhone = (value: string) => users.find(user => user.phone === value);
 
   const handleSendOtp = () => {
@@ -91,7 +94,7 @@ export const DemoAuthModal: React.FC<DemoAuthModalProps> = ({ isOpen, onClose, o
     if (mode === 'signup' && existingByPhone(phone)) { setErrorMessage('이미 가입된 번호예요. 로그인으로 돌아가 주세요.'); return; }
     setErrorMessage('');
     setOtpSent(true); setOtpCode(''); setTimerSeconds(180); setTimerActive(true);
-    setInfoMessage(`체험 모드라 실제 문자는 보내지 않았어요. 예시 인증번호 ${SAMPLE_OTP}을 입력하면 다음 단계로 넘어가요.`);
+    setInfoMessage('체험 모드라 실제 문자는 보내지 않았어요. 테스트코드 입력을 누르면 다음 단계로 넘어갈 수 있어요.');
   };
 
   const handleVerifyOtp = () => {
@@ -110,12 +113,18 @@ export const DemoAuthModal: React.FC<DemoAuthModalProps> = ({ isOpen, onClose, o
     setStep('basic');
     setInfoMessage('번호 확인(체험)을 마쳤어요. 기본 정보를 입력해 주세요. 실제 휴대폰 인증 배지는 부여되지 않아요.');
   };
+  const signInSampleAccount = () => {
+    const account = users.find(user => user.isSample);
+    if (!account) { setErrorMessage('사용할 수 있는 체험 계정이 없어요.'); return; }
+    onAuthSuccess({ ...account, isLoggedIn: true }, 'signin');
+    close();
+  };
 
   const handleSendEmail = () => {
     const problem = validateWorkEmail(workEmail);
     if (problem) { setErrorMessage(problem); return; }
     setErrorMessage(''); setEmailSent(true);
-    setInfoMessage(`체험 모드라 실제 메일은 보내지 않았어요. 예시 확인 코드 ${SAMPLE_EMAIL_CODE}을 입력해 주세요.`);
+    setInfoMessage('체험 모드라 실제 메일은 보내지 않았어요. 화면의 테스트 확인 기능을 이용해 주세요.');
   };
 
   const handleCompleteSignUp = (e: React.FormEvent) => {
@@ -201,7 +210,8 @@ export const DemoAuthModal: React.FC<DemoAuthModalProps> = ({ isOpen, onClose, o
 
   return (
     <div role="dialog" aria-modal="true" aria-label={mode === 'signin' ? '휴대폰 로그인' : '회원가입'}
-      onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } }}
+      onClick={requestClose}
+      onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); requestClose(); } }}
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-[440px] rounded-t-[28px] sm:rounded-[28px] max-h-[92vh] overflow-y-auto shadow-2xl animate-in slide-in-from-bottom duration-300 text-left" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white/95 backdrop-blur-md px-5 py-4 flex items-center justify-between shadow-xs z-10">
@@ -209,7 +219,7 @@ export const DemoAuthModal: React.FC<DemoAuthModalProps> = ({ isOpen, onClose, o
             <div className="w-7 h-7 rounded-lg bg-[#6c2cf5] flex items-center justify-center text-white"><ShieldCheck className="w-4 h-4" /></div>
             <h3 className="text-[17px] font-bold text-gray-900">{title}</h3>
           </div>
-          <button aria-label="로그인 창 닫기" onClick={close} className="p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"><X className="w-5 h-5" /></button>
+          <button aria-label="로그인 창 닫기" onClick={requestClose} className="p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"><X className="w-5 h-5" /></button>
         </div>
 
         {errorMessage && <div role="alert" className="mx-5 mt-4 p-3 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-600 flex items-start gap-2 animate-in fade-in"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /><span>{errorMessage}</span></div>}
@@ -256,7 +266,7 @@ export const DemoAuthModal: React.FC<DemoAuthModalProps> = ({ isOpen, onClose, o
                 <span className="text-[11px] font-semibold text-[#6c2cf5] bg-[#f0edff] px-2 py-0.5 rounded-full">공개 표기: {maskRealName(realName.trim()) || '미입력'}{age ? ` · ${age}` : ''}</span>
               </div>
               {/* Validated on submit only, so Korean IME composition is never interrupted. */}
-              <input id="auth-name" type="text" autoComplete="name" aria-label="실명" placeholder="예: 조유미" value={realName}
+              <input id="auth-name" type="text" autoComplete="name" aria-label="실명" placeholder="한글 실명을 입력해 주세요" value={realName}
                 onChange={(e) => { setRealName(e.target.value); setErrorMessage(''); }}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 focus:bg-white text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#6c2cf5]/30 focus:border-[#6c2cf5]" />
               <p className="text-[11px] text-gray-400 mt-1">실명은 공개되지 않고 가운데를 가린 이름으로만 보여요.</p>
@@ -321,10 +331,12 @@ export const DemoAuthModal: React.FC<DemoAuthModalProps> = ({ isOpen, onClose, o
         </div>}
 
         {mode === 'signin' && <div className="p-5 space-y-4">
+          <button type="button" onClick={signInSampleAccount} className="w-full rounded-xl bg-[#6c2cf5] py-3.5 text-sm font-bold text-white">체험 계정으로 바로 시작</button>
+          <div className="flex items-center gap-2 text-[11px] text-gray-400"><span className="h-px flex-1 bg-gray-200" /><span>또는 가입된 번호로 확인</span><span className="h-px flex-1 bg-gray-200" /></div>
           {phoneInput('가입된 휴대폰 번호')}
           {otpBlock('인증 확인 및 로그인')}
           {sampleNotice}
-          <p className="text-[11px] text-gray-400">예시 회원 조*미의 번호가 채워져 있어요. 새로 가입한 번호로도 로그인할 수 있어요.</p>
+          <p className="text-[11px] text-gray-400">체험 계정은 실제 개인정보나 인증 상태를 사용하지 않아요.</p>
           <div className="pt-2 text-center">
             <button type="button" onClick={() => resetForm('signup')} className="text-xs text-gray-500 hover:text-[#6c2cf5] font-medium">
               계정이 없으신가요? <span className="underline font-bold text-[#6c2cf5]">휴대폰 본인인증으로 가입</span>

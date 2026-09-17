@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { X, Send, Calendar, MapPin, AlertCircle, ShieldCheck, Sparkles, User } from 'lucide-react';
 import { MeetupPost, Appointment, CurrentUser } from '../types';
 import { overlappingAppointments } from '../utils/postLifecycle';
@@ -14,6 +14,8 @@ interface JoinRequestModalProps {
   onSubmitRequest: (postId: string, message: string) => boolean | Promise<boolean>;
 }
 
+const DEFAULT_MESSAGE = '안녕하세요! 공고 내용 확인하고 취향이 잘 맞을 것 같아 신청드립니다. 약속 시간 철저히 지키겠습니다 :)';
+
 export const JoinRequestModal: React.FC<JoinRequestModalProps> = ({
   post,
   isOpen,
@@ -22,11 +24,25 @@ export const JoinRequestModal: React.FC<JoinRequestModalProps> = ({
   appointments,
   onSubmitRequest,
 }) => {
-  const [message, setMessage] = useState(
-    '안녕하세요! 공고 내용 확인하고 취향이 잘 맞을 것 같아 신청드립니다. 약속 시간 철저히 지키겠습니다 :)'
-  );
+  const [message, setMessage] = useState(DEFAULT_MESSAGE);
 
   const [sending, setSending] = useState(false);
+
+  const requestClose = useCallback(() => {
+    if (sending) return;
+    if (message !== DEFAULT_MESSAGE && !window.confirm('작성 중인 신청 메시지가 있어요. 내용을 버리고 닫을까요?')) return;
+    onClose();
+  }, [message, onClose, sending]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') requestClose();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, requestClose]);
+
   if (!isOpen || !post) return null;
 
   const conflicts = overlappingAppointments(appointments, currentUser ? [currentUser.id] : [], post.startsAt, post.endsAt);
@@ -37,11 +53,14 @@ export const JoinRequestModal: React.FC<JoinRequestModalProps> = ({
     setSending(true);
     const sent = await onSubmitRequest(post.id, message.trim());
     setSending(false);
-    if (sent) onClose();
+    if (sent) {
+      setMessage(DEFAULT_MESSAGE);
+      onClose();
+    }
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="동행 참여 신청" className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
+    <div role="dialog" aria-modal="true" aria-label="동행 참여 신청" onClick={requestClose} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
       <div
         className="bg-white w-full max-w-[440px] rounded-t-[28px] sm:rounded-[28px] max-h-[90vh] overflow-y-auto shadow-2xl animate-in slide-in-from-bottom duration-300 text-left"
         onClick={(e) => e.stopPropagation()}
@@ -56,7 +75,7 @@ export const JoinRequestModal: React.FC<JoinRequestModalProps> = ({
             <h3 className="text-[17px] font-bold text-gray-900">1:1 동행 참여 신청</h3>
           </div>
           <button
-            onClick={onClose} aria-label="신청 창 닫기"
+            type="button" onClick={requestClose} aria-label="신청 창 닫기"
             className="p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <X className="w-5 h-5" />

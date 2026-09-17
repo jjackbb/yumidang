@@ -100,6 +100,7 @@ export function completionReviewState(
       ...common,
       reason: policy.canComplete ? '동행이 끝났어요. 한 명이 완료하면 동행 전체가 바로 완료돼요.' : '동행 종료 뒤 완료할 수 있어요.',
     };
+    if (hasOwnReview && hasOtherReview) return { ...common, reason: '양쪽 평가가 모두 제출됐어요. 24시간 공개 보류가 끝나면 함께 공개돼요.' };
     if (hasOwnReview) return { ...common, reason: '내 평가는 제출됐어요. 상대 평가가 먼저 도착하면 보류 종료 후, 아니면 평가 기한에 공개돼요.' };
     if (policy.reviewCanWrite) return { ...common, reason: '동행이 완료됐어요. 공개 보류 중에도 평가를 작성할 수 있어요.' };
     return { ...common, reason: '평가 작성 기간이 끝났거나 현재 평가를 작성할 수 없는 상태예요.' };
@@ -141,6 +142,7 @@ export function completionReviewState(
   if (now.getTime() < endMs) return { ...common, reason: `${formatSchedule(appointment.endsAt!)}부터 내 완료를 확인할 수 있어요.` };
   if (!appointmentCompleted) return { ...common, canComplete: true, reason: '동행이 끝났어요. 한 명이 완료하면 동행 전체가 바로 완료돼요.' };
   if (hasOwnReview && reviewsReleased) return { ...common, reason: hasOtherReview ? '양쪽 평가가 모두 제출되어 후기가 공개됐어요.' : '평가 기한이 끝나 제출된 후기가 공개됐어요.' };
+  if (hasOwnReview && hasOtherReview) return { ...common, reason: '양쪽 평가가 모두 제출됐어요. 24시간 공개 보류가 끝나면 함께 공개돼요.' };
   if (hasOwnReview) return { ...common, reason: '내 평가는 제출됐어요. 상대 평가가 먼저 도착하면 보류 종료 후, 아니면 평가 기한에 공개돼요.' };
   if (now.getTime() >= reviewDeadlineMs) return { ...common, reason: '평가 작성 기간이 끝났어요.' };
   return {

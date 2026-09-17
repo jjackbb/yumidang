@@ -104,4 +104,6 @@ export const liveApi = {
   raiseDispute: (id: string, reason: string) => unwrap(db().rpc('raise_appointment_dispute', { p_appointment_id: id, p_reason: reason })),
   reviewState: async (id: string) => (await unwrap<ReviewState[]>(db().rpc('get_appointment_review_state', { p_appointment_id: id })))[0],
   submitReview: async (id: string, rating: number, comment: string) => (await unwrap<ReviewState[]>(db().rpc('submit_appointment_review', { p_appointment_id: id, p_rating: rating, p_comment: comment.trim() || null })))[0],
+  markNotificationRead: (id: string) => unwrap(db().rpc('mark_my_notification_read', { p_notification_id: id })),
+  markAllNotificationsRead: () => unwrap(db().rpc('mark_all_my_notifications_read')),
 };

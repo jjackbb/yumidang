@@ -43,7 +43,7 @@ export const CategoryDetailModal: React.FC<CategoryDetailModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-40 bg-[#f7f8fc] flex justify-center animate-in slide-in-from-right duration-250 text-left selection:bg-purple-100">
+    <div role="dialog" aria-modal="true" aria-label={`${category.name} 동행 둘러보기`} onKeyDown={event => { if (event.key === 'Escape') onClose(); }} className="fixed inset-0 z-40 bg-[#f7f8fc] flex justify-center animate-in slide-in-from-right duration-250 text-left selection:bg-purple-100">
       {/* Mobile Page Container */}
       <div className="w-full max-w-[440px] h-full bg-[#f7f8fc] flex flex-col relative shadow-2xl overflow-hidden">
         {/* Top Minimal Header (실선 제거 및 부드러운 블러) */}

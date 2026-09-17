@@ -112,8 +112,17 @@ test('explore filters: category, region, today/7-day/date boundaries, search, ze
   assert.deepEqual(ids({ date: 'date', dateValue: '2099-09-22' }), ['day7']);
   assert.deepEqual(ids({ date: 'date', dateValue: '' }), ['today', 'day6', 'day7', 'nodate'], 'no date chosen yet');
   assert.deepEqual(ids({ query: '러닝' }), ['nodate']);
+  const demographicPosts = [
+    post({ id: 'f20', authorGender: 'female', authorAge: 27 }),
+    post({ id: 'm30', authorGender: 'male', authorAge: 35 }),
+    post({ id: 'f40', authorGender: 'female', authorAge: 44 }),
+  ];
+  const demographicIds = (patch: Partial<ReturnType<typeof emptyExploreFilters>>) => filterPosts(demographicPosts, { ...emptyExploreFilters(), ...patch }, now).map(item => item.id);
+  assert.deepEqual(demographicIds({ gender: 'female' }), ['f20', 'f40']);
+  assert.deepEqual(demographicIds({ age: '30s' }), ['m30']);
+  assert.deepEqual(demographicIds({ gender: 'female', age: '40plus' }), ['f40']);
   assert.deepEqual(ids({ category: '전시', region: 'seongdong' }), []);
-  assert.deepEqual(activeFilterLabels({ ...emptyExploreFilters(), category: '전시', region: 'jongno', date: 'week' }), ['전시', '종로구', '7일 이내']);
+  assert.deepEqual(activeFilterLabels({ ...emptyExploreFilters(), category: '전시', region: 'jongno', date: 'week', gender: 'female', age: '20s' }), ['전시', '종로구', '7일 이내', '여성 작성자', '20대 작성자']);
   assert.deepEqual(activeFilterLabels(emptyExploreFilters()), []);
   assert.equal(addDaysToKey('2099-12-30', 3), '2100-01-02');
 });

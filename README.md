@@ -1,6 +1,8 @@
 # 유미당 (YouMeDang) 🍯
 
-현재 상태 (2026-09-16): 브라우저 저장소를 사용하는 프론트엔드 프로토타입이다. 로그인·공고·신청·채팅·완료·평가는 시연 데이터이며 실제 서버 전송이나 다중 사용자 동기화를 수행하지 않는다. 새 백엔드는 별도 설계와 검증을 거쳐 연결한다.
+현재 상태 (2026-09-17): React/Vite 화면에 Supabase 사용자 흐름 1~9와 프로필 사진 필수 가입을 연결해 Production에 배포했다. 최신 구현·검증 기준은 [HANDOFF.md](./HANDOFF.md)와 [백엔드 상태](./docs/backend-implementation/STATE.md)이며, 과거 프로토타입 문서는 역사 자료다.
+
+다음 작업은 [현재 실행 프롬프트](./docs/prompts/START_HERE.md)에서 시작한다. 완료된 과거 프롬프트는 `docs/archive/completed-prompts/2026-09-17/`, 정책 원문과 남은 질문은 `docs/product-decisions/`에 분리했다.
 
 > **"너(You)와 나(Me)의 믿을 수 있는 1:1 라이프스타일 동행 매칭 플랫폼"**  
 > 취향 맞는 이웃과 함께하는 실시간 1:1 동행 매칭 및 라이프스타일 서비스
@@ -71,11 +73,11 @@ npm run preview
 
 ## 📂 프로젝트 구조
 
-기본 저장소는 [jjackbb/yumidang6](https://github.com/jjackbb/yumidang6)이며, 기본 브랜치는 `main`입니다.
+기본 저장소는 [jjackbb/yumidang](https://github.com/jjackbb/yumidang)이며, 기본 브랜치는 `main`입니다.
 Vercel 배포 설정은 `vercel.json`에 정의되어 있습니다: `npm ci`로 설치한 뒤 `npm run build`를 실행하고 `dist`를 배포합니다.
 
 ```
-yumidang6/
+yumidang/
 ├── public/               # 정적 에셋 (유미당 로고 이미지 등)
 │   └── logo.jpg
 ├── src/

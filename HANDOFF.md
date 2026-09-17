@@ -4,6 +4,18 @@
 작업 폴더: `/Users/b/Documents/Antigravity/yumidang`  
 현재 상태: **기존 `App.tsx` UI를 유지한 채 사용자 흐름 1~9 (회원가입 → 로그인 → 공고 → 상대 프로필 → 참여 요청 → 매칭 채팅 → 최종 확정 → 동행 완료 → 블라인드 상호 평가)을 Supabase에 연결했고, 원격 A/B/C/익명 브라우저 전체 사이클까지 PASS했다.** 최종 결과는 `docs/backend-implementation/HARNESS-REPORT.md`. 아래 "과거 기록" 절들은 기능 1·2 당시 기록이며 `nickname`, `3번부터 미구현` 등은 더 이상 최신이 아니다.
 
+## 최신 완료: UT 신청 알림 Expansion 적용·권한 검증 (2026-09-17, Codex)
+
+- 대상은 Supabase `bndguguarijmghnkenvt` 하나다. 적용 직전 `notifications` table/function/trigger/policy와 Realtime publication이 모두 0임을 확인했다.
+- `20260917122744_ut_notifications_and_discovery` 적용: 수신자 전용 알림 테이블/RLS, 신규 신청 trigger, 본인 읽음 RPC 2개, 인증 사용자용 작성자 성별·만 나이 조회 RPC, Realtime publication을 추가했다.
+- 기존 신청 backfill은 사용자 결정에 따라 제거했다. 적용 직후 `notifications` 0행을 확인했고 적용 이후 신규 신청부터 생성된다.
+- 실제 A/B/C 테스트 PASS: A의 신규 신청 알림은 작성자 B만 SELECT·Realtime 수신했고 A·제3자 C·익명은 조회하지 못했다. A의 단건 읽음과 C의 전체 읽음 RPC는 B의 알림을 바꾸지 못했고 B만 읽음 처리했다. 기존 로그인과 공개 공고 조회도 PASS했다.
+- 검증용 공고 1행, 신청 1행, 읽음 알림 1행을 추가했다. 기존 행은 수정·삭제하지 않았고 테스트 행도 삭제하지 않았다. 원문 전화번호·OTP·JWT·UUID는 출력·증거에 남기지 않았다.
+- 적용 후 advisor의 새 Performance INFO에 따라 forward-only `20260917141449_notifications_join_request_index`를 적용했다. 요청 당시 로컬 `20260917123159_notifications_join_request_index.sql`의 SQL만 실행했으며 MCP가 부여한 실제 원격 version에 파일명을 맞췄다. 인덱스는 valid/ready, 알림 행 수는 1행으로 불변, 외래키 미인덱스 finding은 0건이다. 적용 직후 사용 통계가 없어 같은 인덱스에 `unused_index` INFO가 표시되며 실제 부하 후 재평가한다.
+- Security advisor의 새 WARN 3건은 authenticated가 호출해야 하는 `SECURITY DEFINER` RPC를 탐지한 것이다. `PUBLIC`/`anon` 실행 회수, `auth.uid()`/수신자 조건, 실제 교차 사용자 테스트를 확인했다.
+- Git commit/push와 Vercel Production 배포는 수행하지 않았다. Production은 계속 기준 SHA `2433add0ac2c45521849864b454e5fcdc03236ab`이다.
+- 상세 기록: `docs/ut-improvements/IMPLEMENTATION-2026-09-17.md`. 원격 회귀: `tests/harness/ut-notifications.mjs`.
+
 ## 최신 완료: 프로필 사진 필수 원격 적용·운영 검증 (2026-09-17, Codex)
 
 - 대상은 Supabase `bndguguarijmghnkenvt`와 Vercel `jjackbb-projects/yumidang`이다. 존재하지 않는 `yumidang6`을 만들지 않았고 `.vercel/project.json`을 실제 `yumidang` 프로젝트 ID로 정정했다.

@@ -1,6 +1,6 @@
 {
-  "url": "http://127.0.0.1:4192/?demo=1",
-  "mode": "Frontend simulation; 이전 외부 백엔드 intercepted; no real messages or penalties",
+  "url": "http://127.0.0.1:4186/?demo=1",
+  "mode": "Frontend simulation; no real messages or penalties",
   "cases": [
     {
       "name": "close confirmation synchronizes Me chat and post without inventing a second member",
@@ -24,8 +24,7 @@
     },
     {
       "name": "cancellation requires a reason preserves history and disables future appointment actions",
-      "status": "FAIL",
-      "error": "locator.isDisabled: Timeout 7000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog', { name: '약속 상세', exact: true }).getByRole('button', { name: '동행 완료 처리', exact: true })\u001b[22m\n"
+      "status": "PASS"
     },
     {
       "name": "overlap warning allows returning then continuing without cancelling an old appointment",

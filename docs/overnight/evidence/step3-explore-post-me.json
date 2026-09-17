@@ -6,7 +6,7 @@
       "id": "E1",
       "name": "explore category/region/date filters, zero results, reset, return keeps filters",
       "status": "PASS",
-      "details": "all 13, 전시 3, +종로 3, +7일 3, 오늘 1, 지금 1"
+      "details": "all 14, 전시 3, +종로 3, +7일 3, 오늘 1, 지금 1"
     },
     {
       "id": "E1D",
@@ -36,7 +36,7 @@
       "id": "E5",
       "name": "apply → optional chat kept across tabs/reload → host accept → Me/home → cancel shows the same state on both sides",
       "status": "PASS",
-      "details": "request req-0533f0e7-85f5-42c9-81ec-1c1e5bc59d99: chat kept, accepted once, other candidate ended, cancel mirrored"
+      "details": "request req-3a6dd40f-d30a-4133-9164-ea444486411a: chat kept, accepted once, other candidate ended, cancel mirrored"
     },
     {
       "id": "E6",
@@ -46,7 +46,7 @@
     },
     {
       "id": "E7",
-      "name": "Me status and invitation skeleton at 1280×900",
+      "name": "Me status and invitation management at 1280×900",
       "status": "PASS",
       "details": "confirmed cards 4"
     }

@@ -2,33 +2,33 @@
   "features": {
     "preflight": {
       "status": "pass",
-      "runId": "run-codex-preflight1",
-      "updatedAt": "2026-09-16T23:50:27.928Z",
+      "runId": "run-fast-preflight-20260917",
+      "updatedAt": "2026-09-17T00:04:36.913Z",
       "lastPassedStep": "local migrations are named with remote versions",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-codex-preflight1/preflight.json",
+      "evidence": "docs/backend-implementation/evidence/run-fast-preflight-20260917/preflight.json",
       "counts": {
         "PASS": 7
       }
     },
     "feature-01-auth": {
       "status": "pass",
-      "runId": "run-ui-api1b",
-      "updatedAt": "2026-09-16T15:56:20.333Z",
+      "runId": "run-fast-auth1-20260917",
+      "updatedAt": "2026-09-17T00:04:53.148Z",
       "lastPassedStep": "logout revokes the refresh token",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-ui-api1b/feature-01-auth.json",
+      "evidence": "docs/backend-implementation/evidence/run-fast-auth1-20260917/feature-01-auth.json",
       "counts": {
         "PASS": 9
       }
     },
     "feature-02-login": {
       "status": "pass",
-      "runId": "run-ui-api1b",
-      "updatedAt": "2026-09-16T15:56:23.059Z",
+      "runId": "run-fast-auth2-20260917",
+      "updatedAt": "2026-09-17T00:05:09.133Z",
       "lastPassedStep": "refresh keeps the user; logout revokes only that session",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-ui-api1b/feature-02-login.json",
+      "evidence": "docs/backend-implementation/evidence/run-fast-auth2-20260917/feature-02-login.json",
       "counts": {
         "PASS": 6
       }
@@ -122,5 +122,5 @@
       }
     }
   },
-  "lastRunId": "run-codex-preflight1"
+  "lastRunId": "run-fast-auth2-20260917"
 }

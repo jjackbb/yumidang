@@ -152,6 +152,13 @@ test('expansion migration defines private bucket, owner policies, validating ver
   assert.doesNotMatch(sql, /drop function public\.complete_signup\(/);
 });
 
+test('contraction revokes only authenticated legacy signup execution', () => {
+  const sql = readFileSync(new URL('../supabase/migrations/20260917094753_disable_legacy_signup_without_avatar.sql', import.meta.url), 'utf8');
+  assert.match(sql, /revoke execute on function public\.complete_signup\(text,date,text,text,text\) from authenticated/);
+  assert.doesNotMatch(sql, /revoke[^;]*service_role/);
+  assert.doesNotMatch(sql, /drop function public\.complete_signup/);
+});
+
 test('storage adapter requests JPEG upload without upsert and centralizes signed URL creation', () => {
   const source = readFileSync(new URL('../src/profile/avatarStorage.ts', import.meta.url), 'utf8');
   assert.match(source, /contentType: 'image\/jpeg'/);

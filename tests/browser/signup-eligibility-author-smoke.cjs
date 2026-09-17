@@ -5,15 +5,19 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/Users/b/.npm/_np
 
 const executablePath = process.env.BROWSER_EXECUTABLE || '/Users/b/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell';
 const url = process.env.CHECK_URL || 'http://127.0.0.1:3000/';
-const targetTitle = '성수역 팝업스토어 같이 구경해요';
-const expectedTitles = [
-  targetTitle,
+const defaultTitles = [
+  '성수역 팝업스토어 같이 구경해요',
   '홍대 돈까스 저녁 식사 동행 구해요',
   '서울숲에서 가볍게 산책해요',
   '대학로에서 연극 한 편 같이 봐요',
   '용산에서 영화 보고 이야기 나눠요',
   '망원시장 먹거리 구경 같이 해요',
 ];
+const expectedTitles = process.env.EXPECTED_VISIBLE_TITLES
+  ? process.env.EXPECTED_VISIBLE_TITLES.split('|').filter(Boolean)
+  : defaultTitles;
+const targetTitle = process.env.TARGET_TITLE || expectedTitles[0];
+/* Preserved titles that are closed remain a DB-level assertion; this browser list checks currently visible posts. */
 
 (async () => {
   const browser = await chromium.launch({ headless: true, executablePath: fs.existsSync(executablePath) ? executablePath : undefined });

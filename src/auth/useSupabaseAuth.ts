@@ -96,7 +96,8 @@ export function useSupabaseAuth(enabled: boolean) {
         if (active) setState({ status: 'error', session: null, user: null, profile: null, error: error instanceof Error ? error.message : '가입 상태를 확인하지 못했어요.' });
       });
       const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (active) void syncSession(session);
+        // Supabase calls made inside this callback can wait on the auth lock forever; run them after it returns.
+        window.setTimeout(() => { if (active) void syncSession(session); }, 0);
       });
       unsubscribe = () => data.subscription.unsubscribe();
     } catch (error) {

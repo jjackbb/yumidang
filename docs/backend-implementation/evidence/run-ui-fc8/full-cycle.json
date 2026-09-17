@@ -1,0 +1,35 @@
+{
+  "key": "full-cycle",
+  "status": "fail",
+  "steps": [
+    {
+      "name": "1. existing home renders; A, B, C log in in separate browser contexts",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 6987
+    },
+    {
+      "name": "2. A and B create posts in the existing form (시·구·동 + private place) and see each other",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 11414
+    },
+    {
+      "name": "3. detail shows 시·구·동 only; B and anon never receive the exact place",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 377
+    },
+    {
+      "name": "4. B sees A as masked real name + full age; anon is asked to log in",
+      "layer": "BROWSER",
+      "result": "FAIL",
+      "ms": 173,
+      "error": "page.goto: net::ERR_ABORTED at http://127.0.0.1:4340/\nCall log:\n  - navigating to \"http://127.0.0.1:4340/\", waiting until \"load\"\n"
+    }
+  ],
+  "startedAt": "2026-09-16T15:54:59.638Z",
+  "finishedAt": "2026-09-16T15:55:22.371Z",
+  "failure": "full-cycle › 4. B sees A as masked real name + full age; anon is asked to log in: page.goto: net::ERR_ABORTED at http://127.0.0.1:4340/\nCall log:\n  - navigating to \"http://127.0.0.1:4340/\", waiting until \"load\"\n — 재실행: npm run harness:full-cycle",
+  "lastPassedStep": "3. detail shows 시·구·동 only; B and anon never receive the exact place"
+}

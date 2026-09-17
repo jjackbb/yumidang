@@ -1,0 +1,78 @@
+{
+  "key": "full-cycle",
+  "status": "fail",
+  "steps": [
+    {
+      "name": "1. existing home renders; A, B, C log in in separate browser contexts",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 4339
+    },
+    {
+      "name": "2. A and B create posts in the existing form (시·구·동 + private place) and see each other",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 13447
+    },
+    {
+      "name": "3. detail shows 시·구·동 only; B and anon never receive the exact place",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 414
+    },
+    {
+      "name": "4. B sees A as masked real name + full age; anon is asked to log in",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 329
+    },
+    {
+      "name": "5. B requests A post once through the existing request modal; repeat is blocked",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 1480
+    },
+    {
+      "name": "6. A and B exchange messages in the existing chat room without reloading",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 6073,
+      "detail": {
+        "latencyBtoAms": 1290,
+        "latencyAtoBms": 1288
+      }
+    },
+    {
+      "name": "7. A accepts B in the chat room → server final match (post closed)",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 482
+    },
+    {
+      "name": "8. only B newly sees the exact place; C still cannot",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 897
+    },
+    {
+      "name": "9. completion before the end time is refused by the server",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 73,
+      "detail": {
+        "waitSecondsUntilEnd": 347
+      }
+    },
+    {
+      "name": "10. after the end time A confirms completion and immediately submits a review",
+      "layer": "BROWSER",
+      "result": "FAIL",
+      "ms": 350962,
+      "error": "locator.click: Error: strict mode violation: getByRole('dialog', { name: '동행 평가' }).getByRole('button', { name: '닫기' }) resolved to 2 elements:\n    1) <button type=\"button\" aria-label=\"평가창 닫기\" class=\"p-1 text-gray-500\">…</button> aka getByRole('button', { name: '평가창 닫기' })\n    2) <button type=\"button\" class=\"w-full rounded-xl bg-gray-100 py-3 text-sm font-bold\">닫기</button> aka getByRole('button', "
+    }
+  ],
+  "startedAt": "2026-09-16T15:58:43.786Z",
+  "finishedAt": "2026-09-16T16:05:03.691Z",
+  "failure": "full-cycle › 10. after the end time A confirms completion and immediately submits a review: locator.click: Error: strict mode violation: getByRole('dialog', { name: '동행 평가' }).getByRole('button', { name: '닫기' }) resolved to 2 elements:\n    1) <button type=\"button\" aria-label=\"평가창 닫기\" class=\"p-1 text — 재실행: npm run harness:full-cycle",
+  "lastPassedStep": "9. completion before the end time is refused by the server"
+}

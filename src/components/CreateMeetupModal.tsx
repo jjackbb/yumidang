@@ -10,7 +10,7 @@ import {
 interface CreateMeetupModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateMeetup: (newPost: MeetupPost) => boolean;
+  onCreateMeetup: (newPost: MeetupPost) => boolean | Promise<boolean>;
   onUpdatePost?: (updatedPost: MeetupPost) => boolean;
   editPost?: MeetupPost | null;
   currentUser: CurrentUser | null;
@@ -22,6 +22,12 @@ interface CreateMeetupModalProps {
   initialCategory?: string;
   /** Post created from an event detail keeps that eventId only. */
   linkedEvent?: { id: string; title: string } | null;
+  /**
+   * Normal (Supabase) runs: the public area is 시·구·동 only, so the public landmark field is not collected,
+   * and options without a backend yet (PRO) only show a notice.
+   */
+  serviceMode?: boolean;
+  onUnavailable?: () => void;
 }
 
 const FIELD_IDS: Record<PostFormField, string> = {
@@ -34,10 +40,13 @@ const inputClass = 'w-full px-3 py-2 rounded-xl bg-gray-50 focus:bg-white text-x
 
 export const CreateMeetupModal: React.FC<CreateMeetupModalProps> = ({
   isOpen, onClose, onCreateMeetup, onUpdatePost, editPost, currentUser, now, variant, showVariantLabel = false, initialCategory, linkedEvent,
+  serviceMode = false, onUnavailable,
 }) => {
   const [values, setValues] = useState<PostFormValues>(() => defaultPostForm(now));
   const [errors, setErrors] = useState<PostFormErrors>({});
   const [step, setStep] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const validate = (form: PostFormValues, fields?: PostFormField[]) => validatePostForm(form, now, fields, { serviceMode });
 
   // Paid option is a separate preview experience, not part of the shared field contract.
   const [companionType, setCompanionType] = useState<'free' | 'pro'>('free');
@@ -53,7 +62,7 @@ export const CreateMeetupModal: React.FC<CreateMeetupModalProps> = ({
 
   useLayoutEffect(() => {
     setErrors({}); setStep(0);
-    setValues(editPost ? postFormFromPost(editPost, now) : defaultPostForm(now, initialCategory || '식사'));
+    setValues(editPost ? postFormFromPost(editPost, now) : defaultPostForm(now, initialCategory || '식사', serviceMode));
     setCompanionType(editPost?.companionType || 'free');
     if (editPost?.proDetails) {
       setHourlyRate(editPost.proDetails.hourlyRate);
@@ -87,6 +96,7 @@ export const CreateMeetupModal: React.FC<CreateMeetupModalProps> = ({
   };
 
   const handleSelectProType = () => {
+    if (serviceMode) { onUnavailable?.(); return; }
     // PRO 전문 동행 개설 조건: 당도 90 이상 및 본인인증 완료
     const isEligible = currentUser && currentUser.sugarContent >= 90 && currentUser.isPhoneVerified;
     if (!isEligible) { setShowProRequirementModal(true); return; }
@@ -94,16 +104,17 @@ export const CreateMeetupModal: React.FC<CreateMeetupModalProps> = ({
   };
 
   const goNext = () => {
-    const found = validatePostForm(values, now, POST_FORM_STEPS[0]);
+    const found = validate(values, POST_FORM_STEPS[0]);
     setErrors(found);
     if (Object.keys(found).length) { focusFirst(found); return; }
     setStep(1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (variant === 'B' && step === 0) { goNext(); return; }
-    const found = validatePostForm(values, now);
+    const found = validate(values);
     setErrors(found);
     if (Object.keys(found).length) {
       if (variant === 'B' && POST_FORM_STEPS[0].some(field => found[field])) setStep(0);
@@ -132,7 +143,10 @@ export const CreateMeetupModal: React.FC<CreateMeetupModalProps> = ({
         currentMembers: 1, maxMembers: 2, // 1:1 동행 2인 고정
         status: 'recruiting', companionType, proDetails,
       };
-      if (!onCreateMeetup(newPost)) return;
+      setSaving(true);
+      const saved = await onCreateMeetup(newPost);
+      setSaving(false);
+      if (!saved) return;
     }
     onClose();
   };
@@ -194,8 +208,8 @@ export const CreateMeetupModal: React.FC<CreateMeetupModalProps> = ({
     <div>
       <span className="block text-xs font-bold text-gray-600 mb-1">공개 만남 지역 (누구나 열람 가능)</span>
       <div className="grid grid-cols-2 gap-2">
-        <input type="text" {...fieldProps('location')} aria-label="공개 만남 지역" placeholder="지역구 (예: 서울 종로구)" value={values.location} onChange={(e) => set('location', e.target.value)} className={inputClass} />
-        <input type="text" {...fieldProps('publicLocation')} aria-label="공개 랜드마크" placeholder="공개 랜드마크 (예: 안국역 2번 출구)" value={values.publicLocation} onChange={(e) => set('publicLocation', e.target.value)} className={inputClass} />
+        <input type="text" {...fieldProps('location')} aria-label="공개 만남 지역" placeholder={serviceMode ? '시·구·동 (예: 서울특별시 종로구 삼청동)' : '지역구 (예: 서울 종로구)'} value={values.location} onChange={(e) => set('location', e.target.value)} className={serviceMode ? `${inputClass} col-span-2` : inputClass} />
+        {!serviceMode && <input type="text" {...fieldProps('publicLocation')} aria-label="공개 랜드마크" placeholder="공개 랜드마크 (예: 안국역 2번 출구)" value={values.publicLocation} onChange={(e) => set('publicLocation', e.target.value)} className={inputClass} />}
       </div>
       {errorOf('location')}{errorOf('publicLocation')}
     </div>
@@ -314,7 +328,7 @@ export const CreateMeetupModal: React.FC<CreateMeetupModalProps> = ({
             {variant === 'B' && step === 1 && <button key="previous" type="button" onClick={() => setStep(0)} className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl text-sm">이전</button>}
             {variant === 'B' && step === 0
               ? <button key="next" type="button" onClick={goNext} className="w-full py-3.5 bg-[#6c2cf5] text-white font-bold rounded-xl text-[15px]">다음</button>
-              : <button key="submit" type="submit" className="flex-[2] w-full py-3.5 bg-[#6c2cf5] hover:bg-[#5820d8] text-white font-bold rounded-xl text-[15px] shadow-md shadow-purple-500/25 active:scale-98 transition-all">{submitLabel}</button>}
+              : <button key="submit" type="submit" disabled={saving} className="flex-[2] w-full py-3.5 bg-[#6c2cf5] hover:bg-[#5820d8] text-white font-bold rounded-xl text-[15px] shadow-md shadow-purple-500/25 active:scale-98 transition-all">{saving ? '등록 중…' : submitLabel}</button>}
           </div>
         </form>
       </div>

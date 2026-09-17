@@ -1,10 +1,11 @@
 // Feature 2 regression: login never creates accounts, wrong code gives no session, relogin/refresh/logout, A/B isolation.
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { anonClient, signIn, testAuth, PERSONAS } from './helpers/sessions.mjs';
 import { standalone } from './helpers/runner.mjs';
 
 export async function feature02(ctx, feature) {
-  const unregistered = `0198${ctx.run.runId.replace(/\D/g, '').slice(-7).padStart(7, '0')}`;
+  const unregistered = `0198${String(parseInt(createHash('sha256').update(ctx.run.runId).digest('hex').slice(0, 12), 16) % 10_000_000).padStart(7, '0')}`;
   ctx.run.guard.protect(unregistered);
 
   await feature.step('login with an unregistered arbitrary number is rejected and no account appears', 'REMOTE', async () => {

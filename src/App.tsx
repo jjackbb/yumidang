@@ -4,7 +4,6 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import LiveApp from './live/LiveApp';
 import { useAppRoute } from './auth/useAppRoute';
 import { isProtectedPath, loginPath, safeReturnPath } from './auth/routes';
 import { AuthGate } from './components/AuthGate';
@@ -62,6 +61,8 @@ import { blockImpact } from './utils/blocking';
 import { useSupabaseAuth } from './auth/useSupabaseAuth';
 import { currentUserFromProfile } from './auth/user';
 import { getSupabaseClient } from './lib/supabase';
+import { useLiveBackend } from './live/useLiveBackend';
+import { NEW_USER_SUGAR_POLICY } from './live/adapters';
 
 import { mockCategories } from './data/mockData';
 import { Appointment, AppointmentReview, BlockRelation, CategoryItem, ChatMember, CompletionConfirmation, DemoSettings, EventBannerItem, FavoriteFriend, Invitation, MeetupPost, CurrentUser, JoinRequest, ReviewItem, EscrowPayment, NotificationItem, NotificationSettings, ChatRoom, ScheduleProposal } from './types';
@@ -72,30 +73,35 @@ const NAV_TABS: NavTab[] = ['home', 'explore', 'chat', 'me'];
 const trackBackEvent = (_event: Record<string, unknown>) => {};
 const trackFunnelEvent = (_event: Record<string, unknown>) => {};
 
+/** Normal runs start empty and are filled from Supabase; no sample posts, chats or notifications. */
+const emptyServiceData = (): PrototypeData => ({
+  ...createSeedData(), posts: [], requests: [], rooms: [], appointments: [], notifications: [], reviews: [],
+  favorites: [], invitations: [], completions: [], appointmentReviews: [], notificationSettings: [], blocks: [], users: [], activeUserId: null,
+});
+
+/** Shown for existing screens whose backend is not built yet. Nothing is saved or faked. */
+const NOT_READY_NOTICE = '이 기능은 아직 준비 중이에요. 지금은 저장되지 않아요.';
+
 type ConflictAction =
   | { kind: 'join'; postId: string; message: string }
   | { kind: 'accept'; requestId: string; simulateHost: boolean }
   | { kind: 'proposal'; roomId: string; messageId: string; accepted: boolean; sample: boolean }
   | { kind: 'create'; post: MeetupPost };
 
-/** Normal visits use the Supabase-backed app; the local prototype runs only under `?demo=1`. */
 export default function App() {
-  const [demoMode] = useState(isDemoMode);
-  return demoMode ? <PrototypeApp /> : <LiveApp />;
-}
-
-function PrototypeApp() {
   // `?demo=1` is fixed for the page lifetime and uses its own storage key.
   const [demoMode] = useState(isDemoMode);
   const supabaseAuth = useSupabaseAuth(!demoMode);
   const storageKey = demoMode ? STORAGE_KEYS.demo : STORAGE_KEYS.app;
   const [boot] = useState(() => {
+    // Normal runs show Supabase data only; the browser sample store belongs to `?demo=1`.
+    if (!demoMode) return { data: emptyServiceData(), issue: undefined };
     const loaded = loadPrototype(browserStorage(), storageKey);
     return { data: loaded.data || createSeedData(), issue: loaded.issue };
   });
   const [storageIssue, setStorageIssue] = useState<StorageIssue | null>(boot.issue || null);
   // Unreadable saved data is kept untouched until the user retries or resets.
-  const [autosave, setAutosave] = useState(boot.issue !== 'corrupt' && boot.issue !== 'version');
+  const [autosave, setAutosave] = useState(demoMode && boot.issue !== 'corrupt' && boot.issue !== 'version');
 
   // Navigation state
   const { path, search, activeTab, setActiveTab, navigate } = useAppRoute();
@@ -115,6 +121,9 @@ function PrototypeApp() {
   const privateAreaAllowed = demoMode
     ? Boolean(currentUser?.isLoggedIn)
     : supabaseAuth.status === 'authenticated';
+  // Normal runs: every post, request, chat, appointment, completion and review comes from Supabase.
+  const live = useLiveBackend(!demoMode, !demoMode && privateAreaAllowed && currentUser ? currentUser.id : null,
+    !demoMode && currentUser ? { id: currentUser.id, displayName: currentUser.maskedName, avatar: avatarSrc(currentUser.avatar) } : null);
   const [demoSettings, setDemoSettings] = useState<DemoSettings>(boot.data.demo);
   const [favorites, setFavorites] = useState<FavoriteFriend[]>(boot.data.favorites);
   const [invitations, setInvitations] = useState<Invitation[]>(boot.data.invitations);
@@ -341,6 +350,26 @@ function PrototypeApp() {
     if (!demoMode && path === '/login') navigate('/', true);
     prototypeSignInSucceeded.current = false;
   };
+  const accessOf = (room: ChatRoom) => {
+    if (demoMode) return roomAccess(room, currentUser?.id, joinRequests, appointments, meetupPosts, clock());
+    const base = roomAccess(room, currentUser?.id, joinRequests, appointments, meetupPosts, clock());
+    const request = joinRequests.find(item => item.id === room.requestId);
+    const post = meetupPosts.find(item => item.id === room.postId);
+    if (!base.canView || !request || request.status !== 'pending' || !post || post.status === 'deleted') return base;
+    return Date.parse(post.startsAt || '') > clock().getTime() ? { canView: true, canSend: true, label: '매칭 중 · 확정 전' } : base;
+  };
+  // The chat room height subtracts this banner; a fixed 0px pushed the message input under the bottom tab bar.
+  const serviceBannerRef = useRef<HTMLDivElement>(null);
+  const [serviceBannerHeight, setServiceBannerHeight] = useState(0);
+  useEffect(() => {
+    const banner = serviceBannerRef.current;
+    if (!banner) return;
+    const update = () => setServiceBannerHeight(Math.ceil(banner.getBoundingClientRect().height));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(banner);
+    return () => observer.disconnect();
+  }, []);
   const matchingLocks = useRef(new Set<string>());
   const proposalLocks = useRef(new Set<string>());
   const activeRoom = chatRooms.find(room => room.id === activeRoomId && room.members.some(member => member.id === currentUser?.id));
@@ -351,7 +380,7 @@ function PrototypeApp() {
   const myAppointments = appointments.filter(item => currentUser && item.participantIds?.includes(currentUser.id));
   const openRoom = (room: ChatRoom) => {
 
-    if (!roomAccess(room, currentUser?.id, joinRequests, appointments, meetupPosts, clock()).canView) return;
+    if (!accessOf(room).canView) return;
     setActiveRoomId(room.id);
     if (room.appointmentId) setActiveAppointmentId(room.appointmentId);
     setActiveTab('chat');
@@ -363,7 +392,7 @@ function PrototypeApp() {
   };
   const openRequestProfile = (id: string) => {
     const room = chatRooms.find(room => room.requestId === id);
-    if (!room || !roomAccess(room, currentUser?.id, joinRequests, appointments, meetupPosts, clock()).canView) return;
+    if (!room || !accessOf(room).canView) return;
     const member = room.members.find(member => member.id !== currentUser?.id);
     if (member) setSelectedChatProfile(member);
   };
@@ -371,7 +400,15 @@ function PrototypeApp() {
   const sendRoomMessage = (id: string, text: string, sample = false) => {
 
     const room = chatRooms.find(room => room.id === id);
-    if (!room || !text.trim() || !roomAccess(room, currentUser?.id, joinRequests, appointments, meetupPosts, clock()).canSend || (sample && currentUser?.id !== DEMO_USER_ID)) return;
+    if (!room || !text.trim() || !accessOf(room).canSend || (sample && currentUser?.id !== DEMO_USER_ID)) return;
+    if (!demoMode) {
+      if (sample || !room.requestId) return;
+      setChatRooms(prev => prev.map(item => item.id === id ? { ...item, draft: '' } : item));
+      void live.actions.sendMessage(room.requestId, text.trim()).then(result => {
+        if ('error' in result) { setLifecycleNotice(result.error); setChatRooms(prev => prev.map(item => item.id === id ? { ...item, draft: text } : item)); }
+      });
+      return;
+    }
     const senderId = sample ? room.members.find(member => member.id !== currentUser!.id)!.id : currentUser!.id;
     const message = { id: crypto.randomUUID(), senderId, text: text.trim(), createdAt: new Date().toISOString(), isSample: sample };
     setChatRooms(prev => prev.map(item => item.id === id ? { ...item, draft: sample ? item.draft : '', messages: [...item.messages, message] } : item));
@@ -379,20 +416,22 @@ function PrototypeApp() {
     if (recipientId) setNotifications(prev => [{ id: `notif-${message.id}`, title: sample ? '새 동행 메시지 · 시연' : '새 동행 메시지', description: text, roomId: id, recipientId, createdAt: clock().toISOString(), targetType: 'room', targetId: id, type: 'chat', time: '방금', read: false }, ...prev]);
   };
   const proposeRoomSchedule = (id: string, proposal: ScheduleProposal) => {
+    if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; }
 
     const room = chatRooms.find(room => room.id === id);
     const target = appointments.find(item => item.id === room?.appointmentId);
-    if (!room || !target || target.status === '동행 완료' || !roomAccess(room, currentUser?.id, joinRequests, appointments, meetupPosts, clock()).canSend || !isValidMeetupRange(proposal.startsAt, proposal.endsAt)) return;
+    if (!room || !target || target.status === '동행 완료' || !accessOf(room).canSend || !isValidMeetupRange(proposal.startsAt, proposal.endsAt)) return;
     if (room.messages.some(item => item.proposal?.status === 'pending')) { alert('먼저 보낸 일정 변경 제안의 응답을 기다려 주세요.'); return; }
     setChatRooms(prev => prev.map(item => item.id === id ? { ...item, messages: [...item.messages, { id: crypto.randomUUID(), senderId: currentUser!.id, text: '일정·장소 변경을 제안했어요.', createdAt: new Date().toISOString(), proposal }] } : item));
   };
   const resolveRoomProposal = (roomId: string, messageId: string, accepted: boolean, sample = false, ignoreConflict = false) => {
+    if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; }
 
     const room = chatRooms.find(item => item.id === roomId);
     const message = room?.messages.find(item => item.id === messageId);
     const proposal = message?.proposal;
     const target = appointments.find(item => item.id === room?.appointmentId);
-    if (!room || !target || target.status === '동행 완료' || !proposal || proposal.status !== 'pending' || proposalLocks.current.has(messageId) || !roomAccess(room, currentUser?.id, joinRequests, appointments, meetupPosts, clock()).canSend) return;
+    if (!room || !target || target.status === '동행 완료' || !proposal || proposal.status !== 'pending' || proposalLocks.current.has(messageId) || !accessOf(room).canSend) return;
     if (sample ? currentUser?.id !== DEMO_USER_ID : message.senderId === currentUser?.id) return;
     if (accepted && !isValidMeetupRange(proposal.startsAt, proposal.endsAt)) return;
     if (accepted && !ignoreConflict && warnConflict({ kind: 'proposal', roomId, messageId, accepted, sample }, target.participantIds || [], proposal.startsAt, proposal.endsAt, target.id)) return;
@@ -405,6 +444,22 @@ function PrototypeApp() {
     setNotifications(prev => [{ id: `notif-${crypto.randomUUID()}`, title: accepted ? '약속 변경 완료' : '약속 변경 거절', description: accepted ? proposal.newDateTime : '기존 일정이 유지됩니다.', type: 'matching', roomId, time: '방금', read: false }, ...prev]);
   };
   const [notifications, setNotifications] = useState<NotificationItem[]>(boot.data.notifications);
+  useEffect(() => {
+    if (demoMode) return;
+    const ids = [selectedChatProfile?.id, selectedPostForDetail?.authorId, ...chatRooms.flatMap(room => room.members.map(member => member.id))];
+    ids.forEach(id => { if (id) void live.ensureProfile(id); });
+  }, [demoMode, selectedChatProfile?.id, selectedPostForDetail?.authorId, chatRooms, live.ensureProfile]);
+
+  useEffect(() => {
+    if (demoMode) return;
+    setMeetupPosts(live.data.posts); setJoinRequests(live.data.requests); setAppointments(live.data.appointments);
+    setCompletions(live.data.completions); setAppointmentReviews(live.data.appointmentReviews);
+    // Server refreshes must not wipe a message the member is still typing.
+    setChatRooms(previous => live.data.rooms.map(room => ({ ...room, draft: previous.find(item => item.id === room.id)?.draft || '' })));
+  }, [demoMode, live.data]);
+  useEffect(() => {
+    if (!demoMode && live.status === 'error' && live.error) setLifecycleNotice(`Supabase 데이터를 불러오지 못했어요. ${live.error}`);
+  }, [demoMode, live.status, live.error]);
 
   const privateDataReady = privateAreaAllowed;
 
@@ -470,7 +525,7 @@ function PrototypeApp() {
     return true;
   };
   useEffect(() => {
-
+    if (!demoMode) return;
     const next = expirePosts(lifecycleState(), now);
     if (next) applyLifecycle(next);
     const delay = Math.min(...meetupPosts.filter(post => post.status === 'recruiting').map(post => Date.parse(recruitmentDeadline(post) || '') - clock().getTime()).filter(ms => ms > 0));
@@ -534,10 +589,21 @@ function PrototypeApp() {
     setIsCreateModalOpen(true);
   };
 
-  const handleCreateMeetup = (newPost: MeetupPost, ignoreConflict = false) => {
+  const handleCreateMeetup = (newPost: MeetupPost, ignoreConflict = false): boolean | Promise<boolean> => {
 
     if (!currentUser || newPost.authorId !== currentUser.id || !isRecruiting(newPost, clock())) return false;
     if (!ignoreConflict && warnConflict({ kind: 'create', post: newPost }, [currentUser.id], newPost.startsAt, newPost.endsAt)) return false;
+    if (!demoMode) return (async () => {
+      const result = await live.actions.createPost({
+        p_post_id: newPost.id.replace(/^post-/, ''), p_title: newPost.title, p_description: newPost.description || '', p_category: newPost.category,
+        p_starts_at: newPost.startsAt, p_ends_at: newPost.endsAt, p_recruitment_ends_at: newPost.recruitmentEndsAt || newPost.startsAt,
+        p_public_area: newPost.location, p_exact_location: newPost.secretLocation || '', p_preference_note: newPost.partnerPreferences || null,
+        p_tags: newPost.tags, p_partner_gender: newPost.partnerGender || 'any',
+      });
+      if ('error' in result) { setLifecycleNotice(result.error); return false; }
+      setIsCreateModalOpen(false); setCreateContext(null);
+      return true;
+    })();
     setMeetupPosts((prev) => [newPost, ...prev]);
     trackFunnelEvent({
       step: 'CREATE_MEETUP_SUBMIT',
@@ -572,13 +638,14 @@ function PrototypeApp() {
   };
 
   const handleUpdatePost = (updatedPost: MeetupPost) => {
+    if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return false; }
 
     if (!applyLifecycle(updateRecruitingPost(lifecycleState(), updatedPost, currentUser?.id, clock()))) return false;
     setSelectedPostForDetail(updatedPost); setEditingPost(null);
     return true;
   };
-  const handleClosePost = (postId: string) => setPostAction({ id: postId, mode: 'closed' });
-  const handleDeletePost = (postId: string) => setPostAction({ id: postId, mode: 'deleted' });
+  const handleClosePost = (postId: string) => demoMode ? setPostAction({ id: postId, mode: 'closed' }) : setLifecycleNotice(NOT_READY_NOTICE);
+  const handleDeletePost = (postId: string) => demoMode ? setPostAction({ id: postId, mode: 'deleted' }) : setLifecycleNotice(NOT_READY_NOTICE);
   const confirmPostAction = () => {
 
     if (!postAction) return;
@@ -587,17 +654,20 @@ function PrototypeApp() {
     setPostAction(null);
   };
   const handleEditPost = (post: MeetupPost) => {
+    if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; }
     if (post.authorId !== currentUser?.id || !isRecruiting(post, clock())) { setLifecycleNotice('모집 중인 본인 공고만 수정할 수 있어요. 확정 약속은 대화방에서 변경을 제안해 주세요.'); return; }
     setEditingPost(post); setCreateContext(null); setSelectedPostForDetail(null); setIsCreateModalOpen(true);
   };
   const userById = (id: string) => users.find(user => user.id === id) || (currentUser?.id === id ? currentUser : undefined);
   /** Host-side reason an open request cannot be accepted: the requester no longer meets the partner condition. */
   const acceptBlockedReason = (request: JoinRequest) => {
+    if (!demoMode) return null; // the server checks the partner condition when the request is created
     const post = meetupPosts.find(item => item.id === request.postId);
     const requester = userById(request.requesterId);
     return post && requester && !requestEligibility(post, requester).ok ? '신청자가 현재 상대 조건에 맞지 않아 수락할 수 없어요. 조건을 되돌리거나 신청을 거절해 주세요.' : null;
   };
   const handleReconfirm = (requestId: string, revision: number, agree: boolean, simulate = false) => {
+    if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; }
 
     const request = joinRequests.find(item => item.id === requestId);
     if (!request || !currentUser || (simulate && (currentUser.id !== DEMO_USER_ID || request.hostId !== currentUser.id))) return;
@@ -610,6 +680,7 @@ function PrototypeApp() {
     applyLifecycle(confirmChangedConditions(lifecycleState(), requestId, revision, agree, simulate ? request.requesterId : currentUser.id, clock()));
   };
   const simulatePostChange = (requestId: string) => {
+    if (!demoMode) return;
     const request = joinRequests.find(item => item.id === requestId);
     const post = meetupPosts.find(item => item.id === request?.postId);
     if (currentUser?.id !== DEMO_USER_ID || request?.requesterId !== currentUser.id || !request || !isOpenRequest(request) || !post || !isRecruiting(post, clock())) return;
@@ -652,7 +723,19 @@ function PrototypeApp() {
   };
 
   // Phase 3: Submit Join Request
-  const handleSendJoinRequest = (postId: string, message: string, ignoreConflict = false) => {
+  const handleSendJoinRequest = (postId: string, message: string, ignoreConflict = false): boolean | Promise<boolean> => {
+    if (!demoMode) {
+      const target = activeMeetupPosts.find(item => item.id === postId);
+      if (!target || !currentUser) return false;
+      if (!ignoreConflict && warnConflict({ kind: 'join', postId, message }, [currentUser.id], target.startsAt, target.endsAt)) return false;
+      return (async () => {
+        const result = await live.actions.createRequest(postId, message);
+        if ('error' in result) { setLifecycleNotice(result.error); return false; }
+        setIsJoinRequestModalOpen(false); setSelectedPostForJoin(null);
+        setActiveRoomId(`room-${result.requestId}`); setActiveTab('chat');
+        return true;
+      })();
+    }
 
     const post = activeMeetupPosts.find((p) => p.id === postId);
     if (!post || !post.authorId || !currentUser || post.authorId === currentUser.id || !isRecruiting(post, clock()) || !message.trim() || !requestEligibility(post, currentUser).ok) return false;
@@ -718,6 +801,19 @@ function PrototypeApp() {
 
     const targetReq = joinRequests.find(item => item.id === requestId);
     if (!targetReq || !currentUser) return;
+    if (!demoMode) {
+      if (simulateHost || targetReq.hostId !== currentUser.id) return;
+      const targetPost = meetupPosts.find(item => item.id === targetReq.postId);
+      if (!ignoreConflict && warnConflict({ kind: 'accept', requestId, simulateHost }, [targetReq.hostId, targetReq.requesterId], targetPost?.startsAt, targetPost?.endsAt)) return;
+      if (matchingLocks.current.has(targetReq.postId)) return;
+      matchingLocks.current.add(targetReq.postId);
+      void live.actions.confirmMatch(requestId).then(result => {
+        matchingLocks.current.delete(targetReq.postId);
+        if ('error' in result) { setLifecycleNotice(result.error); return; }
+        setActiveRoomId(requestRoomId(requestId)); setActiveTab('chat');
+      });
+      return;
+    }
     if (simulateHost && (currentUser.id !== DEMO_USER_ID || targetReq.requesterId !== currentUser.id)) return;
     const targetPost = meetupPosts.find(item => item.id === targetReq.postId);
     const nextRequests = acceptRequest(joinRequests, targetPost, requestId, simulateHost ? targetReq.hostId : currentUser.id, clock());
@@ -750,6 +846,12 @@ function PrototypeApp() {
 
     const request = joinRequests.find(item => item.id === requestId);
     if (!request || !isOpenRequest(request) || (status === 'rejected' ? request.hostId : request.requesterId) !== currentUser?.id) return false;
+    if (!demoMode) {
+      // The cancellation reason is not stored yet; only the status change is saved.
+      void (status === 'rejected' ? live.actions.decline(requestId) : live.actions.withdraw(requestId))
+        .then(result => { if ('error' in result) setLifecycleNotice(result.error); });
+      return true;
+    }
     const text = status === 'rejected' ? '작성자가 신청을 거절했어요.' : `신청자가 동행 신청을 취소했어요. 사유: ${reason}`;
     setJoinRequests(prev => prev.map(item => item.id === requestId && isOpenRequest(item) ? { ...item, status, cancellationReason: reason } : item));
     setChatRooms(prev => prev.map(room => room.requestId === requestId ? { ...room, messages: [...room.messages, { id: crypto.randomUUID(), senderId: 'system', text, createdAt: new Date().toISOString() }] } : room));
@@ -763,6 +865,7 @@ function PrototypeApp() {
     if (request && isOpenRequest(request) && request.requesterId === currentUser?.id) setCancellationTarget({ id, kind: 'request', title: request.postTitle });
   };
   const openAppointmentCancellation = (target: Appointment) => {
+    if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; }
     if (currentUser && target.participantIds?.includes(currentUser.id) && isConfirmedAppointment(target)) setCancellationTarget({ id: target.id, kind: 'appointment', title: target.title });
   };
   const confirmCancellation = (reason: string) => {
@@ -775,6 +878,7 @@ function PrototypeApp() {
 
   // Phase 4: Handle Emergency / No-Show Report Submit
   const handleReportSubmit = (reasonType: string, details: string) => {
+    if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; }
 
     const reasonMap: Record<string, string> = {
       noshow: '20분 이상 미출현 (노쇼 발생)',
@@ -801,6 +905,7 @@ function PrototypeApp() {
 
   // Phase 4: Send 10-minute Arrival Notice
   const handleSendArrivalNotice = () => {
+    if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; }
 
     if (!isConfirmedAppointment(appointment)) return;
     setNotifications((prev) => [
@@ -828,6 +933,13 @@ function PrototypeApp() {
   const handleCompleteAppointment = (target: Appointment) => {
 
     if (!currentUser) return;
+    if (!demoMode) {
+      void live.actions.confirmCompletion(target.id).then(result => {
+        if ('error' in result) { setLifecycleNotice(result.error); return; }
+        setReviewAppointmentId(target.id); setIsReviewModalOpen(true);
+      });
+      return;
+    }
     const result = createCompletionConfirmation(target, currentUser.id, completions, appointmentReviews, clock());
     if ('error' in result) { setLifecycleNotice(result.error); return; }
     const nextCompletions = [...completions, result.value];
@@ -847,6 +959,7 @@ function PrototypeApp() {
   const handleSubmitReview = async (reviewPayload: ReviewDraft): Promise<{ ok: true } | { ok: false; error: string }> => {
 
     if (!currentUser) return { ok: false, error: '로그인 후 평가해 주세요.' };
+    if (!demoMode) return live.actions.submitReview(reviewAppointment.id, reviewPayload.rating, reviewPayload.comment);
     const result = createAppointmentReview(reviewAppointment, currentUser.id, reviewPayload, completions, appointmentReviews, demoSettings.variants.review, clock());
     if ('error' in result) return result;
     const partnerId = result.value.revieweeId;
@@ -896,6 +1009,7 @@ function PrototypeApp() {
   const commitProfile = (patch: ProfilePatch) => {  if (currentUser) setCurrentUser({ ...currentUser, ...patch }); };
   const selfMember = (user: CurrentUser): ChatMember => ({ id: user.id, displayName: user.maskedName, avatar: user.avatar });
   const toggleFavorite = (targetId: string) => {
+    if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; }
 
     if (!currentUser || targetId === currentUser.id || blocks.some(item => item.blockerId === currentUser.id && item.blockedId === targetId)) return;
     // Private one-way save: no notification is created for the target.
@@ -904,6 +1018,7 @@ function PrototypeApp() {
       : [...prev, { ownerId: currentUser.id, targetId, savedAt: clock().toISOString(), notifyNewPosts: true }]);
   };
   const toggleFavoriteNotice = (targetId: string) => {
+    if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; }
 
     if (!currentUser) return;
     setFavorites(prev => prev.map(item => item.ownerId === currentUser.id && item.targetId === targetId ? { ...item, notifyNewPosts: !item.notifyNewPosts } : item));
@@ -915,6 +1030,7 @@ function PrototypeApp() {
     else if (post) setSelectedChatProfile(postAuthor(post));
   };
   const inviteFavorite = (targetId: string, postId: string) => {
+    if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; }
 
     if (!currentUser || !isSavedBy(currentUser.id, targetId, favorites)) return;
     const post = meetupPosts.find(item => item.id === postId);
@@ -939,6 +1055,7 @@ function PrototypeApp() {
     if (!post) setLifecycleNotice('삭제된 공고예요. 초대 기록은 Me에 남아 있어요.');
   };
   const changeStrangerInvitationNotice = (enabled: boolean) => {
+    if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; }
 
     if (!currentUser) return;
     setNotificationSettings(prev => prev.some(item => item.userId === currentUser.id)
@@ -948,6 +1065,7 @@ function PrototypeApp() {
   const activeAppointmentsWith = (targetId: string) => appointments.filter(item =>
     currentUser && item.participantIds?.includes(currentUser.id) && item.participantIds.includes(targetId) && isConfirmedAppointment(item));
   const confirmBlock = (member: ChatMember) => {
+    if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; }
 
     if (!currentUser || member.id === currentUser.id) return;
     const impact = blockImpact(appointments, completions, currentUser.id, member.id);
@@ -984,6 +1102,7 @@ function PrototypeApp() {
 
   // Phase 6: Pro Escrow Payment Handlers
   const handleOpenEscrow = (post: MeetupPost) => {
+    if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; }
     setSelectedPostForDetail(null);
     setSelectedProPostForEscrow(post);
     setIsEscrowModalOpen(true);
@@ -1002,8 +1121,16 @@ function PrototypeApp() {
       })),
     ],
   });
-  const profileForMember = (member: ChatMember, viewer = currentUser) => withReleasedReviews(publicProfileForMember(member, viewer, users));
-  const profileForPost = (post: MeetupPost) => withReleasedReviews(publicProfileForPost(post, currentUser, users));
+  const profileForMember = (member: ChatMember, viewer = currentUser) => {
+    if (demoMode) return withReleasedReviews(publicProfileForMember(member, viewer, users));
+    // Normal runs: server-masked name/age/photo/bio only; no sample hobbies, badges or reviews.
+    const loaded = live.profiles[member.id];
+    const base = publicProfileForMember(member, viewer, users);
+    return loaded || { ...base, sugarContent: NEW_USER_SUGAR_POLICY };
+  };
+  const profileForPost = (post: MeetupPost) => demoMode
+    ? withReleasedReviews(publicProfileForPost(post, currentUser, users))
+    : profileForMember(postAuthor(post));
   const authorSugarOf = (post: MeetupPost) => profileForPost(post).sugarContent;
   /** The other participant, seen from the signed-in user (the stored partnerName is only the accepting side's view). */
   const partnerOf = (target: Appointment): ChatMember | undefined => {
@@ -1090,7 +1217,7 @@ function PrototypeApp() {
   return (
     <div className="min-h-screen bg-[#f2f4f8] flex justify-center selection:bg-purple-100">
       {/* Mobile container simulating the exact mobile app interface */}
-      <main style={{ '--service-banner-h': '0px' } as React.CSSProperties} className="w-full max-w-[440px] min-h-screen bg-white shadow-xl relative flex flex-col">
+      <main style={{ '--service-banner-h': `${serviceBannerHeight}px` } as React.CSSProperties} className="w-full max-w-[440px] min-h-screen bg-white shadow-xl relative flex flex-col">
         {demoMode && <DemoControlPanel
           users={users} activeUserId={currentUser?.id || null} now={now} settings={demoSettings}
           onSwitchUser={switchDemoUser}
@@ -1107,7 +1234,7 @@ function PrototypeApp() {
             <button type="button" onClick={resetPrototype} className="rounded-lg bg-red-600 text-white px-2.5 py-1 font-bold">저장 데이터 초기화</button>
           </div>
         </div>}
-        {!demoMode && <div role="status" className="bg-amber-50 px-4 py-2 text-xs text-amber-950 border-b border-amber-100">휴대폰 로그인·회원가입 · 테스트 번호는 Supabase가 고정 OTP 123456을 검증하며 실제 문자는 발송하지 않아요.</div>}
+        {!demoMode && <div ref={serviceBannerRef} role="status" className="bg-amber-50 px-4 py-2 text-xs text-amber-950 border-b border-amber-100">휴대폰 로그인·회원가입 · 테스트 번호는 Supabase가 고정 OTP 123456을 검증하며 실제 문자는 발송하지 않아요.</div>}
         {/* Top Header */}
         <Header
           unreadCount={unreadNotifCount}
@@ -1175,12 +1302,12 @@ function PrototypeApp() {
         {activeTab === 'chat' && privateDataReady && <div className="flex-1 flex flex-col" data-chat-storage="browser">
           {activeRoom && currentUser && activePartner ? <ChatView key={activeRoom.id}
             room={activeRoom} user={currentUser} partner={profileForMember(activePartner)} post={activeRoomPost} request={activeRoomRequest} appointment={activeRoomAppointment}
-            status={roomAccess(activeRoom, currentUser.id, joinRequests, appointments, meetupPosts, clock())}
+            status={accessOf(activeRoom)}
             completionActions={activeRoomAppointment ? completionActionsFor(activeRoomAppointment) : undefined}
             onBack={() => setActiveRoomId(null)} onOpenProfile={() => setSelectedChatProfile(activePartner)}
             onOpenPost={() => activeRoomPost && setSelectedPostForDetail(activeRoomPost)}
             onOpenDashboard={() => activeRoomAppointment && openAppointment(activeRoomAppointment)}
-            onOpenVoiceCall={() => { if(activeRoomAppointment) { setActiveAppointmentId(activeRoomAppointment.id); setIsVoiceCallOpen(true); } }}
+            onOpenVoiceCall={() => { if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; } if(activeRoomAppointment) { setActiveAppointmentId(activeRoomAppointment.id); setIsVoiceCallOpen(true); } }}
             onAccept={() => activeRoomRequest && handleAcceptRequest(activeRoomRequest.id)} onReject={() => activeRoomRequest && handleRejectRequest(activeRoomRequest.id)}
             onCancel={() => activeRoomRequest && openRequestCancellation(activeRoomRequest.id)}
             onCancelAppointment={() => activeRoomAppointment && openAppointmentCancellation(activeRoomAppointment)}
@@ -1212,10 +1339,10 @@ function PrototypeApp() {
               onOpenRequestPost={(postId) => setSelectedPostForDetail(meetupPosts.find(post => post.id === postId) || null)}
               currentUser={currentUser}
               onOpenAuth={() => setIsAuthModalOpen(true)}
-              onOpenKyc={() => setIsKycModalOpen(true)}
+              onOpenKyc={() => demoMode ? setIsKycModalOpen(true) : setLifecycleNotice(NOT_READY_NOTICE)}
               onLogout={handleLogout}
               profileMissing={profileMissing}
-              onEditProfile={step => setProfileEditor(profileMissing.length ? { mode: 'setup', step: step || profileMissing[0] } : { mode: 'edit' })}
+              onEditProfile={step => demoMode ? setProfileEditor(profileMissing.length ? { mode: 'setup', step: step || profileMissing[0] } : { mode: 'edit' }) : setLifecycleNotice(NOT_READY_NOTICE)}
               onPreviewProfile={() => setIsProfilePreviewOpen(true)}
               reviews={reviews}
               escrowPayments={escrowPayments}
@@ -1231,14 +1358,14 @@ function PrototypeApp() {
               partnerOf={partnerOf}
               onOpenAppointmentChat={target => { const room = chatRooms.find(item => item.appointmentId === target.id); if (room) openRoom(room); }}
               onOpenPartnerProfile={setSelectedChatProfile}
-              onOpenInvitationPost={openInvitation}
+              onOpenInvitationPost={item => demoMode ? openInvitation(item) : setLifecycleNotice(NOT_READY_NOTICE)}
               onToggleFavoriteNotice={toggleFavoriteNotice}
               onRemoveFavorite={toggleFavorite}
               onInviteFavorite={inviteFavorite}
               onOpenFavoriteProfile={openProfileById}
               onChangeStrangerInvitationNotice={changeStrangerInvitationNotice}
-              onUnblock={targetId => {  setBlocks(prev => prev.filter(item => !(item.blockerId === currentUser.id && item.blockedId === targetId))); setLifecycleNotice('차단을 해제했어요. 이전에 취소된 동행은 복구되지 않아요.'); }}
-              onApplyAiFilters={filters => { setExploreFilters(filters); setActiveTab('explore'); setLifecycleNotice('수정 가능한 예시 조건을 둘러보기에 적용했어요. 실제 AI 호출 결과는 아니에요.'); }}
+              onUnblock={targetId => { if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; } setBlocks(prev => prev.filter(item => !(item.blockerId === currentUser.id && item.blockedId === targetId))); setLifecycleNotice('차단을 해제했어요. 이전에 취소된 동행은 복구되지 않아요.'); }}
+              onApplyAiFilters={filters => { if (!demoMode) { setLifecycleNotice(NOT_READY_NOTICE); return; } setExploreFilters(filters); setActiveTab('explore'); setLifecycleNotice('수정 가능한 예시 조건을 둘러보기에 적용했어요. 실제 AI 호출 결과는 아니에요.'); }}
               acceptBlockedReason={acceptBlockedReason}
             />
           </div>
@@ -1264,7 +1391,7 @@ function PrototypeApp() {
             else { setActiveRoomId(null); setActiveTab('chat'); }
           }}
           onOpenSafetyRules={() => setIsSafetyRulesOpen(true)}
-          onOpenReport={() => setIsReportOpen(true)}
+          onOpenReport={() => demoMode ? setIsReportOpen(true) : setLifecycleNotice(NOT_READY_NOTICE)}
           onSendArrivalNotice={handleSendArrivalNotice}
           onCancelAppointment={() => openAppointmentCancellation(appointment)}
           partnerProfile={dashboardProfile}
@@ -1312,6 +1439,8 @@ function PrototypeApp() {
           variant={demoSettings.variants.postForm}
           showVariantLabel={demoMode}
           initialCategory={createContext?.category}
+          serviceMode={!demoMode}
+          onUnavailable={() => setLifecycleNotice(NOT_READY_NOTICE)}
           linkedEvent={createContext?.eventId ? { id: createContext.eventId, title: createContext.eventTitle || '' } : editingPost?.eventId ? { id: editingPost.eventId, title: eventById(editingPost.eventId)?.title || '' } : null}
         />
 
@@ -1330,9 +1459,12 @@ function PrototypeApp() {
           onOpenExistingChat={existingPostRoom ? () => {
             setSelectedPostForDetail(null); setSelectedCategory(null); setSelectedEvent(null); openRoom(existingPostRoom);
           } : undefined}
-          canViewPrivateLocation={privateDataReady && canViewSecretLocation(selectedPostForDetail?.id, appointments, currentUser?.id)}
+          canViewPrivateLocation={privateDataReady && (demoMode
+            ? canViewSecretLocation(selectedPostForDetail?.id, appointments, currentUser?.id)
+            // RLS returned the exact place only to the author or the confirmed companion.
+            : Boolean(selectedPostForDetail?.secretLocation))}
           authorProfile={selectedPostForDetail ? profileForMember(postAuthor(selectedPostForDetail)) : null}
-          onOpenAuthorProfile={() => selectedPostForDetail && setSelectedChatProfile(postAuthor(selectedPostForDetail))}
+          onOpenAuthorProfile={() => { if (!selectedPostForDetail) return; if (!demoMode && !privateDataReady) { setIsAuthModalOpen(true); return; } setSelectedChatProfile(postAuthor(selectedPostForDetail)); }}
           isCovered={Boolean(selectedChatProfile)}
           now={now}
           eligibility={requestEligibility(selectedPostForDetail || {}, currentUser)}
@@ -1409,8 +1541,8 @@ function PrototypeApp() {
             isFavorite: Boolean(currentUser && isSavedBy(currentUser.id, selectedChatProfile.id, favorites)),
             isBlocked: Boolean(currentUser && blocks.some(item => item.blockerId === currentUser.id && item.blockedId === selectedChatProfile.id)),
             onToggleFavorite: () => toggleFavorite(selectedChatProfile.id),
-            onReport: () => setSafetyDialog({ kind: 'report', member: selectedChatProfile }),
-            onBlock: () => setSafetyDialog({ kind: 'block', member: selectedChatProfile }),
+            onReport: () => demoMode ? setSafetyDialog({ kind: 'report', member: selectedChatProfile }) : setLifecycleNotice(NOT_READY_NOTICE),
+            onBlock: () => demoMode ? setSafetyDialog({ kind: 'block', member: selectedChatProfile }) : setLifecycleNotice(NOT_READY_NOTICE),
             onLoginRequired: () => { setSelectedChatProfile(null); setIsAuthModalOpen(true); },
           }}
         />}
@@ -1468,6 +1600,7 @@ function PrototypeApp() {
           state={completionReviewState(reviewAppointment, currentUser?.id, completions, appointmentReviews, now)}
           ownReview={appointmentReviews.find(item => item.appointmentId === reviewAppointment.id && item.reviewerId === currentUser?.id)}
           partnerReview={appointmentReviews.find(item => item.appointmentId === reviewAppointment.id && item.reviewerId !== currentUser?.id)}
+          ratingAndCommentOnly={!demoMode}
           onSubmitReview={handleSubmitReview}
         />}
 

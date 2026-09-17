@@ -14,7 +14,7 @@ export function currentUserFromProfile(user: User, profile: SignupProfile, now =
     realName: profile.real_name,
     maskedName: maskRealName(profile.real_name),
     nickname: maskRealName(profile.real_name),
-    gender: 'undisclosed',
+    gender: profile.gender || 'undisclosed',
     birthDate: profile.birth_date,
     ageGroup: exactAgeLabel(profile.birth_date, now),
     // Activity/location data belongs to the later meetup/profile contract, not signup.

@@ -1,0 +1,47 @@
+{
+  "key": "full-cycle",
+  "status": "fail",
+  "steps": [
+    {
+      "name": "1. existing home renders; A, B, C log in in separate browser contexts",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 4275
+    },
+    {
+      "name": "2. A and B create posts in the existing form (시·구·동 + private place) and see each other",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 12884
+    },
+    {
+      "name": "3. detail shows 시·구·동 only; B and anon never receive the exact place",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 379
+    },
+    {
+      "name": "4. B sees A as masked real name + full age; anon is asked to log in",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 314
+    },
+    {
+      "name": "5. B requests A post once through the existing request modal; repeat is blocked",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 1379
+    },
+    {
+      "name": "6. A and B exchange messages in the existing chat room without reloading",
+      "layer": "BROWSER",
+      "result": "FAIL",
+      "ms": 11431,
+      "error": "send failed for B: {\"canSend\":1,\"value\":\"B→A 실시간 run-ui-fc5\",\"readOnly\":0}"
+    }
+  ],
+  "startedAt": "2026-09-16T13:35:08.734Z",
+  "finishedAt": "2026-09-16T13:35:41.322Z",
+  "failure": "full-cycle › 6. A and B exchange messages in the existing chat room without reloading: send failed for B: {\"canSend\":1,\"value\":\"B→A 실시간 run-ui-fc5\",\"readOnly\":0} — 재실행: npm run harness:full-cycle",
+  "lastPassedStep": "5. B requests A post once through the existing request modal; repeat is blocked"
+}

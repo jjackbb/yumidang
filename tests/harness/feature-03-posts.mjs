@@ -46,6 +46,7 @@ export async function feature03(ctx, feature) {
       startsAfterEnds: { p_ends_at: postA.args.p_starts_at },
       unknownCategory: { p_category: '파티' },
       tooManyTags: { p_tags: ['1', '2', '3', '4', '5', '6'] },
+      unknownPartnerGender: { p_partner_gender: 'other' },
     };
     for (const [name, override] of Object.entries(cases)) {
       const id = randomUUID();

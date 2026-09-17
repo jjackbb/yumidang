@@ -12,6 +12,8 @@ interface ReviewModalProps {
   state: CompletionReviewState;
   ownReview?: AppointmentReview;
   partnerReview?: AppointmentReview;
+  /** Supabase contract stores a 1–5 rating and an optional comment only. */
+  ratingAndCommentOnly?: boolean;
   onSubmitReview: (review: ReviewDraft) => { ok: true } | { ok: false; error: string } | Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
@@ -24,7 +26,7 @@ const ReviewCard = ({ review, partnerName }: { review: AppointmentReview; partne
   <p className="text-xs leading-relaxed text-gray-700">{review.comment || '선택 한마디는 작성하지 않았어요.'}</p>
 </div>;
 
-export const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, appointment, partnerName, variant, state, ownReview, partnerReview, onSubmitReview }) => {
+export const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, appointment, partnerName, variant, state, ownReview, partnerReview, onSubmitReview, ratingAndCommentOnly = false }) => {
   const [rating, setRating] = useState(5);
   const [positiveItems, setPositiveItems] = useState<string[]>([]);
   const [negativeItems, setNegativeItems] = useState<string[]>([]);
@@ -50,7 +52,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, appoi
   return <div role="dialog" aria-modal="true" aria-label="동행 평가" className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4">
     <div className="bg-white w-full max-w-[440px] rounded-t-[28px] sm:rounded-[28px] max-h-[92vh] overflow-y-auto text-left shadow-2xl">
       <header className="sticky top-0 z-10 flex items-start justify-between bg-white/95 px-5 py-4 shadow-xs backdrop-blur-md">
-        <div><div className="flex items-center gap-2"><h2 className="font-bold">동행 평가</h2><span className="rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900">체험 설정 · 07 {variant}안</span></div><p className="mt-1 text-[11px] text-gray-500">{appointment.title}</p></div>
+        <div><div className="flex items-center gap-2"><h2 className="font-bold">동행 평가</h2>{!ratingAndCommentOnly && <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900">체험 설정 · 07 {variant}안</span>}</div><p className="mt-1 text-[11px] text-gray-500">{appointment.title}</p></div>
         <button type="button" onClick={onClose} aria-label="평가창 닫기" className="p-1 text-gray-500"><X size={19} /></button>
       </header>
 
@@ -70,8 +72,8 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, appoi
         <section className="text-center"><p className="text-sm font-bold">이번 동행은 어떠셨나요?</p><div className="mt-2 flex justify-center gap-2">{[1,2,3,4,5].map(value => <button type="button" key={value} aria-label={`${value}점`} onClick={() => { setRating(value); setError(''); }}><Star className={`h-8 w-8 ${value <= rating ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}`} /></button>)}</div></section>
         {variant === 'B' && step === 1 && <button type="button" onClick={() => setStep(2)} className="w-full rounded-xl bg-[#6c2cf5] py-3 text-sm font-bold text-white">후기 선택으로</button>}
         {showDetails && <>
-          <fieldset><legend className="text-xs font-bold">좋았던 점</legend><div className="mt-2 flex flex-wrap gap-2">{POSITIVE_ITEMS.map(item => <button type="button" key={item} aria-pressed={positiveItems.includes(item)} onClick={() => toggle(item, positiveItems, setPositiveItems)} className={`rounded-full px-3 py-2 text-xs ${positiveItems.includes(item) ? 'bg-[#6c2cf5] text-white' : 'bg-gray-100 text-gray-600'}`}>{item}</button>)}</div></fieldset>
-          <fieldset><legend className="text-xs font-bold">아쉬웠던 점</legend><div className="mt-2 flex flex-wrap gap-2">{NEGATIVE_ITEMS.map(item => <button type="button" key={item} aria-pressed={negativeItems.includes(item)} onClick={() => toggle(item, negativeItems, setNegativeItems)} className={`rounded-full px-3 py-2 text-xs ${negativeItems.includes(item) ? 'bg-rose-600 text-white' : 'bg-gray-100 text-gray-600'}`}>{item}</button>)}</div></fieldset>
+          {!ratingAndCommentOnly && <><fieldset><legend className="text-xs font-bold">좋았던 점</legend><div className="mt-2 flex flex-wrap gap-2">{POSITIVE_ITEMS.map(item => <button type="button" key={item} aria-pressed={positiveItems.includes(item)} onClick={() => toggle(item, positiveItems, setPositiveItems)} className={`rounded-full px-3 py-2 text-xs ${positiveItems.includes(item) ? 'bg-[#6c2cf5] text-white' : 'bg-gray-100 text-gray-600'}`}>{item}</button>)}</div></fieldset>
+          <fieldset><legend className="text-xs font-bold">아쉬웠던 점</legend><div className="mt-2 flex flex-wrap gap-2">{NEGATIVE_ITEMS.map(item => <button type="button" key={item} aria-pressed={negativeItems.includes(item)} onClick={() => toggle(item, negativeItems, setNegativeItems)} className={`rounded-full px-3 py-2 text-xs ${negativeItems.includes(item) ? 'bg-rose-600 text-white' : 'bg-gray-100 text-gray-600'}`}>{item}</button>)}</div></fieldset></>}
           <label className="block text-xs font-bold">선택 한마디 <span className="font-normal text-gray-400">(선택, 300자)</span><textarea value={comment} maxLength={300} onChange={event => { setComment(event.target.value); setError(''); }} rows={3} className="mt-2 w-full resize-none rounded-xl border border-gray-200 p-3 font-normal" placeholder="상대에게 전할 말을 남겨주세요." /></label>
           <div className="rounded-xl bg-amber-50 p-3 text-[11px] text-amber-900">제출 후 수정할 수 없는 체험 흐름이에요. 당도 합산·하한·갱신 시점은 논의가 필요해 자동 반영하지 않습니다.</div>
           {error && <p role="alert" className="text-xs text-rose-600">{error}</p>}

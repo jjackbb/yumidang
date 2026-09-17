@@ -107,7 +107,7 @@ export const MyPageView: React.FC<MyPageViewProps> = ({
     const target = appointments.find(item => item.id === review.appointmentId);
     return {
       id: review.id, appointmentId: review.appointmentId, appointmentTitle: target?.title || '완료한 동행',
-      reviewerName: reviewer?.maskedName || '동행 이웃', reviewerAvatar: reviewer?.avatar || '', targetName: '나',
+      reviewerName: reviewer?.maskedName || '동행 이웃', reviewerAvatar: avatarSrc(reviewer?.avatar), targetName: '나',
       rating: review.rating, badges: [...review.positiveItems, ...review.negativeItems], comment: review.comment,
       isBlind: false, createdAt: new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric' }).format(new Date(review.submittedAt)),
     };

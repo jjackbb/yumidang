@@ -1,5 +1,6 @@
 // Feature 1 audit/regression: signup, incomplete-profile recovery, session restore, own-row RLS, masking.
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { anonClient, signIn, PERSONAS } from './helpers/sessions.mjs';
 import { standalone } from './helpers/runner.mjs';
 import { loadEnv } from './helpers/env.mjs';
@@ -7,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function feature01(ctx, feature) {
   // One fresh signup-probe account per run (explicitly creates one test Auth user + profile).
-  const probePhone = `0199${ctx.run.runId.replace(/\D/g, '').slice(-7).padStart(7, '0')}`;
+  const probePhone = `0199${String(parseInt(createHash('sha256').update(ctx.run.runId).digest('hex').slice(0, 12), 16) % 10_000_000).padStart(7, '0')}`;
   const probeName = '가입검증';
   ctx.run.guard.protect(probePhone, probeName, '1999-03-01');
   let probe;
@@ -39,7 +40,7 @@ export async function feature01(ctx, feature) {
   await feature.step('owner saves real_name/birth_date; DB manages timestamps; no phone column', 'REMOTE', async () => {
     const saved = await probe.sdk.from('profiles').insert({ id: probe.userId, real_name: ` ${probeName} `.trim(), birth_date: '1999-03-01' }).select().single();
     assert.equal(saved.error, null, saved.error?.message);
-    assert.deepEqual(Object.keys(saved.data).sort(), ['avatar_url', 'bio', 'birth_date', 'created_at', 'id', 'real_name', 'updated_at']);
+    assert.deepEqual(Object.keys(saved.data).sort(), ['avatar_url', 'bio', 'birth_date', 'created_at', 'gender', 'id', 'real_name', 'updated_at']);
     const again = await probe.sdk.from('profiles').insert({ id: probe.userId, real_name: probeName, birth_date: '1999-03-01' });
     assert.equal(again.error?.code, '23505', 'duplicate signup keeps one row');
     const touched = await probe.sdk.from('profiles').update({ updated_at: '2001-01-01T00:00:00Z' }).eq('id', probe.userId);
@@ -52,6 +53,8 @@ export async function feature01(ctx, feature) {
   await feature.step('real_name constraints reject blank/short/untrimmed values', 'REMOTE', async () => {
     for (const real_name of ['변', '  ', ' 변종현 '])
       assert.ok((await probe.sdk.from('profiles').update({ real_name }).eq('id', probe.userId)).error, 'invalid real_name accepted');
+    assert.ok((await probe.sdk.from('profiles').update({ gender: 'other' }).eq('id', probe.userId)).error, 'invalid gender accepted');
+    assert.equal((await probe.sdk.from('profiles').update({ gender: 'female' }).eq('id', probe.userId)).error, null);
   });
   await feature.step('A/B/C personas have profiles (idempotent setup)', 'REMOTE', async () => {
     for (const name of ['A', 'B', 'C']) {

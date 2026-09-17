@@ -5,8 +5,6 @@ import { toLiveError } from './errors';
 
 export { LiveApiError, toLiveError } from './errors';
 
-export const POST_CATEGORIES = ['전시', '축제', '식사', '운동', '여행', '클래스', '산책', '스터디', '공연', '쇼핑', '기타'] as const;
-
 export interface Post {
   id: string; author_id: string; title: string; description: string; category: string;
   starts_at: string; ends_at: string; recruitment_ends_at: string; public_area: string;

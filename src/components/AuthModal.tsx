@@ -48,6 +48,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [timerSeconds, setTimerSeconds] = useState(180);
   const [realName, setRealName] = useState('');
   const [birthDate, setBirthDate] = useState('');
+  const [gender, setGender] = useState<'female' | 'male' | null>(null);
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
@@ -172,7 +173,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const saveProfile = async (event: React.FormEvent) => {
     event.preventDefault();
-    const problem = validateSignupProfile(realName, birthDate, now);
+    const problem = validateSignupProfile(realName, birthDate, now, gender);
     if (problem) {
       setErrorMessage(problem);
       return;
@@ -191,6 +192,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const payload = {
         id: sessionData.session.user.id,
         real_name: realName.trim(),
+        gender,
         birth_date: birthDate,
         avatar_url: null,
         bio: null,
@@ -261,6 +263,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       {step === 'basic' && <form onSubmit={saveProfile} className="p-5 space-y-4" noValidate>
         <div><label htmlFor="auth-real-name" className="block text-xs font-bold mb-1.5">실명</label><input id="auth-real-name" value={realName} maxLength={20} autoComplete="name" onChange={event => { setRealName(event.target.value); setErrorMessage(''); }} placeholder="예: 변종현" className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200" /><p className="mt-1 text-[11px] text-gray-400">원본 실명은 본인만 볼 수 있고, 다른 회원에게는 {realName.trim().length >= 2 ? maskRealName(realName) : '변*현'}처럼 가려진 이름만 보여요. 신분증 확인이나 실명 인증은 아니에요.</p></div>
+        <div><span id="auth-gender-label" className="block text-xs font-bold mb-1.5">성별</span><div role="group" aria-labelledby="auth-gender-label" className="flex gap-2">{(['female', 'male'] as const).map(value => <button type="button" key={value} aria-pressed={gender === value} onClick={() => { setGender(value); setErrorMessage(''); }}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${gender === value ? 'bg-[#f0edff] text-[#6c2cf5] border border-[#6c2cf5]/30' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{value === 'female' ? '여성' : '남성'}</button>)}</div><p className="mt-1 text-[11px] text-gray-400">다른 회원에게 공개하지 않고, 공고의 상대 성별 조건 확인에만 사용해요.</p></div>
         <div><div className="flex justify-between mb-1.5"><label htmlFor="auth-birth" className="text-xs font-bold">생년월일</label>{age && <span className="text-[11px] font-bold text-[#6c2cf5] bg-[#f0edff] rounded-full px-2 py-0.5">화면 표시: {age}</span>}</div><input id="auth-birth" type="date" min="1900-01-01" max={koreaToday(now)} value={birthDate} onChange={event => { setBirthDate(event.target.value); setErrorMessage(''); }} className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200" /><p className="mt-1 text-[11px] text-gray-400">원본 생년월일은 본인만 조회하며, 화면에는 현재 서울 날짜 기준 만 나이만 표시해요.</p></div>
         <button type="submit" disabled={busy} className="w-full py-3.5 rounded-xl bg-[#6c2cf5] disabled:bg-purple-300 text-white font-bold">{busy ? 'Supabase에 저장 중…' : '기본 프로필 저장하고 가입 완료'}</button>
         <p className="text-[11px] text-gray-400">저장에 실패해도 인증 세션은 유지됩니다. 창을 다시 열거나 새로고침하면 이 단계부터 이어집니다.</p>

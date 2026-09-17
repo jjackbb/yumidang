@@ -1,0 +1,47 @@
+{
+  "key": "full-cycle",
+  "status": "fail",
+  "steps": [
+    {
+      "name": "1. existing home renders; A, B, C log in in separate browser contexts",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 4272
+    },
+    {
+      "name": "2. A and B create posts in the existing form (시·구·동 + private place) and see each other",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 13444
+    },
+    {
+      "name": "3. detail shows 시·구·동 only; B and anon never receive the exact place",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 380
+    },
+    {
+      "name": "4. B sees A as masked real name + full age; anon is asked to log in",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 318
+    },
+    {
+      "name": "5. B requests A post once through the existing request modal; repeat is blocked",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 2865
+    },
+    {
+      "name": "6. A and B exchange messages in the existing chat room without reloading",
+      "layer": "BROWSER",
+      "result": "FAIL",
+      "ms": 30022,
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-room-id=\"room-b4aadf9f-929c-4f15-afe5-4d8b1ba902a2\"]') to be visible\n"
+    }
+  ],
+  "startedAt": "2026-09-16T13:30:32.999Z",
+  "finishedAt": "2026-09-16T13:31:25.852Z",
+  "failure": "full-cycle › 6. A and B exchange messages in the existing chat room without reloading: locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-room-id=\"room-b4aadf9f-929c-4f15-afe5-4d8b1ba902a2\"]') to be visible\n — 재실행: npm run harness:full-cycle",
+  "lastPassedStep": "5. B requests A post once through the existing request modal; repeat is blocked"
+}

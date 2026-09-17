@@ -1,0 +1,78 @@
+{
+  "key": "full-cycle",
+  "status": "fail",
+  "steps": [
+    {
+      "name": "1. existing home renders; A, B, C log in in separate browser contexts",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 4362
+    },
+    {
+      "name": "2. A and B create posts in the existing form (시·구·동 + private place) and see each other",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 12889
+    },
+    {
+      "name": "3. detail shows 시·구·동 only; B and anon never receive the exact place",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 390
+    },
+    {
+      "name": "4. B sees A as masked real name + full age; anon is asked to log in",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 323
+    },
+    {
+      "name": "5. B requests A post once through the existing request modal; repeat is blocked",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 1359
+    },
+    {
+      "name": "6. A and B exchange messages in the existing chat room without reloading",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 5984,
+      "detail": {
+        "latencyBtoAms": 1289,
+        "latencyAtoBms": 1289
+      }
+    },
+    {
+      "name": "7. A accepts B in the chat room → server final match (post closed)",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 561
+    },
+    {
+      "name": "8. only B newly sees the exact place; C still cannot",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 923
+    },
+    {
+      "name": "9. completion before the end time is refused by the server",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 75,
+      "detail": {
+        "waitSecondsUntilEnd": 373
+      }
+    },
+    {
+      "name": "10. after the end time A confirms completion and immediately submits a review",
+      "layer": "BROWSER",
+      "result": "FAIL",
+      "ms": 1087829,
+      "error": "page.waitForFunction: Timeout 40000ms exceeded."
+    }
+  ],
+  "startedAt": "2026-09-16T13:37:19.005Z",
+  "finishedAt": "2026-09-16T13:55:55.224Z",
+  "failure": "full-cycle › 10. after the end time A confirms completion and immediately submits a review: page.waitForFunction: Timeout 40000ms exceeded. — 재실행: npm run harness:full-cycle",
+  "lastPassedStep": "9. completion before the end time is refused by the server"
+}

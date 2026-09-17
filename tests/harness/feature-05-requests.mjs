@@ -102,6 +102,17 @@ export async function feature05(ctx, feature) {
     assert.equal((await b.sdk.rpc('list_sent_join_requests')).data.find(row => row.id === created.data.id).status, 'declined');
     assert.equal(expectError(await b.sdk.rpc('withdraw_join_request', { p_request_id: created.data.id }), 'withdraw declined').message, 'invalid_transition');
   });
+  await feature.step('partner gender condition is enforced by the server (gender stays private)', 'REMOTE', async () => {
+    const maleOnly = await createPost(ctx, a, '남성조건', { partnerGender: 'male' });
+    assert.equal(maleOnly.post.partner_gender, 'male');
+    assert.equal(expectError(await c.sdk.rpc('create_join_request', { p_post_id: maleOnly.post.id, p_message: MESSAGE }), 'female to male-only').message, 'partner_condition_mismatch');
+    assert.deepEqual((await c.sdk.from('join_requests').select('id').eq('post_id', maleOnly.post.id)).data, []);
+    const ok = await b.sdk.rpc('create_join_request', { p_post_id: maleOnly.post.id, p_message: MESSAGE }).single();
+    assert.equal(ok.error, null, ok.error?.message);
+    assert.deepEqual((await a.sdk.from('profiles').select('gender').eq('id', b.userId)).data, [], 'other members cannot read gender');
+    const lists = JSON.stringify([(await a.sdk.rpc('list_received_join_requests')).data, (await b.sdk.rpc('get_request_counterpart_profile', { p_request_id: ok.data.id })).data]);
+    assert.ok(!lists.includes('gender') && !lists.includes('"male"'));
+  });
   await feature.step('direct REST insert/update on join_requests is refused', 'REMOTE', async () => {
     expectError(await b.sdk.from('join_requests').insert({ post_id: postA.post.id, requester_id: b.userId, message: MESSAGE }), 'direct insert');
     expectError(await a.sdk.from('join_requests').update({ status: 'declined' }).eq('id', request.id), 'direct update');

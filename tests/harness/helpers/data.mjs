@@ -12,6 +12,7 @@ export async function createPost(ctx, member, label, {
   category = '산책',
   publicArea = '서울특별시 성동구 성수동',
   id = randomUUID(),
+  partnerGender = 'any',
 } = {}) {
   const now = Date.now();
   const startsAt = new Date(now + startsInSeconds * 1000);
@@ -29,6 +30,7 @@ export async function createPost(ctx, member, label, {
     p_exact_location: exactLocation,
     p_preference_note: null,
     p_tags: ['하네스'],
+    p_partner_gender: partnerGender,
   };
   const { data, error } = await member.sdk.rpc('create_post', args);
   if (error) throw new Error(`create_post failed: ${error.code} ${error.message}`);

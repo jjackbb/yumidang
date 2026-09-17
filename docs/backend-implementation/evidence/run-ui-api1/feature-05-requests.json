@@ -1,0 +1,75 @@
+{
+  "key": "feature-05-requests",
+  "status": "pass",
+  "steps": [
+    {
+      "name": "anon cannot create or list requests",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 85
+    },
+    {
+      "name": "B requests A post once: pending, requester decided by the session",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 115
+    },
+    {
+      "name": "repeat and parallel submits keep exactly one request",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 197
+    },
+    {
+      "name": "own post, closed/deleted posts and short messages are refused without rows",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 5242
+    },
+    {
+      "name": "sent/received lists show masked names and ages only; C sees nothing",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 115
+    },
+    {
+      "name": "counterpart profile: B↔A only; C refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 56
+    },
+    {
+      "name": "only the requester withdraws, only the author declines; others get a generic refusal",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 135
+    },
+    {
+      "name": "withdraw → withdrawn (idempotent); decline afterwards refused; no re-request row",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 166
+    },
+    {
+      "name": "decline → declined visible to both; withdraw afterwards refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 106
+    },
+    {
+      "name": "partner gender condition is enforced by the server (gender stays private)",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 415
+    },
+    {
+      "name": "direct REST insert/update on join_requests is refused",
+      "layer": "REMOTE",
+      "result": "PASS",
+      "ms": 56
+    }
+  ],
+  "startedAt": "2026-09-16T15:55:57.701Z",
+  "finishedAt": "2026-09-16T15:56:06.048Z",
+  "lastPassedStep": "direct REST insert/update on join_requests is refused"
+}

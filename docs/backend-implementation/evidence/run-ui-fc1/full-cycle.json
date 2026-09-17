@@ -1,0 +1,29 @@
+{
+  "key": "full-cycle",
+  "status": "fail",
+  "steps": [
+    {
+      "name": "1. existing home renders; A, B, C log in in separate browser contexts",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 4669
+    },
+    {
+      "name": "2. A and B create posts in the existing form (시·구·동 + private place) and see each other",
+      "layer": "BROWSER",
+      "result": "PASS",
+      "ms": 13372
+    },
+    {
+      "name": "3. detail shows 시·구·동 only; B and anon never receive the exact place",
+      "layer": "BROWSER",
+      "result": "FAIL",
+      "ms": 30201,
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: /\\[run-ui-fc1\\] A 전체사이클 공고/ }).first() to be visible\n"
+    }
+  ],
+  "startedAt": "2026-09-16T13:28:22.033Z",
+  "finishedAt": "2026-09-16T13:29:12.068Z",
+  "failure": "full-cycle › 3. detail shows 시·구·동 only; B and anon never receive the exact place: locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: /\\[run-ui-fc1\\] A 전체사이클 공고/ }).first() to be visible\n — 재실행: npm run harness:full-cycle",
+  "lastPassedStep": "2. A and B create posts in the existing form (시·구·동 + private place) and see each other"
+}

@@ -3,6 +3,7 @@ import { X, Send, Calendar, MapPin, AlertCircle, ShieldCheck, Sparkles, User } f
 import { MeetupPost, Appointment, CurrentUser } from '../types';
 import { overlappingAppointments } from '../utils/postLifecycle';
 import { publicProfileForPost } from '../data/publicProfiles';
+import { avatarSrc } from '../utils/profile';
 
 interface JoinRequestModalProps {
   post: MeetupPost | null;
@@ -10,7 +11,7 @@ interface JoinRequestModalProps {
   onClose: () => void;
   currentUser: CurrentUser | null;
   appointments: Appointment[];
-  onSubmitRequest: (postId: string, message: string) => boolean;
+  onSubmitRequest: (postId: string, message: string) => boolean | Promise<boolean>;
 }
 
 export const JoinRequestModal: React.FC<JoinRequestModalProps> = ({
@@ -25,14 +26,18 @@ export const JoinRequestModal: React.FC<JoinRequestModalProps> = ({
     '안녕하세요! 공고 내용 확인하고 취향이 잘 맞을 것 같아 신청드립니다. 약속 시간 철저히 지키겠습니다 :)'
   );
 
+  const [sending, setSending] = useState(false);
   if (!isOpen || !post) return null;
 
   const conflicts = overlappingAppointments(appointments, currentUser ? [currentUser.id] : [], post.startsAt, post.endsAt);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim()) return;
-    if (onSubmitRequest(post.id, message.trim())) onClose();
+    if (!message.trim() || sending) return;
+    setSending(true);
+    const sent = await onSubmitRequest(post.id, message.trim());
+    setSending(false);
+    if (sent) onClose();
   };
 
   return (
@@ -102,7 +107,7 @@ export const JoinRequestModal: React.FC<JoinRequestModalProps> = ({
             <div className="p-3.5 bg-gray-50 rounded-2xl flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <img
-                  src={currentUser.avatar}
+                  src={avatarSrc(currentUser.avatar)}
                   alt={currentUser.maskedName}
                   className="w-8 h-8 rounded-full object-cover shadow-2xs"
                 />
@@ -145,6 +150,7 @@ export const JoinRequestModal: React.FC<JoinRequestModalProps> = ({
           <div className="pt-2">
             <button
               type="submit"
+              disabled={sending}
               className="w-full py-3.5 bg-[#6c2cf5] hover:bg-[#5820d8] text-white font-bold rounded-xl text-[15px] shadow-md shadow-purple-500/25 active:scale-98 transition-all flex items-center justify-center gap-2"
             >
               <Send className="w-4 h-4" />

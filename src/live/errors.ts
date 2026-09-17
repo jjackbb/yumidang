@@ -10,6 +10,7 @@ const MESSAGES: Record<string, string> = {
   profile_unavailable: '프로필을 볼 수 없어요. 공고가 삭제됐거나 존재하지 않아요.',
   post_unavailable: '공고를 찾을 수 없어요.',
   own_post: '내가 작성한 공고에는 참여 요청할 수 없어요.',
+  partner_condition_mismatch: '작성자가 정한 상대 성별 조건과 내 프로필 성별이 달라 신청할 수 없어요.',
   recruitment_closed: '모집이 마감된 공고예요.',
   recruitment_must_end_in_future: '모집 마감 시각은 지금 이후여야 해요.',
   invalid_message: '소개 메시지는 공백을 제외하고 10~300자로 입력해 주세요.',

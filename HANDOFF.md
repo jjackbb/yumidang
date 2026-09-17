@@ -2,7 +2,17 @@
 
 기준일: 2026-09-16  
 작업 폴더: `/Users/b/Documents/Antigravity/yumidang`  
-현재 상태: **사용자 흐름 1~9 (회원가입 → 로그인 → 공고 → 상대 프로필 → 참여 요청 → 매칭 채팅 → 최종 확정 → 동행 완료 → 블라인드 상호 평가) 구현·원격 적용·하네스 검증.** 최종 결과는 `docs/backend-implementation/HARNESS-REPORT.md`. 아래 "과거 기록" 절들은 기능 1·2 당시 기록이며 `nickname`, `3번부터 미구현` 등은 더 이상 최신이 아니다.
+현재 상태: **기존 `App.tsx` UI를 유지한 채 사용자 흐름 1~9 (회원가입 → 로그인 → 공고 → 상대 프로필 → 참여 요청 → 매칭 채팅 → 최종 확정 → 동행 완료 → 블라인드 상호 평가)을 Supabase에 연결했고, 원격 A/B/C/익명 브라우저 전체 사이클까지 PASS했다.** 최종 결과는 `docs/backend-implementation/HARNESS-REPORT.md`. 아래 "과거 기록" 절들은 기능 1·2 당시 기록이며 `nickname`, `3번부터 미구현` 등은 더 이상 최신이 아니다.
+
+## 최신 재개 결과: 기존 UI 통합 완료 (2026-09-17, Codex)
+
+- 별도 `LiveApp` 화면으로 교체했던 방향을 폐기하고 기존 홈·탐색·신청 모달·채팅·마이페이지 UI에 `src/live/useLiveBackend.ts`와 어댑터를 연결했다. 삭제된 `src/live/*` 화면 파일은 이 통합 과정의 의도된 결과다.
+- 원격 적용된 `20260916131906_existing_ui_gender_category_author_cards.sql`을 로컬 이력에 추가했다. 가입 성별, 공고 상대 성별 조건의 서버 검증, 기존 UI의 `지금` 카테고리, 로그인 목록용 마스킹 작성자 카드 RPC가 포함된다.
+- 중단 원인이던 평가 모달 locator를 하단 `닫기` 버튼의 정확한 접근성 이름으로 수정했다. 이어 발견된 빈 이미지 `src` 경고는 참여 신청 모달과 마이페이지 공개 후기 카드에 중립 기본 아바타를 적용해 해결했다.
+- 최종 원격 브라우저 run `run-codex-fc4`: 기능 전체 사이클 17단계와 콘솔 무오류 검사 PASS. A/B 독립 세션, Realtime 양방향 채팅, 종료 전 완료 거부, 블라인드 평가, 재로그인 복구, C/익명 차단, 원본 개인정보 차단을 기존 UI에서 확인했다.
+- 최종 사전 검사 `run-codex-preflight1`: 7/7 PASS. 대상은 `bndguguarijmghnkenvt`이며 다른 프로젝트에 요청하지 않았다.
+- 로컬 재검증: `npm test` 95/95 PASS, `npm run lint` PASS, `npm run build` PASS(기존 500 kB 청크 경고), `git diff --check` PASS.
+- Notion 도구가 이 세션에 없어 원격 Notion은 `NOT_RUN`; 대체 기록은 `docs/backend-implementation/NOTION-UPDATE.md`에 남겼다.
 
 ## 최신 상태: 기능 1 감사 + 기능 2~9 구현 (2026-09-16, Claude Code)
 

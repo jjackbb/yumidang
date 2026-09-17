@@ -6,9 +6,9 @@ export const TEST_CODE = '123456';
 
 // Persistent harness accounts. Names/birth dates are test data, not verified real names.
 export const PERSONAS = {
-  A: { phone: '01092700001', realName: '하네스에이', birthDate: '2001-01-15' },
-  B: { phone: '01092700002', realName: '하네스비', birthDate: '1998-12-31' },
-  C: { phone: '01092700003', realName: '하네스씨', birthDate: '2000-06-01' },
+  A: { phone: '01092700001', realName: '하네스에이', birthDate: '2001-01-15', gender: 'female' },
+  B: { phone: '01092700002', realName: '하네스비', birthDate: '1998-12-31', gender: 'male' },
+  C: { phone: '01092700003', realName: '하네스씨', birthDate: '2000-06-01', gender: 'female' },
 };
 
 export function anonClient() {
@@ -41,11 +41,15 @@ export async function signIn(phone, mode = 'signup') {
 export async function persona(name) {
   const spec = PERSONAS[name];
   const member = await signIn(spec.phone, 'signup');
-  const existing = await member.sdk.from('profiles').select('id').eq('id', member.userId).maybeSingle();
+  const existing = await member.sdk.from('profiles').select('id,gender').eq('id', member.userId).maybeSingle();
   if (existing.error) throw existing.error;
   if (!existing.data) {
-    const inserted = await member.sdk.from('profiles').insert({ id: member.userId, real_name: spec.realName, birth_date: spec.birthDate });
+    const inserted = await member.sdk.from('profiles').insert({ id: member.userId, real_name: spec.realName, birth_date: spec.birthDate, gender: spec.gender });
     if (inserted.error) throw inserted.error;
+  } else if (!existing.data.gender) {
+    // Accounts created before the gender column: the owner fills it once.
+    const updated = await member.sdk.from('profiles').update({ gender: spec.gender }).eq('id', member.userId);
+    if (updated.error) throw updated.error;
   }
   return { ...member, name, ...spec };
 }

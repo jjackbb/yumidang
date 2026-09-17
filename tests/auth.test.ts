@@ -29,6 +29,8 @@ test('signup profile validation trims the real name and enforces adult birth dat
   assert.match(validateRealName('변') || '', /2~20자/);
   assert.equal(validateSignupProfile('유미', '2000-09-16', NOW), null);
   assert.match(validateSignupProfile('유미', '2010-01-01', NOW) || '', /만 19세/);
+  assert.match(validateSignupProfile('변종현', '2000-09-16', NOW, null) || '', /성별/);
+  assert.equal(validateSignupProfile('변종현', '2000-09-16', NOW, 'male'), null);
 });
 
 test('exact age label uses the Seoul calendar date instead of an age band', () => {
@@ -60,6 +62,7 @@ test('Supabase profile becomes the minimum current user with an exact age', () =
   const profile: SignupProfile = {
     id: '75ab41dd-dfb4-4fbd-b273-573c9f27f518',
     real_name: '변종현',
+    gender: 'female',
     birth_date: '2001-09-16',
     avatar_url: null,
     bio: null,
@@ -76,7 +79,7 @@ test('Supabase profile becomes the minimum current user with an exact age', () =
   assert.equal(mapped.maskedName, '변*현');
   assert.equal(mapped.isPhoneVerified, true);
   assert.equal(mapped.realName, '변종현');
-  assert.equal(mapped.gender, 'undisclosed');
+  assert.equal(mapped.gender, 'female');
 });
 
 test('real-name masking matches the server rule', async () => {

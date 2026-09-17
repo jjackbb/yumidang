@@ -4,6 +4,9 @@
 
 ## 결론
 
+- **기존 UI 통합 최종 run `run-codex-fc4`: `npm run harness:full-cycle`의 사용자 시나리오 17단계와 브라우저 콘솔 무오류 검사 전부 PASS** (2026-09-17, Codex). 별도 LiveApp이 아니라 기존 `App.tsx` 화면에서 실행했다.
+- 최종 사전 검사 `run-codex-preflight1`: 7/7 PASS. 허용 ref, publishable key, Auth, 테스트 인증 활성, 마이그레이션 파일 버전을 재확인했다.
+- 현재 로컬: `npm test` 95/95 PASS, `npm run lint` PASS, production build PASS(기존 500 kB 청크 경고), `git diff --check` PASS.
 - **최종 run `run-20260916T115621-lu3w`: `npm run test:harness` 1회 실행으로 102단계 전부 PASS** (사전 검사 7, 기능 1~9 원격 83, A/B/C 브라우저 전체 사이클 17).
 - 로컬: `npm test` 99/99 PASS, `npm run lint`(tsc) PASS, Vite production build PASS(기존 500 kB 청크 경고만), `git diff --check` PASS.
 - 증거: `docs/backend-implementation/evidence/run-20260916T115621-lu3w/*.json`.
@@ -101,6 +104,9 @@
 | run-dev-fc2 | C 콘솔 HTTP 500 | `P0002` → PostgREST 500 | 신규 마이그레이션 `PT404` |
 | run-…114144-vth5 | 2단계 공고 미검색 | 같은 run 공고 20개 초과로 첫 페이지 밖 | 하네스를 제목 검색으로 |
 | run-…114511-rrbb | 2단계 공고 미검색 | **앱 결함**: 세션 복구 순간 화면 재마운트로 입력한 검색어 소실 | 세션 복구 완료 전에는 화면을 그리지 않도록 수정 → `run-final-fc` PASS → 최종 run PASS |
+| run-ui-fc10 | 10단계 평가 제출 후 닫기 | 하단 `닫기`와 상단 `평가창 닫기`가 부분 이름 locator에 함께 매칭 | 하단 버튼 locator에 `exact: true` 적용 |
+| run-codex-fc2 / fc3 | 최종 콘솔 검사 | 사진 없는 라이브 계정의 아바타가 일부 기존 UI에서 `src=""`로 렌더링 | 참여 신청 모달과 공개 후기 카드에 공용 중립 기본 아바타 적용 |
+| run-codex-fc4 | - | 위 수정 포함 최종 회귀 | 17단계 + 콘솔 무오류 검사 PASS |
 
 ## Supabase Advisor (최종)
 

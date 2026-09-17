@@ -2,125 +2,125 @@
   "features": {
     "preflight": {
       "status": "pass",
-      "runId": "run-20260916T115621-lu3w",
-      "updatedAt": "2026-09-16T11:56:21.317Z",
+      "runId": "run-codex-preflight1",
+      "updatedAt": "2026-09-16T23:50:27.928Z",
       "lastPassedStep": "local migrations are named with remote versions",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-20260916T115621-lu3w/preflight.json",
+      "evidence": "docs/backend-implementation/evidence/run-codex-preflight1/preflight.json",
       "counts": {
         "PASS": 7
       }
     },
     "feature-01-auth": {
       "status": "pass",
-      "runId": "run-20260916T115621-lu3w",
-      "updatedAt": "2026-09-16T11:56:25.020Z",
+      "runId": "run-ui-api1b",
+      "updatedAt": "2026-09-16T15:56:20.333Z",
       "lastPassedStep": "logout revokes the refresh token",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-20260916T115621-lu3w/feature-01-auth.json",
+      "evidence": "docs/backend-implementation/evidence/run-ui-api1b/feature-01-auth.json",
       "counts": {
         "PASS": 9
       }
     },
     "feature-02-login": {
       "status": "pass",
-      "runId": "run-20260916T115621-lu3w",
-      "updatedAt": "2026-09-16T11:56:26.101Z",
+      "runId": "run-ui-api1b",
+      "updatedAt": "2026-09-16T15:56:23.059Z",
       "lastPassedStep": "refresh keeps the user; logout revokes only that session",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-20260916T115621-lu3w/feature-02-login.json",
+      "evidence": "docs/backend-implementation/evidence/run-ui-api1b/feature-02-login.json",
       "counts": {
         "PASS": 6
       }
     },
     "feature-03-posts": {
       "status": "pass",
-      "runId": "run-20260916T115621-lu3w",
-      "updatedAt": "2026-09-16T11:56:33.627Z",
+      "runId": "run-ui-api1",
+      "updatedAt": "2026-09-16T15:55:57.228Z",
       "lastPassedStep": "direct REST writes to posts/private details are refused",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-20260916T115621-lu3w/feature-03-posts.json",
+      "evidence": "docs/backend-implementation/evidence/run-ui-api1/feature-03-posts.json",
       "counts": {
         "PASS": 11
       }
     },
     "feature-04-profile": {
       "status": "pass",
-      "runId": "run-20260916T115621-lu3w",
-      "updatedAt": "2026-09-16T11:56:33.810Z",
+      "runId": "run-ui-api2",
+      "updatedAt": "2026-09-16T15:56:34.505Z",
       "lastPassedStep": "A cannot read B raw profile directly; own raw birth date remains available to the owner",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-20260916T115621-lu3w/feature-04-profile.json",
+      "evidence": "docs/backend-implementation/evidence/run-ui-api2/feature-04-profile.json",
       "counts": {
         "PASS": 5
       }
     },
     "feature-05-requests": {
       "status": "pass",
-      "runId": "run-20260916T115621-lu3w",
-      "updatedAt": "2026-09-16T11:56:35.179Z",
+      "runId": "run-ui-api1",
+      "updatedAt": "2026-09-16T15:56:06.048Z",
       "lastPassedStep": "direct REST insert/update on join_requests is refused",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-20260916T115621-lu3w/feature-05-requests.json",
+      "evidence": "docs/backend-implementation/evidence/run-ui-api1/feature-05-requests.json",
       "counts": {
-        "PASS": 10
+        "PASS": 11
       }
     },
     "feature-06-chat": {
       "status": "pass",
-      "runId": "run-20260916T115621-lu3w",
-      "updatedAt": "2026-09-16T11:56:53.018Z",
+      "runId": "run-ui-api2",
+      "updatedAt": "2026-09-16T15:56:53.397Z",
       "lastPassedStep": "after the meetup start (server time) a pending chat is read-only",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-20260916T115621-lu3w/feature-06-chat.json",
+      "evidence": "docs/backend-implementation/evidence/run-ui-api2/feature-06-chat.json",
       "counts": {
         "PASS": 10
       }
     },
     "feature-07-match": {
       "status": "pass",
-      "runId": "run-20260916T115621-lu3w",
-      "updatedAt": "2026-09-16T11:57:03.084Z",
+      "runId": "run-ui-api2",
+      "updatedAt": "2026-09-16T15:57:04.689Z",
       "lastPassedStep": "direct REST writes to appointments are refused",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-20260916T115621-lu3w/feature-07-match.json",
+      "evidence": "docs/backend-implementation/evidence/run-ui-api2/feature-07-match.json",
       "counts": {
         "PASS": 10
       }
     },
     "feature-08-completion": {
       "status": "pass",
-      "runId": "run-20260916T115621-lu3w",
-      "updatedAt": "2026-09-16T11:57:46.894Z",
+      "runId": "run-ui-api2",
+      "updatedAt": "2026-09-16T15:57:50.332Z",
       "lastPassedStep": "completion responses carry no raw personal data",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-20260916T115621-lu3w/feature-08-completion.json",
+      "evidence": "docs/backend-implementation/evidence/run-ui-api2/feature-08-completion.json",
       "counts": {
         "PASS": 7
       }
     },
     "feature-09-reviews": {
       "status": "pass",
-      "runId": "run-20260916T115621-lu3w",
-      "updatedAt": "2026-09-16T11:58:33.689Z",
+      "runId": "run-ui-api2",
+      "updatedAt": "2026-09-16T15:58:39.032Z",
       "lastPassedStep": "review responses contain no raw personal data or exact place",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-20260916T115621-lu3w/feature-09-reviews.json",
+      "evidence": "docs/backend-implementation/evidence/run-ui-api2/feature-09-reviews.json",
       "counts": {
         "PASS": 10
       }
     },
     "full-cycle": {
       "status": "pass",
-      "runId": "run-20260916T115621-lu3w",
-      "updatedAt": "2026-09-16T12:05:10.881Z",
+      "runId": "run-codex-fc4",
+      "updatedAt": "2026-09-16T23:40:25.133Z",
       "lastPassedStep": "no uncaught page errors in A/B/C/anon browsers",
       "failure": null,
-      "evidence": "docs/backend-implementation/evidence/run-20260916T115621-lu3w/full-cycle.json",
+      "evidence": "docs/backend-implementation/evidence/run-codex-fc4/full-cycle.json",
       "counts": {
         "PASS": 17
       }
     }
   },
-  "lastRunId": "run-20260916T115621-lu3w"
+  "lastRunId": "run-codex-preflight1"
 }

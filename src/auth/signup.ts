@@ -4,11 +4,13 @@ import { ageOn, validateBirthDate, validatePhone } from '../utils/profile.ts';
 
 export const REAL_NAME_MIN_CHARS = 2;
 export const REAL_NAME_MAX_CHARS = 20;
-export const PROFILE_COLUMNS = 'id,real_name,birth_date,avatar_url,bio,created_at,updated_at';
+export const PROFILE_COLUMNS = 'id,real_name,birth_date,gender,avatar_url,bio,created_at,updated_at';
 export interface SignupProfile {
   id: string;
   /** Private source; other members only receive the server-masked name. */
   real_name: string;
+  /** Private; used only by the server to check a post's partner gender condition. Null for older accounts. */
+  gender: 'female' | 'male' | null;
   birth_date: string;
   avatar_url: string | null;
   bio: string | null;
@@ -30,8 +32,8 @@ export function validateRealName(value: string): string | null {
   return null;
 }
 
-export function validateSignupProfile(realName: string, birthDate: string, now = new Date()) {
-  return validateRealName(realName) || validateBirthDate(birthDate, now);
+export function validateSignupProfile(realName: string, birthDate: string, now = new Date(), gender?: 'female' | 'male' | null) {
+  return validateRealName(realName) || (gender === null ? '성별을 선택해 주세요.' : null) || validateBirthDate(birthDate, now);
 }
 
 export function exactAgeLabel(birthDate: string, now = new Date()) {

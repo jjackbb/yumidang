@@ -1,45 +1,101 @@
-// A/B/C full cycle in real browsers against the remote project:
+// A/B/C full cycle in real browsers on the EXISTING app screens (normal run, Supabase data):
 // login → posts → profile → request → realtime chat → final match → completion → blind reviews → reload/relogin → C/anon denial.
 import assert from 'node:assert/strict';
 import { anonClient, PERSONAS } from './helpers/sessions.mjs';
 import { standalone } from './helpers/runner.mjs';
 import { sleep } from './helpers/data.mjs';
-import { ensureAppServer, inPage, launchBrowser, newMemberPage, pageUserId, seoulInputValue, uiLogin } from './helpers/browser.mjs';
+import { ensureAppServer, inPage, launchBrowser, newMemberPage, pageUserId, uiLogin } from './helpers/browser.mjs';
 import { ageOn } from '../../src/utils/profile.ts';
 import { maskRealName } from '../../src/utils/maskName.ts';
 
-async function createPostInUi(member, fields) {
+const seoulParts = date => {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date);
+  const part = type => parts.find(item => item.type === type).value;
+  return { date: `${part('year')}-${part('month')}-${part('day')}`, time: `${part('hour')}:${part('minute')}` };
+};
+
+/** Existing "새 1:1 동행 모집하기" form (variant A). */
+async function createPostInUi(member, { title, category, start, end, area, exact }) {
   const { page } = member;
-  await page.getByRole('button', { name: '동행 모집하기' }).click();
+  await page.locator('#nav-tab-home').click();
+  await page.locator('#btn-fab-create').click();
   const dialog = page.getByRole('dialog', { name: '동행 공고 작성' });
-  await dialog.locator('input[name=title]').fill(fields.title);
-  await dialog.locator('select[name=category]').selectOption(fields.category);
-  await dialog.locator('textarea[name=description]').fill(fields.description);
-  await dialog.locator('input[name=starts]').fill(fields.starts);
-  await dialog.locator('input[name=ends]').fill(fields.ends);
-  await dialog.locator('input[name=recruitment]').fill(fields.recruitment);
-  await dialog.locator('input[name=publicArea]').fill(fields.publicArea);
-  await dialog.locator('input[name=exactLocation]').fill(fields.exactLocation);
-  await dialog.getByRole('button', { name: '공고 등록하기' }).click();
-  await dialog.waitFor({ state: 'detached' });
-  const detail = page.getByRole('dialog', { name: '공고 상세' });
-  await detail.getByText(fields.title).waitFor();
-  await detail.getByTestId('exact-location').waitFor(); // author sees own private place
-  await detail.getByRole('button', { name: '공고 상세 닫기' }).click();
+  await dialog.getByRole('radio', { name: category, exact: true }).click();
+  await dialog.locator('#meetup-title').fill(title);
+  await dialog.locator('#meetup-description').fill('하네스 전체 사이클 검증 공고입니다.');
+  const s = seoulParts(start), e = seoulParts(end);
+  await dialog.locator('#meetup-start-date').fill(s.date);
+  await dialog.locator('#meetup-start-time').fill(s.time);
+  await dialog.locator('#meetup-end-date').fill(e.date);
+  await dialog.locator('#meetup-end-time').fill(e.time);
+  assert.equal(await dialog.getByLabel('공개 랜드마크').count(), 0, 'landmark field must not be collected in normal runs');
+  await dialog.locator('#meetup-location').fill(area);
+  await dialog.locator('#meetup-secret-location').fill(exact);
+  await dialog.getByRole('button', { name: '1:1 동행 등록 완료' }).click();
+  await dialog.waitFor({ state: 'detached', timeout: 20000 });
 }
 
-/** Searches by the exact run title (other stages of the same run may fill the first 20-item page). */
-async function searchTitle(member, title) {
+async function openPostFromExplore(member, title) {
   const { page } = member;
-  await page.goto(new URL('/explore', page.url()).toString());
+  await page.locator('#nav-tab-explore').click();
   await page.getByLabel('공고 검색').fill(title.replace(/^\[/, ''));
-  await page.getByRole('button', { name: '검색', exact: true }).click();
-  return page.getByRole('button', { name: new RegExp(title.replace(/[[\]]/g, '\\$&')) }).first();
+  const card = page.getByRole('button', { name: new RegExp(title.replace(/[[\]]/g, '\\$&')) }).first();
+  await card.waitFor({ timeout: 30000 });
+  await card.click();
+  return page.getByRole('dialog', { name: '동행 공고 상세' });
 }
 
-async function openPostFromList(member, _runId, title) {
-  await (await searchTitle(member, title)).click();
-  return member.page.getByRole('dialog', { name: '공고 상세' });
+async function openRoom(member, requestId) {
+  const { page } = member;
+  await page.locator('#nav-tab-chat').click();
+  const back = page.getByRole('button', { name: '채팅 목록으로' });
+  if (await back.isVisible().catch(() => false)) await back.click();
+  const room = page.locator(`[data-room-id="room-${requestId}"]`);
+  await room.waitFor({ timeout: 30000 });
+  await room.click();
+  await page.getByRole('region', { name: '동행 대화방' }).or(page.getByLabel('동행 대화방')).first().waitFor();
+}
+
+/** Navigation can be aborted by an in-app route change at the same moment; retry once. */
+async function gotoApp(page, url) {
+  try { await page.goto(url); } catch (error) {
+    if (!/ERR_ABORTED/.test(String(error))) throw error;
+    await page.waitForTimeout(500);
+    await page.goto(url);
+  }
+}
+
+async function waitForCompletionButton(member) {
+  try {
+    await member.page.waitForFunction(() => [...document.querySelectorAll('button')].some(b => b.textContent === '내 동행 완료 확인' && !b.disabled), null, { timeout: 40000 });
+  } catch {
+    const info = await member.page.evaluate(() => ({
+      url: location.pathname + location.search,
+      buttons: [...document.querySelectorAll('button')].filter(b => b.textContent.includes('완료')).map(b => ({ text: b.textContent, disabled: b.disabled })),
+      reason: document.querySelector('[aria-label="동행 완료와 평가"] p')?.textContent || null,
+      room: document.querySelector('[data-active-room]')?.getAttribute('data-active-room') || null,
+    }));
+    if (process.env.HARNESS_DEBUG_DIR) await member.page.screenshot({ path: `${process.env.HARNESS_DEBUG_DIR}/complete-${member.label}.png` });
+    throw new Error(`completion button not enabled for ${member.label}: ${JSON.stringify(info)}`);
+  }
+}
+
+async function sendChat(member, text) {
+  const { page } = member;
+  const box = page.getByLabel('메시지', { exact: true });
+  await box.fill(text);
+  const button = page.getByRole('button', { name: '메시지 보내기' });
+  try {
+    await button.click({ timeout: 8000 });
+  } catch (error) {
+    const state = {
+      canSend: await button.count(), value: await box.inputValue().catch(() => 'n/a'), readOnly: await page.getByText('새 메시지는 보낼 수 없어요').count(),
+      disabled: await button.isDisabled().catch(() => 'n/a'), box: await button.boundingBox().catch(() => null),
+      viewport: page.viewportSize(), top: await page.evaluate(() => { const b = document.querySelector('[aria-label="메시지 보내기"]'); if (!b) return null; const r = b.getBoundingClientRect(); const el = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return { tag: el?.tagName, label: el?.getAttribute('aria-label') || el?.closest('[aria-label]')?.getAttribute('aria-label'), y: r.y }; }),
+    };
+    if (process.env.HARNESS_DEBUG_DIR) await page.screenshot({ path: `${process.env.HARNESS_DEBUG_DIR}/send-${member.label}.png` });
+    throw new Error(`send failed for ${member.label}: ${JSON.stringify(state)}`);
+  }
 }
 
 export async function fullCycle(ctx, feature) {
@@ -49,125 +105,113 @@ export async function fullCycle(ctx, feature) {
   const commentA = `A 평가 한마디 ${runId}`;
   const commentB = `B 평가 한마디 ${runId}`;
   ctx.run.guard.protect(exactA, exactB, ...Object.values(PERSONAS).flatMap(p => [p.realName, p.birthDate, p.phone]));
-  for (const name of ['A', 'B', 'C']) await ctx.member(name); // idempotent profile setup through API
+  for (const name of ['A', 'B', 'C']) await ctx.member(name);
 
   const server = await ensureAppServer();
   const browser = await launchBrowser();
   const titleA = `[${runId}] A 전체사이클 공고`;
   const titleB = `[${runId}] B 전체사이클 공고`;
-  let A, B, C, anon, ids = {};
+  let A, B, C, anon, ids = {}, schedule;
   try {
-    await feature.step('1. A, B, C log in through the UI in separate browser contexts', 'BROWSER', async () => {
-      [A, B, C] = await Promise.all(['A', 'B', 'C'].map(name => newMemberPage(browser, server.url, name)));
-      anon = await newMemberPage(browser, server.url, 'anon');
+    await feature.step('1. existing home renders; A, B, C log in in separate browser contexts', 'BROWSER', async () => {
+      [A, B, C, anon] = await Promise.all(['A', 'B', 'C', 'anon'].map(name => newMemberPage(browser, server.url, name)));
+      await anon.page.getByText('어떤 동행을 찾고 계신가요?').or(anon.page.locator('#nav-tab-home')).first().waitFor();
+      assert.equal(await anon.page.getByText('체험 설정').count(), 0, 'normal run must not show the demo panel');
       for (const [member, name] of [[A, 'A'], [B, 'B'], [C, 'C']]) await uiLogin(member, PERSONAS[name].phone);
-      for (const [member, name] of [[A, 'A'], [B, 'B']]) {
-        const expected = `${maskRealName(PERSONAS[name].realName)} · ${ageOn(PERSONAS[name].birthDate)}살`;
-        await member.page.locator('header').getByText(expected).waitFor();
-      }
+      for (const [member, name] of [[A, 'A'], [B, 'B']])
+        await member.page.locator('header').getByText(`${maskRealName(PERSONAS[name].realName)} · ${ageOn(PERSONAS[name].birthDate)}살`).waitFor();
       ids.A = await pageUserId(A); ids.B = await pageUserId(B); ids.C = await pageUserId(C);
-      assert.equal(new Set([ids.A, ids.B, ids.C]).size, 3, 'sessions are independent');
+      assert.equal(new Set([ids.A, ids.B, ids.C]).size, 3);
     });
 
-    let schedule;
-    await feature.step('2. A and B create posts in the UI (exact place required) and see each other in the list', 'BROWSER', async () => {
-      const start = new Date(Date.now() + 6 * 60_000);
-      start.setSeconds(0, 0);
+    await feature.step('2. A and B create posts in the existing form (시·구·동 + private place) and see each other', 'BROWSER', async () => {
+      const start = new Date(Date.now() + 6 * 60_000); start.setSeconds(0, 0);
       schedule = { start, end: new Date(start.getTime() + 60_000) };
-      await createPostInUi(A, { title: titleA, category: '전시', description: '하네스 전체 사이클 검증 공고', starts: seoulInputValue(schedule.start), ends: seoulInputValue(schedule.end), recruitment: seoulInputValue(schedule.start), publicArea: '서울특별시 성동구 성수동', exactLocation: exactA });
+      await createPostInUi(A, { title: titleA, category: '전시', start: schedule.start, end: schedule.end, area: '서울특별시 성동구 성수동', exact: exactA });
       const far = new Date(Date.now() + 5 * 24 * 3600_000); far.setMinutes(0, 0, 0);
-      await createPostInUi(B, { title: titleB, category: '산책', description: '하네스 전체 사이클 검증 공고', starts: seoulInputValue(far), ends: seoulInputValue(new Date(far.getTime() + 3600_000)), recruitment: seoulInputValue(new Date(far.getTime() - 3600_000)), publicArea: '서울특별시 마포구 연남동', exactLocation: exactB });
+      await createPostInUi(B, { title: titleB, category: '산책', start: far, end: new Date(far.getTime() + 3600_000), area: '서울특별시 마포구 연남동', exact: exactB });
       ids.postA = await inPage(A, async (supabase, title) => (await supabase.from('posts').select('id').eq('title', title).single()).data.id, titleA);
-      ids.postB = await inPage(B, async (supabase, title) => (await supabase.from('posts').select('id').eq('title', title).single()).data.id, titleB);
-      for (const member of [A, B]) for (const title of [titleA, titleB]) await (await searchTitle(member, title)).waitFor();
+      for (const [member, title] of [[A, titleB], [B, titleA]]) {
+        const detail = await openPostFromExplore(member, title);
+        await detail.getByRole('button', { name: '공고 상세 닫기' }).click();
+      }
     });
 
-    await feature.step('3. list and detail show 시·구·동 only, never the exact place (B and anon)', 'BROWSER', async () => {
+    await feature.step('3. detail shows 시·구·동 only; B and anon never receive the exact place', 'BROWSER', async () => {
+      await gotoApp(anon.page, server.url); // a visitor opening the app after the post exists
       for (const member of [B, anon]) {
-        const detail = await openPostFromList(member, runId, titleA);
-        await detail.getByTestId('public-area').getByText('서울특별시 성동구 성수동').waitFor();
-        await detail.getByTestId('exact-location-hidden').waitFor();
+        const detail = await openPostFromExplore(member, titleA);
+        await detail.getByText('서울특별시 성동구 성수동').first().waitFor();
         assert.ok(!(await member.page.content()).includes(exactA), `${member.label} page contains exact place`);
         await detail.getByRole('button', { name: '공고 상세 닫기' }).click();
       }
     });
 
     await feature.step('4. B sees A as masked real name + full age; anon is asked to log in', 'BROWSER', async () => {
-      const detail = await openPostFromList(B, runId, titleA);
-      await detail.getByRole('button', { name: '작성자 프로필 보기' }).click();
-      const profile = B.page.getByRole('dialog', { name: '작성자 프로필' });
-      await profile.getByTestId('masked-name').getByText(maskRealName(PERSONAS.A.realName), { exact: true }).waitFor();
-      await profile.getByTestId('public-age').getByText(`${ageOn(PERSONAS.A.birthDate)}살`, { exact: true }).waitFor();
+      const detail = await openPostFromExplore(B, titleA);
+      const masked = maskRealName(PERSONAS.A.realName);
+      await detail.getByRole('button', { name: `${masked}님의 상세 프로필 보기` }).click();
+      const profile = B.page.getByRole('dialog', { name: `${masked}님의 상세 프로필` });
+      await profile.getByText(`${ageOn(PERSONAS.A.birthDate)}살`).waitFor({ timeout: 20000 });
       const html = await B.page.content();
       assert.ok(!html.includes(PERSONAS.A.realName) && !html.includes(PERSONAS.A.birthDate));
-      await profile.getByRole('button', { name: '공고로 돌아가기' }).click();
-      await detail.getByRole('button', { name: '공고 상세 닫기' }).click();
-      const anonDetail = await openPostFromList(anon, runId, titleA);
-      await anonDetail.getByRole('button', { name: '작성자 프로필 보기' }).click();
+      await B.page.keyboard.press('Escape');
+      await gotoApp(B.page, server.url);
+      const anonDetail = await openPostFromExplore(anon, titleA);
+      await anonDetail.getByRole('button', { name: /님의 상세 프로필 보기/ }).click();
       await anon.page.getByRole('dialog', { name: '로그인' }).waitFor();
-      await anon.page.getByRole('button', { name: '로그인 창 닫기' }).click();
-      await anon.page.goto(server.url);
+      await gotoApp(anon.page, server.url);
     });
 
-    await feature.step('5. B requests A post once; a repeated request is blocked', 'BROWSER', async () => {
-      const detail = await openPostFromList(B, runId, titleA);
-      await detail.getByRole('button', { name: '참여 요청하기' }).click();
-      await detail.locator('#join-message').fill('안녕하세요, 전시를 함께 보고 싶어요!');
-      await detail.getByRole('button', { name: '참여 요청 보내기' }).click();
-      await detail.getByTestId('my-request-status').getByText('매칭 대화 중').waitFor();
+    await feature.step('5. B requests A post once through the existing request modal; repeat is blocked', 'BROWSER', async () => {
+      const detail = await openPostFromExplore(B, titleA);
+      await detail.getByRole('button', { name: '1:1 동행 참여 신청하기' }).click();
+      const modal = B.page.getByRole('dialog', { name: '동행 참여 신청' });
+      await modal.locator('textarea').fill('안녕하세요, 전시를 함께 보고 싶어요!');
+      await modal.getByRole('button', { name: '1:1 동행 신청서 전달하기' }).click();
+      await modal.waitFor({ state: 'detached', timeout: 20000 });
       const again = await inPage(B, async (supabase, postId) => (await supabase.rpc('create_join_request', { p_post_id: postId, p_message: '두 번째 요청을 보내 봅니다.' }).single()).data, ids.postA);
       assert.equal(again.already_existed, true);
       ids.request = again.id;
-      const count = await inPage(B, async (supabase, postId) => (await supabase.from('join_requests').select('id').eq('post_id', postId)).data.length, ids.postA);
-      assert.equal(count, 1);
-      await detail.getByRole('button', { name: '신청 대화 열기' }).click();
-      await B.page.getByTestId('request-status').getByText('매칭 대화 중').waitFor();
+      assert.equal(await inPage(B, async (supabase, postId) => (await supabase.from('join_requests').select('id').eq('post_id', postId)).data.length, ids.postA), 1);
     });
 
-    await feature.step('6. A and B exchange messages in both directions without reloading', 'BROWSER', async () => {
-      await A.page.goto(new URL(`/chat?room=${ids.request}`, server.url).toString());
-      await A.page.getByTestId('chat-counterpart').getByText(maskRealName(PERSONAS.B.realName)).waitFor();
-      // Send only after both screens report a live database listener (the app also re-reads on ready).
-      for (const member of [A, B]) await member.page.locator('section[aria-label="매칭 대화"][data-realtime="ready"]').waitFor({ timeout: 20000 });
-      const fromB = `B→A 실시간 ${runId}`;
-      const fromA = `A→B 실시간 ${runId}`;
-      await B.page.locator('#chat-input').fill(fromB);
-      await B.page.getByRole('button', { name: '메시지 보내기' }).click();
-      const started = Date.now();
-      await A.page.getByRole('log').getByText(fromB).waitFor({ timeout: 20000 });
+    await feature.step('6. A and B exchange messages in the existing chat room without reloading', 'BROWSER', async () => {
+      await openRoom(B, ids.request);
+      await openRoom(A, ids.request);
+      await sleep(3000); // both Realtime channels join
+      const fromB = `B→A 실시간 ${runId}`, fromA = `A→B 실시간 ${runId}`;
+      await sendChat(B, fromB);
+      let started = Date.now();
+      await A.page.getByText(fromB).first().waitFor({ timeout: 25000 });
       const latencyBA = Date.now() - started;
-      await A.page.locator('#chat-input').fill(fromA);
-      await A.page.getByRole('button', { name: '메시지 보내기' }).click();
-      const started2 = Date.now();
-      await B.page.getByRole('log').getByText(fromA).waitFor({ timeout: 20000 });
-      return { latencyBtoAms: latencyBA, latencyAtoBms: Date.now() - started2 };
+      await sendChat(A, fromA);
+      started = Date.now();
+      await B.page.getByText(fromA).first().waitFor({ timeout: 25000 });
+      return { latencyBtoAms: latencyBA, latencyAtoBms: Date.now() - started };
     });
 
-    await feature.step('7. A confirms B as the final companion (UI shows the stored exact place to the author)', 'BROWSER', async () => {
-      await A.page.getByRole('button', { name: '이 신청자와 동행 확정' }).click();
-      const sheet = A.page.getByRole('dialog', { name: '동행 확정' });
-      await sheet.getByText(exactA).waitFor();
-      await sheet.getByText('확정하면 다른 신청은 종료됩니다.').waitFor();
-      await sheet.getByRole('button', { name: '최종 동행 확정' }).click();
-      await sheet.waitFor({ state: 'detached' });
-      await A.page.getByTestId('request-status').getByText('동행 확정').waitFor();
+    await feature.step('7. A accepts B in the chat room → server final match (post closed)', 'BROWSER', async () => {
+      await A.page.getByRole('button', { name: '동행 수락하기' }).click();
+      await A.page.waitForFunction(() => !document.body.innerText.includes('동행 수락하기'), null, { timeout: 25000 });
       const post = await inPage(A, async (supabase, id) => (await supabase.from('posts').select('status').eq('id', id).single()).data, ids.postA);
       assert.equal(post.status, 'closed');
+      ids.appointment = await inPage(A, async (supabase, id) => (await supabase.rpc('get_conversation', { p_request_id: id }).single()).data.appointment_id, ids.request);
+      assert.ok(ids.appointment);
     });
 
     await feature.step('8. only B newly sees the exact place; C still cannot', 'BROWSER', async () => {
-      await B.page.getByTestId('request-status').getByText('동행 확정').waitFor({ timeout: 20000 });
-      await B.page.getByTestId('appointment-exact-location').getByText(exactA).waitFor();
-      ids.appointment = await inPage(B, async (supabase, id) => (await supabase.rpc('get_conversation', { p_request_id: id }).single()).data.appointment_id, ids.request);
-      // A's post is closed now, so it has left the default list; C checks the private row with its own session.
-      const cRead = await inPage(C, async (supabase, id) => (await supabase.from('post_private_details').select('exact_location').eq('post_id', id)).data, ids.postA);
-      assert.deepEqual(cRead, []);
+      await B.page.getByRole('button', { name: '내 동행 완료 확인' }).waitFor({ timeout: 25000 });
+      await B.page.getByRole('button', { name: new RegExp(titleA.replace(/[[\]]/g, '\\$&')) }).first().click();
+      const detail = B.page.getByRole('dialog', { name: '동행 공고 상세' });
+      await detail.getByText(exactA).waitFor({ timeout: 20000 });
+      await detail.getByRole('button', { name: '공고 상세 닫기' }).click();
+      assert.deepEqual(await inPage(C, async (supabase, id) => (await supabase.from('post_private_details').select('exact_location').eq('post_id', id)).data, ids.postA), []);
       assert.ok(!(await C.page.content()).includes(exactA));
     });
 
     await feature.step('9. completion before the end time is refused by the server', 'BROWSER', async () => {
       assert.ok(Date.now() < schedule.end.getTime(), 'schedule already ended; rerun');
-      await A.page.getByRole('button', { name: '내 동행 완료 확인' }).waitFor();
       assert.equal(await A.page.getByRole('button', { name: '내 동행 완료 확인' }).isDisabled(), true);
       const early = await inPage(A, async (supabase, id) => (await supabase.rpc('confirm_appointment_completion', { p_appointment_id: id })).error?.message, ids.appointment);
       assert.equal(early, 'too_early');
@@ -175,69 +219,72 @@ export async function fullCycle(ctx, feature) {
     });
 
     await feature.step('10. after the end time A confirms completion and immediately submits a review', 'BROWSER', async () => {
-      await sleep(Math.max(0, schedule.end.getTime() - Date.now()) + 3000);
+      await sleep(Math.max(0, schedule.end.getTime() - Date.now()) + 2000);
       const button = A.page.getByRole('button', { name: '내 동행 완료 확인' });
-      await A.page.waitForFunction(() => { const el = [...document.querySelectorAll('button')].find(b => b.textContent === '내 동행 완료 확인'); return el && !el.disabled; }, null, { timeout: 30000 });
+      await waitForCompletionButton(A);
       await button.click();
-      await A.page.getByTestId('completion-status').getByText('내 완료 확인됨 · 상대 확인 대기').waitFor();
-      const review = A.page.getByRole('region', { name: '상호 평가' });
-      await review.getByRole('radio', { name: '5점' }).click();
-      await review.locator('textarea[name=review-comment]').fill(commentA);
-      await review.getByRole('button', { name: '평가 제출' }).click();
-      await review.getByRole('button', { name: '확인하고 제출' }).click();
-      await review.getByTestId('review-state').getByText('내 평가 제출 완료 · 상대 평가 대기').waitFor();
+      const review = A.page.getByRole('dialog', { name: '동행 평가' });
+      await review.waitFor({ timeout: 20000 });
+      assert.equal(await review.getByText('좋았던 점').count(), 0, 'normal run stores rating + comment only');
+      await review.getByRole('button', { name: '5점' }).click();
+      await review.locator('textarea').fill(commentA);
+      await review.getByRole('button', { name: '평가 제출하기' }).click();
+      await review.getByText('내 평가를 제출했어요').waitFor({ timeout: 20000 });
+      await review.getByRole('button', { name: '닫기', exact: true }).click();
     });
 
-    await feature.step('11. B only learns that A submitted — no rating or comment', 'BROWSER', async () => {
-      await B.page.getByTestId('peer-submitted').waitFor({ timeout: 20000 });
+    await feature.step('11. B cannot see A’s rating or comment anywhere', 'BROWSER', async () => {
+      await sleep(3000);
       assert.ok(!(await B.page.content()).includes(commentA));
       const state = await inPage(B, async (supabase, id) => (await supabase.rpc('get_appointment_review_state', { p_appointment_id: id }).single()).data, ids.appointment);
       assert.equal(state.peer_submitted, true);
       assert.equal(state.peer_review, null);
-      assert.ok(!JSON.stringify(state).includes(commentA));
     });
 
-    await feature.step('12. B confirms completion → appointment completed on both screens', 'BROWSER', async () => {
+    await feature.step('12. B confirms completion → appointment completed', 'BROWSER', async () => {
+      await waitForCompletionButton(B);
       await B.page.getByRole('button', { name: '내 동행 완료 확인' }).click();
-      await B.page.getByTestId('completion-status').getByText('동행 완료').waitFor();
-      await A.page.getByTestId('completion-status').getByText('동행 완료').waitFor({ timeout: 20000 });
+      await B.page.getByRole('dialog', { name: '동행 평가' }).waitFor({ timeout: 20000 });
+      const row = await inPage(B, async (supabase, id) => (await supabase.from('appointments').select('status').eq('id', id).single()).data, ids.appointment);
+      assert.equal(row.status, 'completed');
     });
 
     await feature.step('13–14. B reviews blind; then both see each other’s review', 'BROWSER', async () => {
-      const review = B.page.getByRole('region', { name: '상호 평가' });
+      const review = B.page.getByRole('dialog', { name: '동행 평가' });
       assert.ok(!(await B.page.content()).includes(commentA), 'A comment visible before B submitted');
-      await review.getByRole('radio', { name: '4점' }).click();
-      await review.locator('textarea[name=review-comment]').fill(commentB);
-      await review.getByRole('button', { name: '평가 제출' }).click();
-      await review.getByRole('button', { name: '확인하고 제출' }).click();
-      await review.getByTestId('peer-review-comment').getByText(commentA).waitFor();
-      await A.page.getByTestId('peer-review-comment').getByText(commentB).waitFor({ timeout: 20000 });
+      await review.getByRole('button', { name: '4점' }).click();
+      await review.locator('textarea').fill(commentB);
+      await review.getByRole('button', { name: '평가 제출하기' }).click();
+      await review.getByText(commentA).waitFor({ timeout: 25000 });
+      await review.getByRole('button', { name: '닫기', exact: true }).click();
+      await A.page.getByRole('button', { name: '공개된 후기 보기' }).first().waitFor({ timeout: 30000 });
+      await A.page.getByRole('button', { name: '공개된 후기 보기' }).first().click();
+      await A.page.getByRole('dialog', { name: '동행 평가' }).getByText(commentB).waitFor({ timeout: 20000 });
+      await A.page.keyboard.press('Escape').catch(() => {});
     });
 
     await feature.step('15. state survives reload, logout and re-login (protected /me return, external next ignored)', 'BROWSER', async () => {
       await A.page.reload();
-      await A.page.getByTestId('peer-review-comment').getByText(commentB).waitFor();
-      await B.page.goto(new URL('/me', server.url).toString());
-      await B.page.getByRole('button', { name: '로그아웃' }).click();
-      await B.page.locator('header').getByRole('button', { name: '로그인', exact: true }).waitFor();
+      await openRoom(A, ids.request);
+      await A.page.getByRole('button', { name: '공개된 후기 보기' }).first().waitFor({ timeout: 30000 });
+      await gotoApp(B.page, new URL('/me', server.url).toString());
+      await B.page.getByRole('button', { name: /로그아웃/ }).first().click();
+      await B.page.locator('header').getByRole('button', { name: '로그인', exact: true }).waitFor({ timeout: 20000 });
       assert.equal(await pageUserId(B), null);
       assert.ok(!(await B.page.content()).includes(commentA), 'private data remained after logout');
-      // Protected path → login → return to the requested internal path.
-      await B.page.goto(new URL('/me', server.url).toString());
+      await gotoApp(B.page, new URL('/me', server.url).toString());
       await B.page.waitForURL(/\/login\?next=%2Fme/);
       const login = B.page.getByRole('dialog', { name: '로그인', exact: true });
       await login.locator('#auth-phone').fill(PERSONAS.B.phone);
       await login.getByRole('button', { name: '인증번호 요청', exact: true }).click();
       await login.locator('#auth-otp').fill('123456');
       await login.getByRole('button', { name: 'Supabase에서 인증 확인', exact: true }).click();
-      await B.page.waitForURL(url => new URL(url).pathname === '/me');
-      await B.page.getByTestId('me-masked-name').waitFor();
-      // A manipulated external `next` is ignored.
-      await B.page.goto(new URL('/login?next=https%3A%2F%2Fevil.example%2F', server.url).toString());
-      await B.page.waitForURL(url => new URL(url).origin === new URL(server.url).origin && new URL(url).pathname === '/');
-      await B.page.goto(new URL(`/chat?room=${ids.request}`, server.url).toString());
-      await B.page.getByTestId('completion-status').getByText('동행 완료').waitFor();
-      await B.page.getByTestId('peer-review-comment').getByText(commentA).waitFor();
+      await B.page.waitForURL(url => new URL(url).pathname === '/me', { timeout: 20000 });
+      await gotoApp(B.page, new URL('/login?next=https%3A%2F%2Fevil.example%2F', server.url).toString());
+      await B.page.waitForURL(url => new URL(url).origin === new URL(server.url).origin && new URL(url).pathname !== '/login', { timeout: 20000 });
+      assert.notEqual(new URL(B.page.url()).hostname, 'evil.example');
+      await openRoom(B, ids.request);
+      await B.page.getByRole('button', { name: '공개된 후기 보기' }).first().waitFor({ timeout: 30000 });
     });
 
     await feature.step('16. C and anon cannot read the request, chat, appointment, exact place, completion or reviews', 'BROWSER', async () => {
@@ -254,14 +301,10 @@ export async function fullCycle(ctx, feature) {
           conversationRpc: (await supabase.rpc('get_conversation', { p_request_id: ids.request })).error ? 'denied' : 'allowed',
         };
       };
-      const expected = { request: 0, chat: 0, appointment: 0, exact: 0, completion: 0, reviews: 'denied', reviewRpc: 'denied', conversationRpc: 'denied' };
-      assert.deepEqual(await inPage(C, probe, ids), expected);
-      const anonResult = await inPage(anon, probe, ids);
-      for (const [key, value] of Object.entries(anonResult)) assert.ok(value === 0 || value === 'denied', `anon ${key}: ${value}`);
-      // Independent of the browser: plain anon REST client.
-      const rest = anonClient();
-      assert.ok((await rest.from('appointment_reviews').select('id')).error);
-      return { C: 'all denied', anon: 'all denied' };
+      assert.deepEqual(await inPage(C, probe, ids), { request: 0, chat: 0, appointment: 0, exact: 0, completion: 0, reviews: 'denied', reviewRpc: 'denied', conversationRpc: 'denied' });
+      for (const [key, value] of Object.entries(await inPage(anon, probe, ids))) assert.ok(value === 0 || value === 'denied', `anon ${key}: ${value}`);
+      assert.ok((await anonClient().from('appointment_reviews').select('id')).error);
+      assert.ok(!(await C.page.content()).includes(commentA) && !(await C.page.content()).includes(commentB));
     });
 
     await feature.step('17. A and B cannot read each other’s raw real name, birth date or phone', 'BROWSER', async () => {
@@ -276,7 +319,7 @@ export async function fullCycle(ctx, feature) {
 
     await feature.step('no uncaught page errors in A/B/C/anon browsers', 'BROWSER', async () => {
       const errors = [A, B, C, anon].flatMap(member => member.consoleErrors.map(text => `${member.label}: ${text}`))
-        .filter(text => !/Failed to load resource: the server responded with a status of 4\d\d/.test(text)); // expected denials in step 16
+        .filter(text => !/Failed to load resource: the server responded with a status of 4\d\d/.test(text));
       assert.deepEqual(errors, []);
     });
   } finally {

@@ -46,12 +46,17 @@ const koreaLocalMs = (value: string) =>
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value) ? Date.parse(`${value}:00+09:00`) : NaN;
 export const koreaLocalInput = (iso: string) => `${koreaDateKey(new Date(iso))}T${formatClock(iso)}`;
 
-export function defaultPostForm(now: Date, category = '식사'): PostFormValues {
+/** Supabase contract: the public area is 시·구·동 only (e.g. 서울특별시 성동구 성수동). */
+export const PUBLIC_AREA_PATTERN = /^[가-힣]+(특별시|광역시|특별자치시|특별자치도|도) [가-힣]+(시|군|구)( [가-힣]+구)? [가-힣0-9]+(동|읍|면|가)$/;
+
+export function defaultPostForm(now: Date, category = '식사', serviceMode = false): PostFormValues {
   const day = koreaDateKey(new Date(now.getTime() + DAY));
   return {
     title: '', category, description: '',
     startDate: day, startTime: '18:00', endDate: day, endTime: '19:00', deadline: '',
-    location: '서울 강남구 대치동', publicLocation: '대치역 3번 출구 앞', secretLocation: '르브런치 2층 예약석',
+    location: serviceMode ? '서울특별시 강남구 대치동' : '서울 강남구 대치동',
+    publicLocation: serviceMode ? '' : '대치역 3번 출구 앞',
+    secretLocation: '르브런치 2층 예약석',
     partnerGender: 'any', partnerPreferences: '시간 약속 잘 지키고 편안한 대화 나누실 분 환영해요 :)',
     tags: '#맛집탐방 #주말브런치',
   };
@@ -76,7 +81,7 @@ export function postFormFromPost(post: MeetupPost, now: Date): PostFormValues {
 }
 
 /** start > now, start < end, now < deadline <= start, and no empty required field. */
-export function validatePostForm(values: PostFormValues, now: Date, fields?: PostFormField[]): PostFormErrors {
+export function validatePostForm(values: PostFormValues, now: Date, fields?: PostFormField[], options: { serviceMode?: boolean } = {}): PostFormErrors {
   const errors: PostFormErrors = {};
   const required = (field: PostFormField, message: string) => { if (!String(values[field]).trim()) errors[field] = message; };
   required('title', '모집 제목을 입력해 주세요.');
@@ -92,7 +97,11 @@ export function validatePostForm(values: PostFormValues, now: Date, fields?: Pos
   if (values.deadline && !Number.isFinite(deadline)) errors.deadline = '모집 마감 날짜·시각을 확인해 주세요.';
   else if (Number.isFinite(start) && (deadline <= now.getTime() || deadline > start)) errors.deadline = DEADLINE_MESSAGE;
   required('location', '공개 만남 지역을 입력해 주세요.');
-  required('publicLocation', '공개 랜드마크를 입력해 주세요.');
+  if (options.serviceMode) {
+    if (values.location.trim() && !PUBLIC_AREA_PATTERN.test(values.location.trim())) errors.location = '공개 만남 지역은 "서울특별시 성동구 성수동"처럼 시·구·동까지만 입력해 주세요.';
+    const secret = values.secretLocation.trim();
+    if (secret.length < 2 || secret.length > 200) errors.secretLocation = '확정자 전용 상세 장소를 2~200자로 입력해 주세요.';
+  } else required('publicLocation', '공개 랜드마크를 입력해 주세요.');
   if (!PARTNER_GENDERS.some(option => option.value === values.partnerGender)) errors.partnerGender = '상대 성별 조건을 선택해 주세요.';
   if (!fields) return errors;
   return Object.fromEntries(Object.entries(errors).filter(([field]) => fields.includes(field as PostFormField))) as PostFormErrors;

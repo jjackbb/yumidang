@@ -1,5 +1,5 @@
 -- EXPANSION ONLY. Keep complete_signup(...) executable until the new frontend has been deployed and smoke-tested.
--- This file is intentionally generated locally and must remain unapplied during this implementation session.
+-- Apply this expansion before relying on the versioned profile-image RPCs in production.
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('profile-images', 'profile-images', false, 2097152, array['image/jpeg']::text[])
@@ -55,8 +55,10 @@ begin
     raise exception 'profile_image_not_owned' using errcode = '42501';
   end if;
   if coalesce(v_metadata->>'mimetype', '') <> 'image/jpeg'
-     or case when coalesce(v_metadata->>'size', '') ~ '^[0-9]+$'
-             then (v_metadata->>'size')::bigint else 0 end not between 1 and 2097152 then
+     or coalesce(v_metadata->>'size', '') !~ '^[0-9]+$' then
+    raise exception 'invalid_profile_image_object' using errcode = '22023';
+  end if;
+  if (v_metadata->>'size')::numeric not between 1 and 2097152 then
     raise exception 'invalid_profile_image_object' using errcode = '22023';
   end if;
 end;

@@ -135,7 +135,7 @@ test('object cleanup failure is distinct from RPC failure after the profile path
   assert.doesNotMatch(notice, /삭제하지 못했어요|그대로 유지/);
 });
 
-test('unapplied migration defines private bucket, owner policies, validating versioned RPCs, and transitional old-RPC safety', () => {
+test('expansion migration defines private bucket, owner policies, validating versioned RPCs, and transitional old-RPC safety', () => {
   const sql = readFileSync(new URL('../supabase/migrations/20260917052827_profile_images_required.sql', import.meta.url), 'utf8');
   assert.match(sql, /values \('profile-images', 'profile-images', false, 2097152, array\['image\/jpeg'\]/);
   assert.match(sql, /for select to authenticated[\s\S]*bucket_id = 'profile-images'/);

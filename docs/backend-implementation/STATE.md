@@ -2,12 +2,12 @@
 
 자동 생성 파일이다. 직접 수정하지 말고 하네스를 실행한다. 상태 값: `pending`, `running`, `pass`, `fail`, `not_run`.
 
-- 마지막 run: `run-20260917T015813-zfhx`
+- 마지막 run: `run-20260917T032717-d70f`
 - 재개 지점: 모든 단계 pass — 회귀는 `npm run test:harness`
 
 | 단계 | 상태 | run_id | 단계 결과 | 마지막 통과 단계 | 실패 원인 | 재실행 명령 |
 |---|---|---|---|---|---|---|
-| 사전 검사 | `pass` | run-20260917T015813-zfhx | PASS 7 | local migrations are named with remote versions | - | `npm run harness:preflight` |
+| 사전 검사 | `pass` | run-20260917T032717-d70f | PASS 7 | local migrations are named with remote versions | - | `npm run harness:preflight` |
 | 기능 1 회원가입 | `pass` | run-20260917T000709-1i5g | PASS 9 | logout revokes the refresh token | - | `npm run harness:01` |
 | 기능 2 로그인 | `pass` | run-20260917T000709-1i5g | PASS 6 | refresh keeps the user; logout revokes only that session | - | `npm run harness:02` |
 | 기능 3 공고 | `pass` | run-20260917T000709-1i5g | PASS 11 | direct REST writes to posts/private details are refused | - | `npm run harness:03` |

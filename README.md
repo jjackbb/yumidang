@@ -1,120 +1,72 @@
-# 유미당 (YouMeDang) 🍯
+# 유미당 (YouMeDang)
 
-현재 상태 (2026-09-17): React/Vite 화면에 Supabase 사용자 흐름 1~9와 프로필 사진 필수 가입을 연결해 Production에 배포했다. 최신 구현·검증 기준은 [HANDOFF.md](./HANDOFF.md)와 [백엔드 상태](./docs/backend-implementation/STATE.md)이며, 과거 프로토타입 문서는 역사 자료다.
+취향이 맞는 사람과 1:1 동행을 찾고, 대화한 뒤 약속을 확정하는 React/Vite 서비스입니다.
 
-다음 작업은 [현재 실행 프롬프트](./docs/prompts/START_HERE.md)에서 시작한다. 완료된 과거 프롬프트는 `docs/archive/completed-prompts/2026-09-17/`, 정책 원문과 남은 질문은 `docs/product-decisions/`에 분리했다.
+**현재 목표: 팀이 합의할 전체 화면 구조 만들기.**
+작업을 재개할 때는 [HANDOFF.md](HANDOFF.md) → [작업 분담](docs/work-allocation/README.md) → [화면 목록](docs/design/SCREEN_INVENTORY.md) 순서로 읽습니다. 전체 자료는 [문서 안내](docs/README.md)에 분류했습니다.
 
-> **"너(You)와 나(Me)의 믿을 수 있는 1:1 라이프스타일 동행 매칭 플랫폼"**  
-> 취향 맞는 이웃과 함께하는 실시간 1:1 동행 매칭 및 라이프스타일 서비스
+## 지금 할 일
 
-![유미당 로고](/public/logo.jpg)
+- 오늘(2026-09-20): 설치·생성 파일의 Git 추적과 문서 시작점을 정리한 뒤 커밋·푸시.
+- 내일(2026-09-21): 팀원 1에게 [정책 인수인계](docs/work-allocation/01_POLICY_HANDOFF.md), 팀원 2에게 [API 인수인계](docs/work-allocation/02_API_HANDOFF.md) 전달·작업 시작.
+- 사용자+GPT: 전체 화면 구조 합의 → 핵심 흐름별 Stitch 시안 → Figma 기준본 정리. 정책/API 미정 부분은 표시하고 독립적인 설계는 계속합니다.
 
----
+## 구현과 계획 구분
 
-## 📌 프로젝트 소개
+| 영역 | 현재 코드·문서 기준 |
+|---|---|
+| 핵심 흐름 | 가입·로그인, 공고·상대 프로필, 신청·채팅·최종 확정, 완료·상호 평가의 Supabase 연결 코드 |
+| 인증 | 테스트 휴대폰 인증 경로가 있음. 실제 SMS·실명 인증 완료로 표현하지 않음 |
+| 프로필 사진 | 필수 가입·사진 교체 흐름 |
+| 후속 기능 | 신고·차단·초대·관심친구·일부 공고 관리·통화·결제 등 일반 모드에서 준비 중인 부분이 있음 |
+| 행사·AI | 현재 행사 예시와 AI 체험 UI 존재. 실제 행사 API·AI 2종은 설계/연동 준비 단계 |
+| 최신 확정 | 마스킹 이름, 만 나이 값의 `25세` 표기, 초기 `15당`, D-A16 캡션 등은 [결정 기록이 있는 인수인계](docs/handoffs/CLAUDE_CODE_인수인계_2026-09-18.md) 참고 |
+| 검증 | 과거 실행 기록과 이번 확인은 [정리 인수인계](docs/handoffs/REPOSITORY_CLEANUP_2026-09-20.md)에서 구분 |
 
-**유미당**은 혼자 하기 망설여지거나 취향이 통하는 사람과 함께하고 싶을 때, 안전하고 신뢰할 수 있는 이웃과 **1:1로 연결**해 주는 라이프스타일 동행 플랫폼입니다.
+## 로컬 실행
 
-- **오직 1:1 동행만 매칭**: 다인원 모임의 부담을 덜고, 나와 상대방 단 둘이서만 만나는 깊이 있는 1대1 매칭(정원 2/2명 고정)을 지향합니다.
-- **신뢰 지표 '당도'**: 딱딱한 매너온도 대신 유미당만의 달콤하고 친근한 신뢰 지표인 **당도 (예: 당도 99.2 🍯)**로 상대방의 매너와 동행 만족도를 직관적으로 확인합니다.
-- **일상의 12가지 취향 카테고리**: 전시, 축제, 식사, 운동, 여행, 클래스, 산책, 스터디, 공연, 쇼핑, 번개 등 다양한 일상 카테고리를 제공합니다.
+Node.js는 `--experimental-strip-types`를 지원하는 환경이 필요합니다. 프로젝트의 테스트 명령은 해당 옵션을 사용합니다.
 
----
-
-## 🛠 기술 스택
-
-- **Frontend**: React 19, TypeScript (~5.8)
-- **Bundler & Tooling**: Vite 6, ESBuild
-- **Styling**: Tailwind CSS v4 (`@tailwindcss/vite`)
-- **Icons**: Lucide React (`lucide-react`)
-- **Typography**: Pretendard Variable Font
-
----
-
-## 🚀 빠른 시작 (Getting Started)
-
-### 1. 의존성 설치
 ```bash
-npm install
-```
-
-### 2. 로컬 개발 서버 실행
-```bash
+npm ci
+cp .env.example .env.local
+# .env.local의 Supabase URL·공개키·테스트 모드를 실제 작업 환경에 맞게 설정
 npm run dev
-# 기본 3000 포트 실행 (포트 충돌 시 자동으로 다음 포트 연결 또는 npx vite --port=5173 사용)
 ```
 
-### 3. 프로덕션 빌드 및 타입 검사
+기본 주소는 `http://localhost:3000`입니다. `?demo=1`은 별도 로컬 체험 모드입니다.
+일반 모드는 실제 Supabase를 사용하므로 계정 생성·공고 작성 등은 원격 데이터에 영향을 줍니다.
+
 ```bash
-# TypeScript 타입 검사
-npm run lint
-
-# 배포용 프로덕션 빌드
+npm test
 npm run build
-
-# 빌드 결과물 로컬 미리보기
-npm run preview
 ```
 
----
+`npm run build`는 TypeScript 검사(`npm run lint`)와 Vite 빌드를 포함합니다.
+`test:harness`와 원격 브라우저 테스트는 실제 서비스를 사용할 수 있으므로 [운영 절차](docs/backend-implementation/RUNBOOK.md)를 먼저 읽습니다.
 
-## 📱 주요 화면 및 기능
+## 폴더 구조
 
-| 화면 | 주요 기능 |
-| :--- | :--- |
-| **홈 화면 (Home)** | • 상단 헤더: 유미당 신규 마스코트 로고 및 읽지 않은 알림 카운트<br>• 주목할 이벤트 배너: 시즌 특별 이벤트(서울세계불꽃축제 등) 슬라이드<br>• 매칭 확정 약속 카드: D-Day 카운트다운 및 일정 상세 바로가기<br>• 12가지 카테고리 그리드: 전시, 축제, 식사, 운동 등 원터치 탐색 |
-| **둘러보기 (Explore)** | • 내 주변(동네 반경) 1:1 동행 공고 탐색 및 검색<br>• 지역 필터 및 키워드 검색<br>• 1:1 동행 전용 상태 표시 (`1/2명 모집중`, `2/2명 마감`) |
-| **1:1 채팅 (Chat)** | • 매칭된 동행 파트너와의 1:1 대화방<br>• 상대방 프로필 요약 (응답률, **당도 99 🍯**)<br>• 약속 정보 바로가기 및 실시간 메시지 전송 |
-| **마이페이지 (MyPage)** | • 내 프로필 및 인증회원 뱃지<br>• **유미당 신뢰 지표: 당도 99 🍯 게이지** (기준 당도 50에서 49 상승)<br>• 참여 통계: 참여한 동행(14회), 동행 평점(4.9), 받은 후기(8개)<br>• 진행 예정 동행 요약 카드 및 취향 키워드/안전센터 메뉴 |
-| **새 동행 등록 (FAB)** | • 1:1 맞춤 동행 전용 모집 폼 (카테고리, 제목, 일시, 장소, 태그)<br>• **모집 형태 1:1 동행 (나 + 동행 파트너 1명, 2인 정원 고정)** |
-| **상세 모달 (Modals)** | • `CategoryDetailModal`: 카테고리별 1:1 공고 리스트 및 즉시 참여 신청<br>• `EventDetailModal`: 대형 이벤트 소개 및 전용 1:1 동행 모임 리스트<br>• `DashboardModal`: 확정 약속 상세(상대 프로필, 추천 메뉴, 상세 주소)<br>• `NotificationModal`: 매칭/이벤트/채팅 알림 및 전체 읽음 처리 |
+| 경로 | 용도 |
+|---|---|
+| `src/`, `public/` | 실제 앱·공용 이미지 |
+| `supabase/` | DB 변경 이력·서버 함수 |
+| `tests/` | 로컬 테스트·브라우저/원격 검증 도구 |
+| `docs/work-allocation/` | 현재 담당별 작업 |
+| `docs/design/`, `docs/product-decisions/` | 화면 설계·정책 근거 |
+| `docs/handoffs/` | 날짜별 인수인계 |
+| `docs/archive/` | 완료 프롬프트·과거 루트 문서 |
+| `scripts/` | 과거 프로토타입 자동화 도구. [사용 범위](scripts/README.md) 확인 |
+| `node_modules/`, `dist/`, `.vercel/` | 로컬 설치·빌드·배포 연결 파일. Git 추적 제외 |
 
----
+`package-lock.json`은 재현 가능한 설치를 위해 유지합니다. `.env.local`과 서버 비밀키는 Git에 넣지 않습니다.
+이전 커밋에 들어 있던 설치 파일은 과거 이력에 남습니다. 이번 정리는 이력을 다시 쓰지 않습니다.
 
-## 📂 프로젝트 구조
+## 고정 연결 대상
 
-기본 저장소는 [jjackbb/yumidang](https://github.com/jjackbb/yumidang)이며, 기본 브랜치는 `main`입니다.
-Vercel 배포 설정은 `vercel.json`에 정의되어 있습니다: `npm ci`로 설치한 뒤 `npm run build`를 실행하고 `dist`를 배포합니다.
+- Git: [jjackbb/yumidang](https://github.com/jjackbb/yumidang), `main`
+- Supabase: `bndguguarijmghnkenvt`
+- Vercel: `jjackbb-projects/yumidang`, [운영 사이트](https://yumidang.vercel.app)
+- `main` push는 GitHub 연동 운영 배포를 시작합니다. `.vercel/project.json`은 로컬에 유지합니다.
 
-```
-yumidang/
-├── public/               # 정적 에셋 (유미당 로고 이미지 등)
-│   └── logo.jpg
-├── src/
-│   ├── assets/           # 소스 에셋 (번들러 참조용)
-│   │   └── logo.jpg
-│   ├── components/       # UI 컴포넌트
-│   │   ├── AppointmentCard.tsx       # 매칭 확정 약속 카드
-│   │   ├── BottomNav.tsx             # 하단 내비게이션 바 & FAB (+) 버튼
-│   │   ├── CategoryDetailModal.tsx   # 카테고리별 1:1 동행 리스트 모달
-│   │   ├── CategoryGrid.tsx          # 12종 카테고리 그리드
-│   │   ├── CategoryIcon.tsx          # Lucide 기반 벡터 아이콘 매핑
-│   │   ├── ChatView.tsx              # 1:1 동행 채팅 화면 (당도 99.2 표시)
-│   │   ├── CreateMeetupModal.tsx     # 새 1:1 동행 등록 모달 (정원 2인 고정)
-│   │   ├── DashboardModal.tsx        # 확정 동행 대시보드 모달
-│   │   ├── EventBanner.tsx           # 시즌 이벤트 배너
-│   │   ├── EventDetailModal.tsx      # 이벤트 상세 및 동행 모임 모달
-│   │   ├── ExploreView.tsx           # 내 주변 동행 둘러보기 (1/2명, 2/2명)
-│   │   ├── Header.tsx                # 상단 헤더 (새 로고, 알림 종)
-│   │   ├── MyPageView.tsx            # 마이페이지 (당도 99.2 지표)
-│   │   └── NotificationModal.tsx     # 알림 목록 모달
-│   ├── data/
-│   │   └── mockData.ts               # 목데이터 (모든 공고 1:1 규격 2인 정원)
-│   ├── App.tsx                       # 최상위 앱 컴포넌트 및 상태 관리
-│   ├── index.css                     # Tailwind CSS v4 스타일링
-│   ├── main.tsx                      # React DOM 루트 마운트
-│   ├── types.ts                      # TypeScript 데이터 인터페이스
-│   └── vite-env.d.ts                 # Vite 환경 타입 선언
-├── index.html            # 웹 진입점 HTML (Pretendard 폰트 & 파비콘)
-├── package.json          # 프로젝트 패키지 정의
-├── tsconfig.json         # TypeScript 컴파일 설정
-└── vite.config.ts        # Vite 설정 (@tailwindcss/vite, alias)
-```
-
----
-
-## 🔐 핵심 서비스 정책
-
-1. **1:1 동행 매칭 원칙**: 모든 모집은 호스트 1인 + 게스트 1인으로 구성되며, 분모는 항상 `2명`으로 엄격히 제한됩니다.
-2. **당도 지표**: 상대방과의 만남 평가, 노쇼 여부, 후기를 통해 지속적으로 업데이트되는 신뢰 지수로, 기본 당도 50에서 시작하여 100을 향해 상승합니다.
-3. **안심 실명제 & 인증**: 마스킹된 실명 표기(`조*미`, `민*우`) 및 인증회원 뱃지를 통해 안전한 만남 환경을 보장합니다.
+[정리 전 README·인수인계·로드맵](docs/archive/project-history/2026-09-20/README.md)은 역사 자료이며 현재 작업 지시가 아닙니다.

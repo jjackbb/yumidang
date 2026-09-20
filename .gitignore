@@ -1,10 +1,18 @@
+# Installed dependencies and generated build output (recreate with npm ci/build)
 node_modules/
 dist/
+*.tsbuildinfo
+
+# Local environment; keep the documented example
 .env
 .env.*
 !.env.example
+
+# Local service links and tool caches
 .vercel/
 supabase/.temp/
 .overnight/
+
+# Finder metadata and legacy generated server
 .DS_Store
 server.js

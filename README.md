@@ -3,7 +3,7 @@
 취향이 맞는 사람과 1:1 동행을 찾고, 대화한 뒤 약속을 확정하는 React/Vite 서비스입니다.
 
 **현재 목표: 팀이 합의할 전체 화면 구조 만들기.**
-작업을 재개할 때는 [HANDOFF.md](HANDOFF.md) → [작업 분담](docs/work-allocation/README.md) → [화면 목록](docs/design/SCREEN_INVENTORY.md) 순서로 읽습니다. 전체 자료는 [문서 안내](docs/README.md)에 분류했습니다.
+작업을 재개할 때는 [HANDOFF.md](HANDOFF.md) → [작업 분담](docs/work-allocation/README.md) → [화면 목록](docs/planning/design/SCREEN_INVENTORY.md) 순서로 읽습니다. 전체 자료는 [문서 안내](docs/README.md)에 분류했습니다.
 
 ## 지금 할 일
 
@@ -49,15 +49,18 @@ npm run build
 
 | 경로 | 용도 |
 |---|---|
-| `src/`, `public/` | 실제 앱·공용 이미지 |
-| `supabase/` | DB 변경 이력·서버 함수 |
-| `tests/` | 로컬 테스트·브라우저/원격 검증 도구 |
+| `frontend/` | React 화면·브라우저 로직·이미지·Vite 설정 |
+| `backend/supabase/` | DB 변경 이력·접근 정책·서버 함수 |
+| `tests/frontend/`, `tests/backend/` | 영역별 로컬 테스트 |
+| `tests/browser/`, `tests/harness/`, `tests/*.mjs` | 브라우저·통합·원격 검증 도구 |
 | `docs/work-allocation/` | 현재 담당별 작업 |
-| `docs/design/`, `docs/product-decisions/` | 화면 설계·정책 근거 |
+| `docs/planning/` | [기획 문서](docs/planning/README.md): MVP·기능명세·정책·화면 설계·과거 로드맵 |
 | `docs/handoffs/` | 날짜별 인수인계 |
 | `docs/archive/` | 완료 프롬프트·과거 루트 문서 |
 | `scripts/` | 과거 프로토타입 자동화 도구. [사용 범위](scripts/README.md) 확인 |
 | `node_modules/`, `dist/`, `.vercel/` | 로컬 설치·빌드·배포 연결 파일. Git 추적 제외 |
+
+전체 파일의 분류 기준과 이전→현재 경로는 [파일 분류 안내](docs/FILE_STRUCTURE.md)를 참고합니다. 실행 명령과 `.env.local`은 프로젝트 루트 기준이며, 빌드 결과도 루트 `dist/`에 생성됩니다.
 
 `package-lock.json`은 재현 가능한 설치를 위해 유지합니다. `.env.local`과 서버 비밀키는 Git에 넣지 않습니다.
 이전 커밋에 들어 있던 설치 파일은 과거 이력에 남습니다. 이번 정리는 이력을 다시 쓰지 않습니다.

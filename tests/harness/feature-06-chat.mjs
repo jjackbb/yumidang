@@ -5,7 +5,7 @@ import { anonClient, PERSONAS } from './helpers/sessions.mjs';
 import { standalone } from './helpers/runner.mjs';
 import { createPost, expectError, sleep } from './helpers/data.mjs';
 import { subscribeInserts } from './helpers/realtime.mjs';
-import { maskRealName } from '../../src/utils/maskName.ts';
+import { maskRealName } from '../../frontend/src/utils/maskName.ts';
 
 const REQUEST_MESSAGE = '하네스 채팅 검증용 참여 요청입니다.';
 

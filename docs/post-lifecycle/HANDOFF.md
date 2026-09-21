@@ -1,6 +1,6 @@
 # 2차 구현 기록 — 공고 마감·조건 변경과 신청 상태
 
-현재 작업은 [전체 초안 선택](../design-selection/SKETCHES.html)이다. 사용자의 최신 지시에 따라 Codex는 설계를 맡고, 사용자 선택이 모이면 2026년 10월 7일까지 사용자 지정 Claude Opus 5로 묶음 구현한다. [현재 작업 기준](../design-selection/WORKFLOW.md)이 아래 기록보다 우선한다. 아래 구현 방식들은 개별 UX·정책을 모두 사용자 승인받았다는 의미가 아니다.
+현재 작업은 [전체 초안 선택](../planning/design-selection/SKETCHES.html)이다. 사용자의 최신 지시에 따라 Codex는 설계를 맡고, 사용자 선택이 모이면 2026년 10월 7일까지 사용자 지정 Claude Opus 5로 묶음 구현한다. [현재 작업 기준](../planning/design-selection/WORKFLOW.md)이 아래 기록보다 우선한다. 아래 구현 방식들은 개별 UX·정책을 모두 사용자 승인받았다는 의미가 아니다.
 
 ## 기준
 

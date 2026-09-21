@@ -6,9 +6,9 @@
 
 0. **이번 대화 추가분:** 아래 ‘2026-09-20 추가 — 비로그인 익명 표시·공고 상세 변경’을 먼저 확인한다. 기존 29개·추가 10개와 별도로 누적한 항목이다.
 1. [최신 결정 D-A1~D-A16](../handoffs/CLAUDE_CODE_인수인계_2026-09-18.md)
-2. [기존 29개 + 추가 10개 전체 질문](../product-decisions/정책_재확인_팀회의용_전체질문_2026-09-18.md): 사례·추천·대안이 이미 있으므로 질문지를 새로 만들 필요 없음.
-3. [재확인 질문 원본](../product-decisions/노션_기능명세서_재확인질문_2026-09-17.md), [D01~D12](../product-decisions/노션_기능명세서_질문지_Claude_인수인계_2026-09-17.md)
-4. [기존 결정 기록](../product-decisions/정책_결정_진행기록_2026-09-17.md), [AI 설계안](../design/AI_FEATURES_DESIGN.md), [화면 목록](../design/SCREEN_INVENTORY.md)
+2. [기존 29개 + 추가 10개 전체 질문](../planning/product-decisions/정책_재확인_팀회의용_전체질문_2026-09-18.md): 사례·추천·대안이 이미 있으므로 질문지를 새로 만들 필요 없음.
+3. [재확인 질문 원본](../planning/product-decisions/노션_기능명세서_재확인질문_2026-09-17.md), [D01~D12](../planning/product-decisions/노션_기능명세서_질문지_Claude_인수인계_2026-09-17.md)
+4. [기존 결정 기록](../planning/product-decisions/정책_결정_진행기록_2026-09-17.md), [AI 설계안](../planning/design/AI_FEATURES_DESIGN.md), [화면 목록](../planning/design/SCREEN_INVENTORY.md)
 
 로컬 자료 기준이며 최신 Notion과의 동기화는 이번 작업에서 확인하지 않았다. 과거 문서 속 Notion 수정 프롬프트를 새 원격 수정 지시로 실행하지 않는다.
 
@@ -143,7 +143,7 @@ Claude 수정용 [통합 프롬프트](../prompts/CLAUDE_WIREFRAME_REVISION_2026
 
 ## 결과 형식과 완료 기준
 
-결과 파일 제안: `docs/product-decisions/TEAM1_RESULTS.md`.
+결과 파일 제안: `docs/planning/product-decisions/TEAM1_RESULTS.md`.
 
 ```text
 ID / 결정 또는 보류 / 결정자·날짜 / 실제 발언과 근거

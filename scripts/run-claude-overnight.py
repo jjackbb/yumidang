@@ -172,7 +172,7 @@ def start_server(port, preview=False):
     command = ["node", str(ROOT / "node_modules/vite/bin/vite.js")]
     if preview:
         command.append("preview")
-    command += ["--host", "127.0.0.1", "--port", str(port), "--strictPort"]
+    command += ["--config", str(ROOT / "frontend/vite.config.ts"), "--host", "127.0.0.1", "--port", str(port), "--strictPort"]
     log = path.open("a")
     proc = subprocess.Popen(command, cwd=ROOT, stdin=subprocess.DEVNULL,
                             stdout=log, stderr=subprocess.STDOUT, start_new_session=True)

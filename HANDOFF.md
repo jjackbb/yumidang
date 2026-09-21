@@ -2,12 +2,16 @@
 
 갱신: 2026-09-21. 작업 폴더: `/Users/b/Documents/Antigravity/yumidang`.
 
+2026-09-21 파일 분류: 앱 코드는 `frontend/`, Supabase 서버 함수·DB 마이그레이션은 `backend/supabase/`로 이동했다. 루트 실행 명령과 환경 파일 위치는 유지한다. 이전 문서의 `src/`, `supabase/` 경로는 [파일 분류 안내](docs/FILE_STRUCTURE.md)의 대응표를 참고한다.
+
+기획 자료는 [기획 문서 안내](docs/planning/README.md)에서 시작한다. MVP·기능명세·정책·화면 설계·과거 로드맵을 `docs/planning/`으로 모았으며, 작업 분담·인수인계는 기존 위치에서 연결한다.
+
 ## 먼저 읽을 것
 
 1. [완료된 폴더 정리·커밋/푸시 인수인계](docs/handoffs/REPOSITORY_CLEANUP_2026-09-20.md)
 2. [사용자 지시와 역할 분담](docs/handoffs/WORK_SPLIT_2026-09-20.md)
 3. [팀원 1 정책 / 팀원 2 API / 사용자+GPT 설계](docs/work-allocation/README.md)
-4. [전체 화면 구조 초안](docs/design/SCREEN_INVENTORY.md)
+4. [전체 화면 구조 초안](docs/planning/design/SCREEN_INVENTORY.md)
 5. [현재: 안티그래비티 HTML 후속 수정 이관](docs/prompts/ANTIGRAVITY_WIREFRAME_CONTINUE_2026-09-21.md)
 
 팀원 1·2 자료 전달 예정일은 2026-09-21이며 실제 전달 완료 여부는 확인하지 않았다. 사용자와 GPT는 **팀 합의용 전체 화면 구조와 이번 주 포트폴리오**를 준비한다. 디자인·정책 문서의 초안은 자동 확정하지 않는다.

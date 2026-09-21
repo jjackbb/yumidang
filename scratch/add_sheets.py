@@ -1,4 +1,4 @@
-with open('docs/design/yumidang-wireframes.html', 'r', encoding='utf-8') as f:
+with open('docs/planning/design/yumidang-wireframes.html', 'r', encoding='utf-8') as f:
     html = f.read()
 
 target = "return F({ top: top + action, body:'<div class=\"padx\" style=\"padding-top:8px\">' + msgs + '<div style=\"height:16px\"></div></div>', bot: composer });"
@@ -25,5 +25,5 @@ if target in html:
 else:
     print("Target not found.")
 
-with open('docs/design/yumidang-wireframes.html', 'w', encoding='utf-8') as f:
+with open('docs/planning/design/yumidang-wireframes.html', 'w', encoding='utf-8') as f:
     f.write(html)

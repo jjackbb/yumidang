@@ -8,8 +8,8 @@
 - Git: `jjackbb/yumidang`, `main`
 - Supabase: `bndguguarijmghnkenvt`; Vercel: `jjackbb-projects/yumidang`
 - 과거 `yumidang5/6` 또는 다른 Supabase ref를 사용하지 않는다.
-- [최신 인수인계](../handoffs/CLAUDE_CODE_인수인계_2026-09-18.md)의 D-A13~D-A16, [AI 설계 초안](../design/AI_FEATURES_DESIGN.md), [화면 목록](../design/SCREEN_INVENTORY.md), [팀원 1 문서](01_POLICY_HANDOFF.md)를 읽는다.
-- 현재 연결 확인: `src/lib/supabase.ts`, `src/live/api.ts`, `src/live/useLiveBackend.ts`, `src/data/events.ts`, `supabase/migrations/`, `supabase/functions/`.
+- [최신 인수인계](../handoffs/CLAUDE_CODE_인수인계_2026-09-18.md)의 D-A13~D-A16, [AI 설계 초안](../planning/design/AI_FEATURES_DESIGN.md), [화면 목록](../planning/design/SCREEN_INVENTORY.md), [팀원 1 문서](01_POLICY_HANDOFF.md)를 읽는다.
+- 현재 연결 확인: `frontend/src/lib/supabase.ts`, `frontend/src/live/api.ts`, `frontend/src/live/useLiveBackend.ts`, `frontend/src/data/events.ts`, `backend/supabase/migrations/`, `backend/supabase/functions/`.
 
 ## 대상별 발급·적용 목록
 

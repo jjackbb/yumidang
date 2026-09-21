@@ -4,8 +4,8 @@ import { randomUUID } from 'node:crypto';
 import { anonClient, PERSONAS } from './helpers/sessions.mjs';
 import { standalone } from './helpers/runner.mjs';
 import { createPost, DELETED_FIXTURE_POST_ID, expectError } from './helpers/data.mjs';
-import { ageOn } from '../../src/utils/profile.ts';
-import { maskRealName } from '../../src/utils/maskName.ts';
+import { ageOn } from '../../frontend/src/utils/profile.ts';
+import { maskRealName } from '../../frontend/src/utils/maskName.ts';
 
 export async function feature04(ctx, feature) {
   const a = await ctx.member('A');

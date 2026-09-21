@@ -3,7 +3,7 @@ const fs = require('fs'),
   assert = require('assert/strict');
 const out =
   process.env.EVIDENCE_DIR ||
-  require('path').resolve(__dirname, '../../docs/prototype-roadmap/evidence');
+  require('path').resolve(__dirname, '../../docs/planning/prototype-roadmap/evidence');
 fs.mkdirSync(out, { recursive: true });
 const url = process.env.CHECK_URL || 'http://127.0.0.1:4176';
 (async () => {

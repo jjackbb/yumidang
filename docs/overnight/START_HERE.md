@@ -18,8 +18,8 @@
 2. [단계별 할 일](TASKS.md)
 3. [합격 기준](CHECKS.md)
 4. [자동 실행 상태](STATUS.md), [Claude 단계 기록](PROGRESS.md)
-5. 필요할 때 [사용자 선택 원문 정리](../design-selection/DECISIONS.md), [관심친구 결정](../design-selection/FAVORITE_REVIEW.md)
-6. [최신 MVP 사본](sources/MVP.md), [기능명세 사본](sources/FEATURE_SPEC.md)
+5. 필요할 때 [사용자 선택 원문 정리](../planning/design-selection/DECISIONS.md), [관심친구 결정](../planning/design-selection/FAVORITE_REVIEW.md)
+6. [최신 MVP 사본](../planning/requirements/MVP.md), [기능명세 사본](../planning/requirements/FEATURE_SPEC.md)
 
 권위: 이번 사용자 지시·확정 계약 > 사용자 선택 기록 > 최신 MVP > 기능명세 > 기존 코드·오래된 분석.
 노션 사본에는 보존된 과거 문구가 남아 있다. 최신 확정 추가와 이 계약이 우선한다.

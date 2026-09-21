@@ -7,9 +7,9 @@
 너는 유미당 와이어프레임의 **후속 수정 담당**이다. 검수만 하는 역할이 아니다. 사용자와 주 설계 담당 GPT가 핵심 구조·정책을 판단하고, 너는 사용자가 지정한 화면의 배치·문구·상태·모형 상호작용을 수정한다.
 
 - 작업 폴더: `/Users/b/Documents/Antigravity/yumidang`
-- 수정할 파일: `docs/design/yumidang-wireframes.html`
+- 수정할 파일: `docs/planning/design/yumidang-wireframes.html`
 - 결과를 누적할 파일: `docs/handoffs/화면구조_와이어프레임_HTML_2026-09-20.md`
-- 필요한 캡처만: `docs/design/wireframe-captures/`
+- 필요한 캡처만: `docs/planning/design/wireframe-captures/`
 - 앱 코드·DB·API 키·원격 설정·배포·커밋·푸시는 이번 작업에 포함하지 않는다.
 - 단일 HTML, 외부 의존 없음, 기존 24개 주요 화면 ID와 전체/상세 보기 도구를 유지한다.
 - 같은 HTML은 한 담당자만 수정한다. Claude 작업이 동시에 진행 중이면 겹쳐 쓰지 말고 중단/완료 상태부터 맞춘다. 이미 저장된 미커밋 변경을 초기화하지 않는다.
@@ -18,7 +18,7 @@
 
 1. 기존 HTML 인수인계의 **3차·4차 수정, 정책 확인 사항, NOT_RUN**을 먼저 읽는다. 이후 차수가 추가돼 있으면 더 최신 기록을 우선한다.
 2. HTML의 스타일·공통 컴포넌트·해당 화면·이벤트 연결 위치를 검색해 구조를 파악한다. 현재 파일은 약 2,658줄이며 이후 달라질 수 있다. 전체 파일을 반복 출력하거나 재작성하지 않는다.
-3. 필요한 화면만 `docs/design/SCREEN_INVENTORY.md`, `docs/design/DESIGN.md`와 대조한다.
+3. 필요한 화면만 `docs/planning/design/SCREEN_INVENTORY.md`, `docs/planning/design/DESIGN.md`와 대조한다.
 4. 정책·API 쟁점이 있을 때만 `docs/work-allocation/01_POLICY_HANDOFF.md`, `02_API_HANDOFF.md`의 관련 항목을 읽는다.
 
 `CLAUDE_WIREFRAME_REVISION_2026-09-20.md`는 초기 변경 근거다. 그 목록을 새 작업처럼 전부 재실행하면 3·4차 수정을 되돌릴 수 있다. 현재 사용자 지시가 가장 우선이며, HTML의 구현·과거 AI 인수인계만으로 미정 정책을 확정하지 않는다.

@@ -4,7 +4,7 @@
 
 1. 팀원 1: [정책 재확인·충돌 인수인계](../work-allocation/01_POLICY_HANDOFF.md).
 2. 팀원 2: [API 키 발급·연동 인수인계](../work-allocation/02_API_HANDOFF.md).
-3. 사용자+현재 GPT/Codex: [전체 화면 구조 초안](../design/SCREEN_INVENTORY.md), [디자인 기준](../design/DESIGN.md), [기존 Stitch 프롬프트](../design/STITCH_PROMPTS.md).
+3. 사용자+현재 GPT/Codex: [전체 화면 구조 초안](../planning/design/SCREEN_INVENTORY.md), [디자인 기준](../planning/design/DESIGN.md), [기존 Stitch 프롬프트](../planning/design/STITCH_PROMPTS.md).
 
 정책/API 결과를 화면 설계에 반영한다. 미확정 부분만 대기로 표시하고 독립적인 설계는 계속한다. 코드 적용보다 화면 구조 합의가 현재 작업이다.
 

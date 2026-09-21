@@ -8,7 +8,7 @@ const puppeteer = require('puppeteer');
   page.on('pageerror', error => console.log('PAGE ERROR:', error.message));
   page.on('requestfailed', request => console.log('REQUEST FAILED:', request.url(), request.failure().errorText));
 
-  await page.goto('file:///Users/b/Documents/Antigravity/yumidang/docs/design/yumidang-wireframes.html');
+  await page.goto('file:///Users/b/Documents/Antigravity/yumidang/docs/planning/design/yumidang-wireframes.html');
   
   // Wait a bit for JS to run
   await new Promise(r => setTimeout(r, 1000));

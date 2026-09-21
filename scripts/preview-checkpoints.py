@@ -40,9 +40,9 @@ def now():
 
 def inputs():
     files = []
-    for folder in ["src", "public", "tests"]:
+    for folder in ["frontend/src", "frontend/public", "backend/supabase/functions", "backend/supabase/migrations", "tests"]:
         files.extend(p for p in (ROOT / folder).rglob("*") if p.is_file() and not p.is_symlink())
-    for pattern in ["package*.json", "tsconfig*.json", "vite.config.*", "index.html"]:
+    for pattern in ["package*.json", "tsconfig*.json", "frontend/tsconfig*.json", "frontend/vite.config.*", "frontend/index.html"]:
         files.extend(ROOT.glob(pattern))
     return sorted(set(p for p in files if p.is_file() and not p.is_symlink()))
 

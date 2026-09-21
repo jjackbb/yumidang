@@ -17,7 +17,7 @@ export async function launchBrowser() {
 export async function ensureAppServer() {
   if (process.env.HARNESS_APP_URL) return { url: process.env.HARNESS_APP_URL, stop: () => {} };
   const port = Number(process.env.HARNESS_APP_PORT || 4320);
-  const child = spawn('npx', ['vite', '--port', String(port), '--strictPort', '--host', '127.0.0.1'], { cwd: ROOT, stdio: 'ignore', detached: false });
+  const child = spawn('npx', ['vite', '--config', 'frontend/vite.config.ts', '--port', String(port), '--strictPort', '--host', '127.0.0.1'], { cwd: ROOT, stdio: 'ignore', detached: false });
   const url = `http://127.0.0.1:${port}/`;
   for (let attempt = 0; attempt < 60; attempt++) {
     try { if ((await fetch(url)).ok) return { url, stop: () => child.kill() }; } catch {}

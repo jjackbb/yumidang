@@ -10,7 +10,7 @@ dist/
 
 # Local service links and tool caches
 .vercel/
-supabase/.temp/
+backend/supabase/.temp/
 .overnight/
 
 # Finder metadata and legacy generated server

@@ -18,7 +18,7 @@ export async function preflight(ctx, feature) {
     return { url: ALLOWED_URL, keyKind: 'publishable' };
   });
   await feature.step('no service-role/secret key referenced by browser code', 'LOCAL', async () => {
-    const hits = execSync("grep -rlE 'sb_secret_|service_role|SERVICE_ROLE' src || true", { cwd: ROOT }).toString().trim();
+    const hits = execSync("grep -rlE 'sb_secret_|service_role|SERVICE_ROLE' frontend/src || true", { cwd: ROOT }).toString().trim();
     assert.equal(hits, '', `browser source mentions secret keys: ${hits}`);
   });
   await feature.step('git state recorded', 'LOCAL', async () => ({
@@ -35,7 +35,7 @@ export async function preflight(ctx, feature) {
     assert.equal(result.status, 200, `test-phone-auth HTTP ${result.status}: expired or disabled — do not extend automatically`);
   });
   await feature.step('local migrations are named with remote versions', 'LOCAL', async () => {
-    const files = fs.readdirSync(path.join(ROOT, 'supabase/migrations')).filter(name => name.endsWith('.sql'));
+    const files = fs.readdirSync(path.join(ROOT, 'backend/supabase/migrations')).filter(name => name.endsWith('.sql'));
     assert.ok(files.every(name => /^\d{14}_[a-z0-9_]+\.sql$/.test(name)), 'unversioned migration file present');
     return { localMigrations: files.length };
   });

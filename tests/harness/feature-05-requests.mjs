@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { anonClient, PERSONAS } from './helpers/sessions.mjs';
 import { standalone } from './helpers/runner.mjs';
 import { createPost, DELETED_FIXTURE_POST_ID, expectError, sleep } from './helpers/data.mjs';
-import { maskRealName } from '../../src/utils/maskName.ts';
+import { maskRealName } from '../../frontend/src/utils/maskName.ts';
 
 const MESSAGE = '하네스 참여 요청 메시지입니다. 반갑습니다.';
 

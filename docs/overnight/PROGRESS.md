@@ -86,7 +86,7 @@
 - **재동의** (`postLifecycle.ts`): `conditionsOf`/`conditionChanges`에 `상대 성별 조건` 추가 → 기존 신청은 `변경 조건 확인 필요`, 동의해도 `매칭 중 · 확정 전`, 작성자 수락이 있어야 확정. 변경된 조건에 맞지 않는 신청자는 동의가 막히고, 작성자 수락도 이유와 함께 막힘. 모집 마감 시각만 바꾸는 편집은 재동의 대상이 아님(기존 만료 회귀 기대 유지).
 - **Me** (`MyPageView.tsx`, `CompanionRequests.tsx`, `src/utils/myActivity.ts`): 상단 신청한 동행/받은 신청 두 탭 유지. 보낸 신청 카드에도 작성자(상대) 프로필 진입, 종료된 신청은 상태 라벨+이유 문장(거절/취소/다른 신청자 확정/마감/만료/삭제/조건 거절/확정 취소), 수락 불가 이유, `대화 없이 바로 수락 가능` 안내. **초대 관리** 골격(받은/보낸 초대 탭·카드·빈 상태, 초대만으로 신청·확정 안 됨 안내; 초대 생성은 단계 4). **내가 쓴 공고**(상태 라벨, 확정 전 신청 수, 마감/만료/삭제/매칭/취소 이유 — 모집 마감은 완료가 아님을 명시). **상태별 동행** 확정/완료/취소 탭: 약속 제목(약속 상세), 연결 공고, 보는 사람 기준 상대(방 멤버·계정으로 계산, 저장된 partnerName의 한쪽 시점 오류 회피), 취소 주체·사유, 약속 상세/대화방. 기존 중복 목록 `나의 동행 (n건)`은 이 탭으로 대체.
 - **이번 호출에서 찾은 버그 수정**: B안 1단계 `다음` 클릭 시 React가 같은 `<button>` 노드를 `type="submit"`으로 재사용해 기본 동작으로 폼이 제출되던 문제(2단계 입력 없이 기본값으로 공고가 저장됨). 버튼별 key로 분리.
-- **검사 실행 보조** (`tests/browser/overnight-env.cjs`): 환경변수가 없을 때 기존 `conversations.cjs`가 사용자 증거 폴더(`docs/prototype-roadmap/evidence`)에 쓰지 않도록 overnight 기본값(CHECK_URL 4186 데모, EVIDENCE_DIR docs/overnight/evidence)을 채워 실행.
+- **검사 실행 보조** (`tests/browser/overnight-env.cjs`): 환경변수가 없을 때 기존 `conversations.cjs`가 사용자 증거 폴더(`docs/planning/prototype-roadmap/evidence`)에 쓰지 않도록 overnight 기본값(CHECK_URL 4186 데모, EVIDENCE_DIR docs/overnight/evidence)을 채워 실행.
 
 ### 검사 (이 단계에서 직접 실행)
 - `npm run lint` PASS

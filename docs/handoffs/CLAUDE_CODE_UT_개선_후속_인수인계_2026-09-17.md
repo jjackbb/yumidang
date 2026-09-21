@@ -45,7 +45,7 @@
 6. `supabase/migrations/20260917122744_ut_notifications_and_discovery.sql`
 7. `supabase/migrations/20260917123159_notifications_join_request_index.sql`
 8. `tests/harness/ut-notifications.mjs`
-9. `docs/product-decisions/README.md`
+9. `docs/planning/product-decisions/README.md`
 
 과거 `docs/archive/completed-prompts/2026-09-17/` 문서는 실행 지시가 아니라 역사 기록이다.
 
@@ -143,7 +143,7 @@ on public.notifications (join_request_id);
 현재 작업 트리에는 서로 다른 성격의 변경이 함께 있다.
 
 1. 사용자가 요청한 문서 정리
-   - 루트의 과거 프롬프트·노션 파일을 `docs/archive/`, `docs/product-decisions/`로 이동
+   - 루트의 과거 프롬프트·노션 파일을 `docs/archive/`, `docs/planning/product-decisions/`로 이동
    - `docs/prompts/`와 이 인수인계 추가
 2. UT 개선 코드·테스트·migration
 3. 구현·원격 검증 문서와 증거

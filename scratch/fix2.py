@@ -1,4 +1,4 @@
-with open('docs/design/yumidang-wireframes.html', 'r', encoding='utf-8') as f:
+with open('docs/planning/design/yumidang-wireframes.html', 'r', encoding='utf-8') as f:
     html = f.read()
 
 bad_str = """    }).join("")
@@ -12,5 +12,5 @@ bad_str = """    }).join("")
 print("Found bad string:", bad_str in html)
 html = html.replace(bad_str, "")
 
-with open('docs/design/yumidang-wireframes.html', 'w', encoding='utf-8') as f:
+with open('docs/planning/design/yumidang-wireframes.html', 'w', encoding='utf-8') as f:
     f.write(html)

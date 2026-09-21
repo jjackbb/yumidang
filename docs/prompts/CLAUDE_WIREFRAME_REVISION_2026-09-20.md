@@ -11,11 +11,11 @@
 
 ## 1. 대상과 자료
 
-- 수정 대상: `docs/design/yumidang-wireframes.html`
+- 수정 대상: `docs/planning/design/yumidang-wireframes.html`
 - 기존 인수인계: `docs/handoffs/화면구조_와이어프레임_HTML_2026-09-20.md`
-- 화면 구조: `docs/design/SCREEN_INVENTORY.md`
-- 기존 화면 설명: `docs/design/STITCH_PROMPTS.md`
-- 디자인 기준: `docs/design/DESIGN.md`
+- 화면 구조: `docs/planning/design/SCREEN_INVENTORY.md`
+- 기존 화면 설명: `docs/planning/design/STITCH_PROMPTS.md`
+- 디자인 기준: `docs/planning/design/DESIGN.md`
 - 최신 정책 추가분: `docs/work-allocation/01_POLICY_HANDOFF.md`의 ANON-01~03·UX-POST-01~04·UX-FILTER-01
 - API 확인 대기: `docs/work-allocation/02_API_HANDOFF.md`의 API-08
 

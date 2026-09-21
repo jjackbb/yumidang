@@ -5,8 +5,8 @@ import { anonClient, PERSONAS } from './helpers/sessions.mjs';
 import { standalone } from './helpers/runner.mjs';
 import { sleep } from './helpers/data.mjs';
 import { ensureAppServer, inPage, launchBrowser, newMemberPage, pageUserId, uiLogin } from './helpers/browser.mjs';
-import { ageOn } from '../../src/utils/profile.ts';
-import { maskRealName } from '../../src/utils/maskName.ts';
+import { ageOn } from '../../frontend/src/utils/profile.ts';
+import { maskRealName } from '../../frontend/src/utils/maskName.ts';
 
 const seoulParts = date => {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date);

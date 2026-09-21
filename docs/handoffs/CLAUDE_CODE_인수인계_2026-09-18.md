@@ -66,14 +66,14 @@
 
 작성된 문서:
 
-- `docs/design/DESIGN.md` — 홈 화면에서 추출한 디자인 시스템(색·글꼴·radius·컴포넌트). Stitch 첫 입력용.
-- `docs/design/STITCH_PROMPTS.md` — 화면별 Stitch 프롬프트(S01~S19, 1·2·3차와 보류 목록 포함).
-- `docs/design/AI_FEATURES_DESIGN.md` — AI 브리핑·공고 찾기 챗봇 설계안(구현 전).
-- `docs/design/ANTIGRAVITY_UI_APPLY_PROMPT.md` — 시안을 코드에 입히는 실행 프롬프트(로직 불변, 테스트 통과 후 화면 단위 commit).
+- `docs/planning/design/DESIGN.md` — 홈 화면에서 추출한 디자인 시스템(색·글꼴·radius·컴포넌트). Stitch 첫 입력용.
+- `docs/planning/design/STITCH_PROMPTS.md` — 화면별 Stitch 프롬프트(S01~S19, 1·2·3차와 보류 목록 포함).
+- `docs/planning/design/AI_FEATURES_DESIGN.md` — AI 브리핑·공고 찾기 챗봇 설계안(구현 전).
+- `docs/planning/design/ANTIGRAVITY_UI_APPLY_PROMPT.md` — 시안을 코드에 입히는 실행 프롬프트(로직 불변, 테스트 통과 후 화면 단위 commit).
 
 순서: 1차 S01~S09-3(정책 영향 적음) → 2차 S10~S15-2 → 3차 S16~S19(정책 확정 후). 홈 화면은 교체 대상이 아니다(디자인 기준).
 
-진행 방법: Stitch에 DESIGN.md 입력 → 화면 프롬프트 → 결과를 `docs/design/stitch-export/`에 저장 → Antigravity가 한 화면씩 적용 → 화면 2~3개마다 Claude 검수.
+진행 방법: Stitch에 DESIGN.md 입력 → 화면 프롬프트 → 결과를 `docs/planning/design/stitch-export/`에 저장 → Antigravity가 한 화면씩 적용 → 화면 2~3개마다 Claude 검수.
 
 ---
 
@@ -97,7 +97,7 @@
 | D-A12 | 당도 기본값 **15**, 표기 **"15당"** |
 | **D-A13** | 주소·장소 검색은 **카카오 우편번호 서비스 + 카카오 로컬 API**(장소명 검색까지). 네이버는 보류 |
 | **D-A14** | 행사 데이터는 **무료인 범위에서 KOPIS + 서울 열린데이터광장 문화행사정보 + 한국관광공사 TourAPI 전부** 연동. 팝업은 공개 API가 없어 운영자 등록 |
-| **D-A15** | **AI 기능 2종 도입**: ① 후기 요약 Ai 브리핑 ② 자연어 공고 찾기 챗봇. 테스트는 **포텐스닷 API**, 이후 **제미나이 API**로 전환. 설계안 `docs/design/AI_FEATURES_DESIGN.md`, 구현 전 승인 필요 |
+| **D-A15** | **AI 기능 2종 도입**: ① 후기 요약 Ai 브리핑 ② 자연어 공고 찾기 챗봇. 테스트는 **포텐스닷 API**, 이후 **제미나이 API**로 전환. 설계안 `docs/planning/design/AI_FEATURES_DESIGN.md`, 구현 전 승인 필요 |
 | **D-A16** | Ai 브리핑 캡션 문구를 **"사용자 리뷰를 바탕으로 동행 성향을 요약했습니다."** 로 한다(2026-09-20). 기존 "공개된 후기 N건 기준 · 안전을 보증하는 정보는 아니에요"는 사용하지 않는다. 단어는 특징/취향/성향 중 **성향** 추천 |
 
 ---
@@ -109,7 +109,7 @@
 - 남은 정책 질문 **29개**: `docs/prompts/02_…md` 2절 목록.
 - 추가 안건 7-1: "준비 중"만 뜨는 기능(신고·차단·초대·관심친구·공고 수정/마감/삭제·확정 취소·KYC·유료 결제·안심 통화) 숨길지/표시할지, 신고 화면 문구 충돌, 에스크로 예시 데이터 노출.
 - 추가 안건 7-3: 후기 공개 기준, **D-A16으로 삭제된 "안전 보증 아님" 안내를 다른 화면에서 보완할지**, 나이 하한 18 vs 가입 19세, "25세" 표기 오해, 당도 증감 규칙, Ai 브리핑 연동 전 표시, MBTI 필수 여부, 이벤트 선택 범위.
-- 결정 기록 파일: `docs/product-decisions/정책_결정_진행기록_2026-09-17.md`(다른 세션이 생성함, Claude는 건드리지 않았다).
+- 결정 기록 파일: `docs/planning/product-decisions/정책_결정_진행기록_2026-09-17.md`(다른 세션이 생성함, Claude는 건드리지 않았다).
 
 ### 7.2 구현 전 준비 (사용자만 가능)
 
@@ -150,7 +150,7 @@
 1. **정책 트랙(GPT):** `02_…md` 전체를 넣고 3문항씩 진행 → 결정 기록 갱신.
 2. **UI 트랙(Stitch→Antigravity):** S01부터 시안 생성·적용. 2~3화면마다 Claude 검수.
 3. **API 트랙:** 키 발급 후 (a) 주소 검색 UI + 공개/비공개 분리 저장, (b) `events` 테이블 설계와 동기화 Edge Function, (c) 행사 화면 연결. 모두 migration은 forward-only, 적용 전 승인.
-4. **AI 트랙:** `docs/design/AI_FEATURES_DESIGN.md` 6절 결정 → P0(UI 더미) → 포텐스닷 어댑터 → 제미나이 전환. 포텐스닷 API 스펙은 미확인.
+4. **AI 트랙:** `docs/planning/design/AI_FEATURES_DESIGN.md` 6절 결정 → P0(UI 더미) → 포텐스닷 어댑터 → 제미나이 전환. 포텐스닷 API 스펙은 미확인.
 5. 데이터가 비어 있으므로, 배포 후 화면 점검 12개 항목은 **새 계정으로 가입해 재실행**해야 한다(현재 NOT_RUN).
 
 ---

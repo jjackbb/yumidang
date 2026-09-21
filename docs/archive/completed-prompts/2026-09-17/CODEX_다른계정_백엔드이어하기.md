@@ -13,8 +13,8 @@ Claude Code의 ‘supabase 적용 구현 세션’이 사용량 제한으로 중
 ## 첫 번째로 할 일
 
 1. git status와 기존 수정 사항을 확인한다. 이미 변경된 파일을 초기화하지 않는다.
-2. docs/backend-plans/CLAUDE-CODE-02-09-HARNESS-PROMPT.md 전체와 그 문서가 지정한 자료를 읽는다. 현재 인수인계의 최신 ‘기존 UI 유지’ 지시가 우선한다.
-3. docs/backend-implementation/STATE.md, state.json, RUNBOOK.md, HARNESS-REPORT.md 및 최신 증거를 확인한다. 존재·내용을 실행 시 재확인한다.
+2. docs/development/backend-plans/CLAUDE-CODE-02-09-HARNESS-PROMPT.md 전체와 그 문서가 지정한 자료를 읽는다. 현재 인수인계의 최신 ‘기존 UI 유지’ 지시가 우선한다.
+3. docs/development/backend-implementation/STATE.md, state.json, RUNBOOK.md, HARNESS-REPORT.md 및 최신 증거를 확인한다. 존재·내용을 실행 시 재확인한다.
 4. 먼저 전체 사이클의 locator 실패를 확인하고 최소 수정 후 해당 전체 사이클을 끝까지 실행한다. 기능을 처음부터 다시 만들지 않는다.
 
 ## 확인된 중단 지점
@@ -28,7 +28,7 @@ Claude Code의 ‘supabase 적용 구현 세션’이 사용량 제한으로 중
 - 현재 tests/harness/full-cycle.mjs 233행·259행에 해당 locator가 남아 있음.
 - src/components/ReviewModal.tsx에는 aria-label='평가창 닫기'인 상단 버튼과 하단 ‘닫기’가 있음.
 - 후보 수정: 의도한 하단 버튼이면 name:'닫기', exact:true, 상단이면 정확한 accessible name을 사용. DOM을 확인한 뒤 선택하며 .first()로 무작정 통과시키거나 화면을 재설계하지 않는다.
-- 증거: docs/backend-implementation/evidence/run-ui-fc10/full-cycle.json
+- 증거: docs/development/backend-implementation/evidence/run-ui-fc10/full-cycle.json
 - 이 오류 뒤의 전체 흐름은 이 파일 작성자가 성공을 확인하지 않았다. 앞 9단계 성공만으로 최종 완료로 표시하지 않는다.
 
 ## 현 작업 트리의 중요한 변경

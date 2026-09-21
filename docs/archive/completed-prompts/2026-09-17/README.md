@@ -12,4 +12,4 @@
 - 다른 Codex 계정으로 백엔드 작업을 이어가던 과거 인수인계
 - [UT 개선 구현 프롬프트](01_UT_개선사항_구현_프롬프트_2026-09-17.md): 구현·배포 완료 기록에 따라 2026-09-20 보관함으로 이동
 
-최신 실행 시작점은 [`docs/prompts/START_HERE.md`](../../../prompts/START_HERE.md)다. 실제 완료 상태는 [`HANDOFF.md`](../../../../HANDOFF.md)와 [`docs/backend-implementation/STATE.md`](../../../backend-implementation/STATE.md)를 우선한다.
+최신 실행 시작점은 [`docs/collaboration/prompts/START_HERE.md`](../../../collaboration/prompts/START_HERE.md)다. 실제 완료 상태는 [`HANDOFF.md`](../../../../HANDOFF.md)와 [`docs/development/backend-implementation/STATE.md`](../../../development/backend-implementation/STATE.md)를 우선한다.

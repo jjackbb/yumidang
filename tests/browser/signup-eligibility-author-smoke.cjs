@@ -56,7 +56,7 @@ const targetTitle = process.env.TARGET_TITLE || expectedTitles[0];
     assert.match((await demographics.innerText()).trim(), /^남성 · 만 \d+세$/);
     assert.ok(authorRpc.length > 0, 'authenticated detail did not call author RPC');
 
-    const evidenceDir = path.resolve('docs/backend-implementation/evidence/signup-eligibility-author-20260917');
+    const evidenceDir = path.resolve('docs/development/backend-implementation/evidence/signup-eligibility-author-20260917');
     fs.mkdirSync(evidenceDir, { recursive: true });
     await detail.locator('[data-author-id]').screenshot({ path: path.join(evidenceDir, 'logged-in-author-demographics.png') });
     console.log(JSON.stringify({ result: 'PASS', anonymousRpcCalls: 0, authenticatedRpcCalls: authorRpc.length, demographics: await demographics.innerText(), preservedTitles: expectedTitles.length }));

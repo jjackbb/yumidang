@@ -5,7 +5,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 
 const url = process.env.CHECK_URL || 'http://127.0.0.1:4186/?demo=1';
 const plainUrl = url.replace(/[?&]demo=1/, '').replace(/\?$/, '');
-const out = process.env.EVIDENCE_DIR || 'docs/overnight/evidence';
+const out = process.env.EVIDENCE_DIR || 'docs/archive/overnight/evidence';
 const DEMO_KEY = 'yumidang:demo:v1';
 const APP_KEY = 'yumidang:app:v1';
 const result = { url, mode: 'step-1 demo foundation', cases: [], errors: [], externalRequests: [] };

@@ -2,7 +2,7 @@
 
 원본: https://app.notion.com/p/3d5626093f2e8031927bf5d680bebe67?pvs=204
 마지막 편집: 2026-09-14T20:28:01.574Z
-최신 사용자 결정과 ../../overnight/SPEC.md가 충돌 문구보다 우선한다. 첨부 이미지·OLD DATA는 범위 제외.
+최신 사용자 결정과 ../../archive/overnight/SPEC.md가 충돌 문구보다 우선한다. 첨부 이미지·OLD DATA는 범위 제외.
 
 <table header-row="true">
 <colgroup>

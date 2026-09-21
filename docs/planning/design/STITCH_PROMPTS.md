@@ -1,5 +1,7 @@
 # Google Stitch 화면별 프롬프트 — 유미당 UX/UI 교체
 
+> 과거 시안 제작용 프롬프트다. 현재 요구사항은 [PRD](../requirements/PRD.md) → [IA](IA.md) → [유저플로우](USER_FLOW.md)를 따른다. 아래 남성 가입·S07·성별 선택/필터·작성자 단독 확정은 현재 적용 대상이 아니다. 재사용할 때는 해당 화면을 새 기준에 맞춰 고친 뒤 사용하며, 아래 문구 보존 지침보다 새 기준을 우선한다. [과거 기록 안내](../../archive/design-selection/README.md)
+
 작성: 2026-09-18 · 기준 코드: `76a4952` (Production 배포본)
 
 ## 사용법
@@ -502,7 +504,7 @@ Primary button [안전 수칙을 준수하겠습니다].
 
 ## 사용자 결정 반영 (2026-09-18)
 
-`docs/prompts/02_남은_정책_재확인_진행_프롬프트_2026-09-17.md` 7-2의 D-A1~D-A12를 반영했다.
+`docs/collaboration/prompts/02_남은_정책_재확인_진행_프롬프트_2026-09-17.md` 7-2의 D-A1~D-A12를 반영했다.
 
 | 결정 | 반영 화면 |
 |---|---|
@@ -518,4 +520,4 @@ Primary button [안전 수칙을 준수하겠습니다].
 | D-A11 마스킹 이름 + "25세" 표기 | 전체 |
 | D-A12 기본 당도 "15당" | 전체 |
 
-> 최신 상태·결정 배경은 `docs/handoffs/CLAUDE_CODE_인수인계_2026-09-18.md`.
+> 최신 상태·결정 배경은 `docs/collaboration/handoffs/CLAUDE_CODE_인수인계_2026-09-18.md`.

@@ -113,7 +113,7 @@ def capture(reason="automatic"):
         save_json(BASE / f"{release_id}.json", info)
         save_json(BASE / "latest.json", info)
         save_json(BASE / "capture-state.json", {"status": "READY", "at": now(), "url": url})
-        (ROOT / "docs/overnight/PREVIEW.md").write_text(
+        (ROOT / "docs/archive/overnight/PREVIEW.md").write_text(
             "# 확인 가능한 중간 결과\n\n"
             f"항상 열 수 있는 안내: {ORIGIN}\n\n"
             f"현재 보존한 빌드: {url}\n\n"

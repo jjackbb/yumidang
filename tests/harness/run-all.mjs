@@ -1,5 +1,5 @@
 // One command: preflight → features 1–9 (remote API, publishable key + member sessions) → A/B/C browser full cycle.
-// Stops at the first failing stage and leaves the resume command in docs/backend-implementation/STATE.md.
+// Stops at the first failing stage and leaves the resume command in docs/development/backend-implementation/STATE.md.
 import { createContext, runFeature } from './helpers/runner.mjs';
 import { preflight } from './preflight.mjs';
 import { feature01 } from './feature-01-auth.mjs';
@@ -33,5 +33,5 @@ if (process.env.HARNESS_SKIP_BROWSER === '1' && !failed) {
   feature.finish('not_run');
 }
 await ctx.signOutAll();
-console.log(failed ? `\nHARNESS FAIL at ${failed} — see docs/backend-implementation/STATE.md` : `\nHARNESS PASS (${ctx.run.runId})`);
+console.log(failed ? `\nHARNESS FAIL at ${failed} — see docs/development/backend-implementation/STATE.md` : `\nHARNESS PASS (${ctx.run.runId})`);
 process.exit(failed ? 1 : 0);

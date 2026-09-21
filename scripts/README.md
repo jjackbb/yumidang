@@ -10,4 +10,4 @@
 | `preview-checkpoints.py` | 검증된 미리보기 사본 저장 |
 | `check-preview.cjs` | 미리보기 화면 최소 점검 |
 
-특정 모델명과 개인 컴퓨터의 브라우저·도구 경로가 포함돼 있다. 재사용할 때는 현재 환경과 작업 범위를 확인한다. 기존 실행 맥락은 [과거 안내](../docs/overnight/START_HERE.md), 현재 작업은 [최신 인수인계](../HANDOFF.md)를 따른다.
+특정 모델명과 개인 컴퓨터의 브라우저·도구 경로가 포함돼 있다. 재사용할 때는 현재 환경과 작업 범위를 확인한다. 기존 실행 맥락은 [과거 안내](../docs/archive/overnight/START_HERE.md), 현재 작업은 [최신 인수인계](../HANDOFF.md)를 따른다.

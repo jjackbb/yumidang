@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT } from './env.mjs';
 
-export const IMPL_DIR = path.join(ROOT, 'docs/backend-implementation');
+export const IMPL_DIR = path.join(ROOT, 'docs/development/backend-implementation');
 export const STATE_JSON = path.join(IMPL_DIR, 'state.json');
 const STATE_MD = path.join(IMPL_DIR, 'STATE.md');
 
@@ -135,6 +135,6 @@ function renderState(state) {
 |---|---|---|---|---|---|---|
 ${rows.join('\n')}
 
-증거는 \`docs/backend-implementation/evidence/<run_id>/\`에 run별로 저장되며 기존 파일을 덮어쓰지 않는다.
+증거는 \`docs/development/backend-implementation/evidence/<run_id>/\`에 run별로 저장되며 기존 파일을 덮어쓰지 않는다.
 `;
 }

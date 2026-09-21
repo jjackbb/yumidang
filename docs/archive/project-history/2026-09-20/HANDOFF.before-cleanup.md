@@ -4,9 +4,9 @@
 
 기준일: 2026-09-16\
 작업 폴더: `/Users/b/Documents/Antigravity/yumidang`\
-현재 상태: **기존 `App.tsx` UI를 유지한 채 사용자 흐름 1~9 (회원가입 → 로그인 → 공고 → 상대 프로필 → 참여 요청 → 매칭 채팅 → 최종 확정 → 동행 완료 → 블라인드 상호 평가)을 Supabase에 연결했고, 원격 A/B/C/익명 브라우저 전체 사이클까지 PASS했다.** 최종 결과는 `docs/backend-implementation/HARNESS-REPORT.md`. 아래 "과거 기록" 절들은 기능 1·2 당시 기록이며 `nickname`, `3번부터 미구현` 등은 더 이상 최신이 아니다.
+현재 상태: **기존 `App.tsx` UI를 유지한 채 사용자 흐름 1~9 (회원가입 → 로그인 → 공고 → 상대 프로필 → 참여 요청 → 매칭 채팅 → 최종 확정 → 동행 완료 → 블라인드 상호 평가)을 Supabase에 연결했고, 원격 A/B/C/익명 브라우저 전체 사이클까지 PASS했다.** 최종 결과는 `docs/development/backend-implementation/HARNESS-REPORT.md`. 아래 "과거 기록" 절들은 기능 1·2 당시 기록이며 `nickname`, `3번부터 미구현` 등은 더 이상 최신이 아니다.
 
-> **최신 작업 방향(2026-09-20): [작업 분담·화면 구조 인수인계](../../../handoffs/WORK_SPLIT_2026-09-20.md)**. 팀원 1은 정책, 팀원 2는 API, 사용자+GPT는 팀 합의용 전체 화면 구조를 설계한다. 구현 배경·정책 D-A1~D-A16은 [9월 18일 인수인계](../../../handoffs/CLAUDE_CODE_인수인계_2026-09-18.md)에 보존돼 있다. 아래는 그 이전 기록이다.
+> **최신 작업 방향(2026-09-20): [작업 분담·화면 구조 인수인계](../../../collaboration/handoffs/WORK_SPLIT_2026-09-20.md)**. 팀원 1은 정책, 팀원 2는 API, 사용자+GPT는 팀 합의용 전체 화면 구조를 설계한다. 구현 배경·정책 D-A1~D-A16은 [9월 18일 인수인계](../../../collaboration/handoffs/CLAUDE_CODE_인수인계_2026-09-18.md)에 보존돼 있다. 아래는 그 이전 기록이다.
 
 ## 최신 완료: UT 신청 알림 Expansion 적용·권한 검증 (2026-09-17, Codex)
 
@@ -18,7 +18,7 @@
 - 적용 후 advisor의 새 Performance INFO에 따라 forward-only `20260917141449_notifications_join_request_index`를 적용했다. 요청 당시 로컬 `20260917123159_notifications_join_request_index.sql`의 SQL만 실행했으며 MCP가 부여한 실제 원격 version에 파일명을 맞췄다. 인덱스는 valid/ready, 알림 행 수는 1행으로 불변, 외래키 미인덱스 finding은 0건이다. 적용 직후 사용 통계가 없어 같은 인덱스에 `unused_index` INFO가 표시되며 실제 부하 후 재평가한다.
 - Security advisor의 새 WARN 3건은 authenticated가 호출해야 하는 `SECURITY DEFINER` RPC를 탐지한 것이다. `PUBLIC`/`anon` 실행 회수, `auth.uid()`/수신자 조건, 실제 교차 사용자 테스트를 확인했다.
 - Git commit/push와 Vercel Production 배포는 수행하지 않았다. Production은 계속 기준 SHA `2433add0ac2c45521849864b454e5fcdc03236ab`이다.
-- 상세 기록: `docs/ut-improvements/IMPLEMENTATION-2026-09-17.md`. 원격 회귀: `tests/harness/ut-notifications.mjs`.
+- 상세 기록: `docs/archive/ut-improvements/IMPLEMENTATION-2026-09-17.md`. 원격 회귀: `tests/harness/ut-notifications.mjs`.
 
 ## 최신 완료: 프로필 사진 필수 원격 적용·운영 검증 (2026-09-17, Codex)
 
@@ -30,7 +30,7 @@
 - 최종 원격: Auth 19 / profile 17 / post 36 / join request 14 / message 176 / appointment 11 / review 10 / profile image object 0. 시작 Auth 14 / profile 13 / post 36 대비 통제 테스트 Auth +5, profile +4뿐이다. 기존 profile 13개와 post 36개의 체크섬은 동일하다.
 - 기존 회원 `5555` 로그인, 익명/로그인 공고, 모집 중 지정 공고 5개, 작성자 `남성 · 만 30세`를 Contraction 후에도 재확인했다. 지정 6번째 공고는 삭제가 아니라 `closed` 상태라 기본 목록에서 제외된다.
 - authenticated 전체 bucket SELECT 범위는 인터뷰에서 더 좁은 공개 계약이 정해지지 않아 그대로 유지했다. 비로그인 공개는 차단되지만 로그인 회원 사이 객체 목록 범위가 넓은 운영 위험은 남는다.
-- 상세 기록: `docs/backend-implementation/PROFILE-IMAGE-REQUIRED-2026-09-17.md`. 실제 테스트 명령은 `tests/browser/signup-profile-photo-production.cjs`, `tests/profile-images-remote.mjs`.
+- 상세 기록: `docs/development/backend-implementation/PROFILE-IMAGE-REQUIRED-2026-09-17.md`. 실제 테스트 명령은 `tests/browser/signup-profile-photo-production.cjs`, `tests/profile-images-remote.mjs`.
 
 ## 최신 추가 구현: 회원가입 성별 분기·작성자 성별/만 나이 (2026-09-17, Codex)
 
@@ -39,7 +39,7 @@
 - `test-institutional-email-auth`를 JWT 검증 enabled로 배포하고 별도 flag/expiry를 2026-09-24 09:00 KST까지 설정했다. 기존 `test-phone-auth`는 변경하지 않았다.
 - 모바일 원격 스모크: 익명 RPC 0회/정보 미표시, 기존 5555 계정 로그인 후 `남성 · 만 30세`, 지정 공고 6개 존재 PASS. 신규 원격 가입은 fixture를 남기지 않기 위해 NOT_RUN.
 - 실제 기준 수량은 요청서의 1/1/6과 달리 적용 전후 4 Auth / 4 profile / 10 post였으며 삭제·축소하지 않았다.
-- 상세 결과: `docs/backend-implementation/SIGNUP-ELIGIBILITY-AUTHOR-DEMO-2026-09-17.md`.
+- 상세 결과: `docs/development/backend-implementation/SIGNUP-ELIGIBILITY-AUTHOR-DEMO-2026-09-17.md`.
 
 ## 최신 재개 결과: 기존 UI 통합 완료 (2026-09-17, Codex)
 
@@ -49,7 +49,7 @@
 - 최종 원격 브라우저 run `run-codex-fc4`: 기능 전체 사이클 17단계와 콘솔 무오류 검사 PASS. A/B 독립 세션, Realtime 양방향 채팅, 종료 전 완료 거부, 블라인드 평가, 재로그인 복구, C/익명 차단, 원본 개인정보 차단을 기존 UI에서 확인했다.
 - 최종 사전 검사 `run-codex-preflight1`: 7/7 PASS. 대상은 `bndguguarijmghnkenvt`이며 다른 프로젝트에 요청하지 않았다.
 - 로컬 재검증: `npm test` 95/95 PASS, `npm run lint` PASS, `npm run build` PASS(기존 500 kB 청크 경고), `git diff --check` PASS.
-- Notion 도구가 이 세션에 없어 원격 Notion은 `NOT_RUN`; 대체 기록은 `docs/backend-implementation/NOTION-UPDATE.md`에 남겼다.
+- Notion 도구가 이 세션에 없어 원격 Notion은 `NOT_RUN`; 대체 기록은 `docs/development/backend-implementation/NOTION-UPDATE.md`에 남겼다.
 
 ## 최신 상태: 기능 1 감사 + 기능 2~9 구현 (2026-09-16, Claude Code)
 
@@ -61,7 +61,7 @@
 - 원격 마이그레이션(로컬 파일명 = 원격 version): `20260916101123_profiles_real_name_contract`, `20260916105220_feature03_posts`, `20260916105738_feature04_post_author_profile`, `20260916105916_feature05_join_requests`, `20260916110052_feature06_matching_chat`, `20260916110758_feature07_final_match`, `20260916110943_feature08_completion`, `20260916111030_feature09_mutual_review`, `20260916111437_appointments_request_post_fk_index`, `20260916114036_rpc_unavailable_errors_as_404`. 기존 3개 마이그레이션은 수정하지 않았다.
 - 테스트 데이터: 하네스 계정 A/B/C(`010-9270-0001~0003`), run마다 가입 검증 계정 1개, `[run_id]` 제목 공고와 그 요청·메시지·동행·평가, 삭제 상태 고정 공고 1건(관리자 SQL). 기존 사용자·프로필·공고는 삭제하지 않았다.
 - 관리자 SQL 사용: 스키마 조회, 삭제 상태 고정 공고 1건 생성, 평가 기한 검증용 run 공고 1건 일정 이동. 사용자 행동 성공을 관리자 권한으로 대신하지 않았다.
-- 기능별 인수인계: `docs/backend-plans/02-login-HANDOFF.md` ~ `09-mutual-review-HANDOFF.md`. 실행 방법: `docs/backend-implementation/RUNBOOK.md`. 상태: `docs/backend-implementation/STATE.md`.
+- 기능별 인수인계: `docs/development/backend-plans/02-login-HANDOFF.md` ~ `09-mutual-review-HANDOFF.md`. 실행 방법: `docs/development/backend-implementation/RUNBOOK.md`. 상태: `docs/development/backend-implementation/STATE.md`.
 - Git: 작업 중 GitHub Desktop 브랜치 전환으로 변경분이 `stash@{0}`(회원가입까지만)에 보관돼 사용자 선택에 따라 main에 `stash apply`로 복구했다. stash 항목은 삭제하지 않았다. 커밋·푸시·Vercel 배포는 하지 않았다.
 - 테스트 인증 서버 만료: **2026-09-23 18:30 KST**. 이후 하네스 사전 검사가 실패하며 임의 연장하지 않는다.
 
@@ -176,7 +176,7 @@
 - `src/utils/profile.ts`의 `ageOn()`은 서울 날짜 기준 만 나이를 이미 계산한다.
 - `ageGroupOf()`의 `20대` 표시는 새 가입 프로필에서 사용하지 말고 `25살` 같은 만 나이를 표시한다.
 
-루트 `.overnight/`의 과거 생성물 482개는 2026-09-16에 삭제했고 `.gitignore`에 등록했다. `docs/overnight/`는 문서이므로 보존했다. 삭제된 생성물의 Supabase 코드·키·SQL을 복사하거나 복원하지 않는다.
+루트 `.overnight/`의 과거 생성물 482개는 2026-09-16에 삭제했고 `.gitignore`에 등록했다. `docs/archive/overnight/`는 문서이므로 보존했다. 삭제된 생성물의 Supabase 코드·키·SQL을 복사하거나 복원하지 않는다.
 
 ## 4. 회원가입 데이터 계약
 

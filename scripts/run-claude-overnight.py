@@ -16,7 +16,7 @@ import time
 from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
-DOC = ROOT / "docs/overnight"
+DOC = ROOT / "docs/archive/overnight"
 RUN = ROOT / ".overnight"
 MODEL = "claude-opus-5"
 CLAUDE = "/Users/b/.local/bin/claude"
@@ -259,7 +259,7 @@ def main():
                 checkpoint.unlink()
             log = RUN / f"step-{step}-attempt-{attempt}-call-{state['call_sequence']}.jsonl"
             prompt = f"""사용자가 승인한 유미당 프론트 프로토타입 구현을 실행하세요. 모델은 Claude Opus 5 고정입니다.
-먼저 docs/overnight/START_HERE.md, SPEC.md, TASKS.md, CHECKS.md, PROGRESS.md를 읽으세요.
+먼저 docs/archive/overnight/START_HERE.md, SPEC.md, TASKS.md, CHECKS.md, PROGRESS.md를 읽으세요.
 이번 호출은 단계 {step}/6만 담당합니다. 이후 단계는 실행기가 자동 호출하므로 여기서 중단했다고 전체를 보류하지 마세요.
 이번 단계:
 {stage}
@@ -365,7 +365,7 @@ if __name__ == "__main__":
     if owner_path.exists():
         owner = json.loads(owner_path.read_text()).get("owner")
         if owner != "claude":
-            sys.exit("Claude 실행 중지: 현재 구현 담당은 GPT입니다. docs/overnight/GPT_HANDOFF.md를 확인하세요.")
+            sys.exit("Claude 실행 중지: 현재 구현 담당은 GPT입니다. docs/archive/overnight/GPT_HANDOFF.md를 확인하세요.")
     RUN.mkdir(mode=0o700, exist_ok=True)
     if args.detach:
         with (RUN / "runner.log").open("a") as output:

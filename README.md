@@ -3,12 +3,12 @@
 취향이 맞는 사람과 1:1 동행을 찾고, 대화한 뒤 약속을 확정하는 React/Vite 서비스입니다.
 
 **현재 목표: 팀이 합의할 전체 화면 구조 만들기.**
-작업을 재개할 때는 [HANDOFF.md](HANDOFF.md) → [작업 분담](docs/work-allocation/README.md) → [화면 목록](docs/planning/design/SCREEN_INVENTORY.md) 순서로 읽습니다. 전체 자료는 [문서 안내](docs/README.md)에 분류했습니다.
+제품 기준은 [PRD](docs/planning/requirements/PRD.md) → [IA](docs/planning/design/IA.md) → [유저플로우](docs/planning/design/USER_FLOW.md) 순서로 읽습니다. 작업 상태는 [HANDOFF.md](HANDOFF.md), 담당은 [작업 분담](docs/collaboration/work-allocation/README.md)에서 확인합니다. 전체 자료는 [문서 안내](docs/README.md)에 분류했습니다.
 
 ## 지금 할 일
 
 - 오늘(2026-09-20): 설치·생성 파일의 Git 추적과 문서 시작점을 정리한 뒤 커밋·푸시.
-- 내일(2026-09-21): 팀원 1에게 [정책 인수인계](docs/work-allocation/01_POLICY_HANDOFF.md), 팀원 2에게 [API 인수인계](docs/work-allocation/02_API_HANDOFF.md) 전달·작업 시작.
+- 내일(2026-09-21): 팀원 1에게 [정책 인수인계](docs/collaboration/work-allocation/01_POLICY_HANDOFF.md), 팀원 2에게 [API 인수인계](docs/collaboration/work-allocation/02_API_HANDOFF.md) 전달·작업 시작.
 - 사용자+GPT: 전체 화면 구조 합의 → 핵심 흐름별 Stitch 시안 → Figma 기준본 정리. 정책/API 미정 부분은 표시하고 독립적인 설계는 계속합니다.
 
 ## 구현과 계획 구분
@@ -20,8 +20,8 @@
 | 프로필 사진 | 필수 가입·사진 교체 흐름 |
 | 후속 기능 | 신고·차단·초대·관심친구·일부 공고 관리·통화·결제 등 일반 모드에서 준비 중인 부분이 있음 |
 | 행사·AI | 현재 행사 예시와 AI 체험 UI 존재. 실제 행사 API·AI 2종은 설계/연동 준비 단계 |
-| 최신 확정 | 마스킹 이름, 만 나이 값의 `25세` 표기, 초기 `15당`, D-A16 캡션 등은 [결정 기록이 있는 인수인계](docs/handoffs/CLAUDE_CODE_인수인계_2026-09-18.md) 참고 |
-| 검증 | 과거 실행 기록과 이번 확인은 [정리 인수인계](docs/handoffs/REPOSITORY_CLEANUP_2026-09-20.md)에서 구분 |
+| 최신 확정 | 마스킹 이름, 만 나이 값의 `25세` 표기, 초기 `15당`, D-A16 캡션 등은 [결정 기록이 있는 인수인계](docs/collaboration/handoffs/CLAUDE_CODE_인수인계_2026-09-18.md) 참고 |
+| 검증 | 과거 실행 기록과 이번 확인은 [정리 인수인계](docs/collaboration/handoffs/REPOSITORY_CLEANUP_2026-09-20.md)에서 구분 |
 
 ## 로컬 실행
 
@@ -43,7 +43,7 @@ npm run build
 ```
 
 `npm run build`는 TypeScript 검사(`npm run lint`)와 Vite 빌드를 포함합니다.
-`test:harness`와 원격 브라우저 테스트는 실제 서비스를 사용할 수 있으므로 [운영 절차](docs/backend-implementation/RUNBOOK.md)를 먼저 읽습니다.
+`test:harness`와 원격 브라우저 테스트는 실제 서비스를 사용할 수 있으므로 [운영 절차](docs/development/backend-implementation/RUNBOOK.md)를 먼저 읽습니다.
 
 ## 폴더 구조
 
@@ -53,10 +53,10 @@ npm run build
 | `backend/supabase/` | DB 변경 이력·접근 정책·서버 함수 |
 | `tests/frontend/`, `tests/backend/` | 영역별 로컬 테스트 |
 | `tests/browser/`, `tests/harness/`, `tests/*.mjs` | 브라우저·통합·원격 검증 도구 |
-| `docs/work-allocation/` | 현재 담당별 작업 |
-| `docs/planning/` | [기획 문서](docs/planning/README.md): MVP·기능명세·정책·화면 설계·과거 로드맵 |
-| `docs/handoffs/` | 날짜별 인수인계 |
-| `docs/archive/` | 완료 프롬프트·과거 루트 문서 |
+| `docs/planning/` | [기획 문서](docs/planning/README.md): PRD·MVP·기능명세·정책·화면 설계 |
+| `docs/development/` | 백엔드 기술 설계·운영 절차·검증 |
+| `docs/collaboration/` | 작업 분담·인수인계·작업 프롬프트 |
+| `docs/archive/` | 과거 설계·구현 기록·스크린샷·보관 사본 |
 | `scripts/` | 과거 프로토타입 자동화 도구. [사용 범위](scripts/README.md) 확인 |
 | `node_modules/`, `dist/`, `.vercel/` | 로컬 설치·빌드·배포 연결 파일. Git 추적 제외 |
 

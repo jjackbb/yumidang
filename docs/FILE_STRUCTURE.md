@@ -34,8 +34,10 @@ yumidang/
 │   ├── harness/              # 프론트엔드와 백엔드 통합 검증
 │   └── *.mjs                 # 원격 인증·프로필 이미지 검증
 ├── docs/
-│   ├── planning/             # MVP·기능명세·정책·화면 설계·과거 로드맵
-│   └── ...                   # API·인수인계·작업 분담·검증 기록
+│   ├── planning/             # PRD·MVP·기능명세·정책·화면 설계
+│   ├── development/          # 백엔드 기술 설계·운영·검증
+│   ├── collaboration/        # 작업 분담·인수인계·프롬프트
+│   └── archive/              # 과거 기록·검증 증거·보관 사본
 ├── scripts/                  # 과거 프로토타입 자동화 도구
 ├── scratch/                  # 와이어프레임 임시 수정·점검 도구
 ├── package.json              # 공통 의존성·루트 실행 명령
@@ -61,14 +63,15 @@ yumidang/
 
 | 경로 | 분류·역할 |
 |---|---|
-| `docs/planning/` | [기획 문서](planning/README.md): 요구사항·제품 정책·화면 설계·과거 설계안·로드맵 |
-| `docs/backend-plans/`, `docs/backend-implementation/` | 백엔드 계약·운영·검증 자료 |
-| 나머지 `docs/` 하위 폴더 | 작업 분담·인수인계·구현·검증·과거 기록 |
+| `docs/planning/` | [기획 문서](planning/README.md): PRD·요구사항·제품 정책·화면 설계 |
+| `docs/development/` | 백엔드 계약·운영·검증 자료 |
+| `docs/collaboration/` | 작업 분담·인수인계·작업 프롬프트 |
+| `docs/archive/` | 과거 설계·구현 기록·검증 증거·보관 사본 |
 | `scripts/`, `scratch/` | 개발 보조 도구. 제품의 프론트엔드·백엔드 소스와 구분 |
 | `node_modules/`, `dist/`, `.vercel/`, `.overnight/` | 설치·빌드·로컬 도구 생성물. Git 추적 제외 |
 | `.env`, `.env.local` 등 | 루트의 로컬 환경 설정. Git 추적 제외 |
 
-기획 문서는 `docs/planning/`으로 모으고 관련 링크·도구 경로를 갱신했다. 문서 내용과 기존 이미지·검증 증거는 보존한다. 과거 보고서에 등장하는 이전 코드 경로는 아래 대응표로 읽는다.
+문서는 기획·개발·협업·과거 기록 네 묶음으로 모으고 관련 링크·도구 경로를 갱신했다. 문서 내용과 기존 이미지·검증 증거는 보존한다. 과거 보고서에 등장하는 이전 코드 경로는 아래 대응표로 읽는다.
 
 ## 이전 경로 → 현재 경로
 
@@ -84,9 +87,22 @@ yumidang/
 | 나머지 `tests/*.test.ts` | `tests/frontend/`의 같은 파일명 |
 | `docs/design/` | `docs/planning/design/` |
 | `docs/product-decisions/` | `docs/planning/product-decisions/` |
-| `docs/design-selection/` | `docs/planning/design-selection/` |
-| `docs/prototype-roadmap/` | `docs/planning/prototype-roadmap/` |
-| `docs/overnight/sources/` | `docs/planning/requirements/` |
+| `docs/design-selection/` | `docs/archive/design-selection/` |
+| `docs/prototype-roadmap/` | `docs/archive/prototype-roadmap/` |
+| `docs/archive/overnight/sources/` | `docs/planning/requirements/` |
+
+현재 제품 기준은 [PRD](planning/requirements/PRD.md), [IA](planning/design/IA.md), [유저플로우](planning/design/USER_FLOW.md)다. 이전 IA·유저플로우 자료는 [보관 안내](archive/design-selection/README.md)를 따른다.
+
+### 문서 폴더 간소화 경로
+
+| 이전 (`docs/` 기준) | 현재 (`docs/` 기준) |
+|---|---|
+| `backend-plans/`, `backend-implementation/` | `development/` 아래 같은 폴더명 |
+| `handoffs/`, `prompts/`, `work-allocation/` | `collaboration/` 아래 같은 폴더명 |
+| `planning/design-selection/`, `planning/prototype-roadmap/` | `archive/` 아래 같은 폴더명 |
+| `analysis/`, `fixes/`, `home-update/`, `overnight/`, `post-lifecycle/`, `profile-completion/`, `ut-improvements/` | `archive/` 아래 같은 폴더명 |
+| `planning/design/SCREEN_INVENTORY.md` | `archive/design-selection/SCREEN_INVENTORY.md` |
+| `FILE_STRUCTURE 2.md` | `archive/duplicates/FILE_STRUCTURE 2.md` |
 
 ## 실행 기준
 
@@ -103,4 +119,4 @@ npm run preview
 
 Vite는 `frontend/`를 앱 루트로 사용하고, `.env.local`은 프로젝트 루트에서 읽는다. 브라우저의 `/src/`·`/logo.jpg` 주소는 유지된다. 빌드 결과는 루트 `dist/`에 생성하므로 기존 Vercel 출력 경로도 유지된다.
 
-Supabase CLI의 작업 디렉터리는 `backend/`다. 관련 명령은 `backend/`에서 실행하거나 루트에서 `--workdir backend`를 지정한다. 원격 검증 절차는 [운영 안내](backend-implementation/RUNBOOK.md)를 따른다.
+Supabase CLI의 작업 디렉터리는 `backend/`다. 관련 명령은 `backend/`에서 실행하거나 루트에서 `--workdir backend`를 지정한다. 원격 검증 절차는 [운영 안내](development/backend-implementation/RUNBOOK.md)를 따른다.

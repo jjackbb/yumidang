@@ -1,5 +1,7 @@
 # Antigravity 실행 프롬프트 — Stitch 시안을 실제 화면에 적용
 
+> 기존 시안의 스타일 적용을 위한 참고 프롬프트다. 현재 서비스 기준은 [PRD](../requirements/PRD.md) → [IA](IA.md) → [유저플로우](USER_FLOW.md)이며, 성인 여성만 가입·이용하고 양측 동의 후 동행을 확정한다. 남성 가입·S07·성별 선택/필터·작성자 단독 확정은 과거 구조다. [과거 기록 안내](../../archive/design-selection/README.md)
+
 사용법: 화면 1개(또는 밀접한 2개)마다 아래 `실행 프롬프트`를 새로 붙여 넣고 `{화면 ID}`, `{시안 경로}`만 바꾼다.
 예: `S01 둘러보기`, `docs/planning/design/stitch-export/S01_둘러보기.png` (+ HTML이 있으면 함께)
 
@@ -13,7 +15,9 @@
 이번 작업: {화면 ID} 화면의 "겉모양"만 Google Stitch 시안으로 교체한다.
 시안: {시안 경로}
 디자인 기준: docs/planning/design/DESIGN.md
-화면 요구사항: docs/planning/design/STITCH_PROMPTS.md 의 {화면 ID} 항목
+화면 요구사항: docs/planning/requirements/PRD.md, docs/planning/design/IA.md, docs/planning/design/USER_FLOW.md
+과거 시안 참고: docs/planning/design/STITCH_PROMPTS.md 의 {화면 ID} 항목 (새 기준과 충돌하는 내용은 적용하지 않는다)
+현재 코드와 새 기준이 다른 동작은 차이로 보고하고 별도 기능 변경 작업에 남긴다. 아래 스타일 적용 원칙을 기존 동작의 제품 승인으로 해석하지 않는다.
 
 ## 반드시 지킬 원칙
 1. 동작 로직은 바꾸지 않는다.

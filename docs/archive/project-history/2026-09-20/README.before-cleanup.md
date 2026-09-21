@@ -2,9 +2,9 @@
 
 # 유미당 (YouMeDang) 🍯
 
-현재 상태 (2026-09-17): React/Vite 화면에 Supabase 사용자 흐름 1~9와 프로필 사진 필수 가입을 연결해 Production에 배포했다. 최신 구현·검증 기준은 [HANDOFF.md](../../../../HANDOFF.md)와 [백엔드 상태](../../../backend-implementation/STATE.md)이며, 과거 프로토타입 문서는 역사 자료다.
+현재 상태 (2026-09-17): React/Vite 화면에 Supabase 사용자 흐름 1~9와 프로필 사진 필수 가입을 연결해 Production에 배포했다. 최신 구현·검증 기준은 [HANDOFF.md](../../../../HANDOFF.md)와 [백엔드 상태](../../../development/backend-implementation/STATE.md)이며, 과거 프로토타입 문서는 역사 자료다.
 
-현재 작업(2026-09-20)은 **팀이 합의할 전체 화면 구조 만들기**다. [작업 분담](../../../work-allocation/README.md)에서 팀원 1 정책·팀원 2 API·사용자+GPT 화면 설계로 나눠 시작한다. [현재 실행 안내](../../../prompts/START_HERE.md), [전체 화면 목록](../../../planning/design/SCREEN_INVENTORY.md)을 참고한다. 완료된 과거 프롬프트는 `docs/archive/completed-prompts/2026-09-17/`, 정책 원문과 남은 질문은 `docs/planning/product-decisions/`에 보존했다. 아래 기존 제품 소개의 예시 수치·정책 설명은 최신 결정과 대조가 필요한 과거 설명을 포함한다.
+현재 작업(2026-09-20)은 **팀이 합의할 전체 화면 구조 만들기**다. [작업 분담](../../../collaboration/work-allocation/README.md)에서 팀원 1 정책·팀원 2 API·사용자+GPT 화면 설계로 나눠 시작한다. [현재 실행 안내](../../../collaboration/prompts/START_HERE.md), [전체 화면 목록](../../design-selection/SCREEN_INVENTORY.md)을 참고한다. 완료된 과거 프롬프트는 `docs/archive/completed-prompts/2026-09-17/`, 정책 원문과 남은 질문은 `docs/planning/product-decisions/`에 보존했다. 아래 기존 제품 소개의 예시 수치·정책 설명은 최신 결정과 대조가 필요한 과거 설명을 포함한다.
 
 > **"너(You)와 나(Me)의 믿을 수 있는 1:1 라이프스타일 동행 매칭 플랫폼"**\
 > 취향 맞는 이웃과 함께하는 실시간 1:1 동행 매칭 및 라이프스타일 서비스

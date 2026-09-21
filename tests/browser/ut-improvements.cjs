@@ -3,7 +3,7 @@ const assert = require('assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/Users/b/.npm/_npx/e41f203b7505f1fb/node_modules/playwright');
 
 const url = process.env.CHECK_URL || 'http://127.0.0.1:4186/?demo=1';
-const out = process.env.EVIDENCE_DIR || 'docs/ut-improvements/evidence';
+const out = process.env.EVIDENCE_DIR || 'docs/archive/ut-improvements/evidence';
 const executablePath = process.env.BROWSER_EXECUTABLE || '/Users/b/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell';
 const result = { url, cases: [], errors: [] };
 const DAY = 86_400_000;

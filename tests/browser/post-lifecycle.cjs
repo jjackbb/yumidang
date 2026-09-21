@@ -3,7 +3,7 @@ const fs = require('fs'),
   path = require('path'),
   assert = require('assert/strict');
 const url = process.env.CHECK_URL || 'http://127.0.0.1:4180';
-const out = path.resolve(__dirname, '../../docs/post-lifecycle/evidence');
+const out = path.resolve(__dirname, '../../docs/archive/post-lifecycle/evidence');
 fs.mkdirSync(out, { recursive: true });
 (async () => {
   const browser = await chromium.launch({

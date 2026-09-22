@@ -1,75 +1,31 @@
-# 유미당 (YouMeDang)
+# 유미당
 
-취향이 맞는 사람과 1:1 동행을 찾고, 대화한 뒤 약속을 확정하는 React/Vite 서비스입니다.
+현재 와이어프레임을 개선해 프로토타입을 만들고, 기존 Supabase에 연결합니다.
 
-**현재 목표: 팀이 합의할 전체 화면 구조 만들기.**
-제품 기준은 [PRD](docs/planning/requirements/PRD.md) → [IA](docs/planning/design/IA.md) → [유저플로우](docs/planning/design/USER_FLOW.md) 순서로 읽습니다. 작업 상태는 [HANDOFF.md](HANDOFF.md), 담당은 [작업 분담](docs/collaboration/work-allocation/README.md)에서 확인합니다. 전체 자료는 [문서 안내](docs/README.md)에 분류했습니다.
+## 기획과 화면 기준
 
-## 지금 할 일
+- [PRD](docs/planning/requirements/PRD.md): 팀의 제품 목적·대상·핵심 흐름
+- [추가 요구 사항](<docs/planning/requirements/추가 요구 사항.md>): 추가 기능과 결정 이유
+- [화면 수정 요청](docs/planning/requirements/전달.md): 구체적인 요청과 검토 사항
+- [IA](docs/planning/design/IA.md): 화면과 정보 구조
+- [사용자 흐름](docs/planning/design/USER_FLOW.md): 행동 순서와 예외
+- [와이어프레임](docs/planning/design/yumidang-wireframes.html): 프론트 담당자가 개선하는 HTML 시안
 
-- 오늘(2026-09-20): 설치·생성 파일의 Git 추적과 문서 시작점을 정리한 뒤 커밋·푸시.
-- 내일(2026-09-21): 팀원 1에게 [정책 인수인계](docs/collaboration/work-allocation/01_POLICY_HANDOFF.md), 팀원 2에게 [API 인수인계](docs/collaboration/work-allocation/02_API_HANDOFF.md) 전달·작업 시작.
-- 사용자+GPT: 전체 화면 구조 합의 → 핵심 흐름별 Stitch 시안 → Figma 기준본 정리. 정책/API 미정 부분은 표시하고 독립적인 설계는 계속합니다.
+와이어프레임은 HTML 파일을 브라우저에서 열어 확인합니다. 실제 서비스 연결 완료를 의미하지 않습니다.
 
-## 구현과 계획 구분
+## 보존한 기술 자료
 
-| 영역 | 현재 코드·문서 기준 |
-|---|---|
-| 핵심 흐름 | 가입·로그인, 공고·상대 프로필, 신청·채팅·최종 확정, 완료·상호 평가의 Supabase 연결 코드 |
-| 인증 | 테스트 휴대폰 인증 경로가 있음. 실제 SMS·실명 인증 완료로 표현하지 않음 |
-| 프로필 사진 | 필수 가입·사진 교체 흐름 |
-| 후속 기능 | 신고·차단·초대·관심친구·일부 공고 관리·통화·결제 등 일반 모드에서 준비 중인 부분이 있음 |
-| 행사·AI | 현재 행사 예시와 AI 체험 UI 존재. 실제 행사 API·AI 2종은 설계/연동 준비 단계 |
-| 최신 확정 | 마스킹 이름, 만 나이 값의 `25세` 표기, 초기 `15당`, D-A16 캡션 등은 [결정 기록이 있는 인수인계](docs/collaboration/handoffs/CLAUDE_CODE_인수인계_2026-09-18.md) 참고 |
-| 검증 | 과거 실행 기록과 이번 확인은 [정리 인수인계](docs/collaboration/handoffs/REPOSITORY_CLEANUP_2026-09-20.md)에서 구분 |
+- `backend/supabase/migrations/`: 기존 DB 변경 이력. 새 요구사항에 맞는 후속 변경을 설계합니다.
+- `backend/supabase/functions/`: 기존 테스트용 인증 서버 함수. 실제 본인인증의 근거로 사용하지 않습니다.
+- `frontend/src/assets/logo.jpg`: 사용할 로고
+- `.env.local`: 로컬 연결 설정. Git에 올리지 않습니다.
+- [.env.example](.env.example): 기존 환경 항목 안내. 새 연결 방식에 맞춰 갱신할 대상입니다.
+- `.gitignore`, `.git/`: 제외 규칙과 버전 이력
 
-## 로컬 실행
+## 현재 작업 경계
 
-Node.js는 `--experimental-strip-types`를 지원하는 환경이 필요합니다. 프로젝트의 테스트 명령은 해당 옵션을 사용합니다.
+2026-09-22 사용자 지시에 따라 기존 React 앱, 프론트 API 연결·인증·사진 처리 코드, 테스트, 실행·빌드·배포 설정, 과거 문서와 생성물을 삭제했습니다. 별도 백업은 만들지 않았습니다. 새로운 연결 코드·테스트·실행 환경은 현재 프로토타입에 맞춰 구성합니다.
 
-```bash
-npm ci
-cp .env.example .env.local
-# .env.local의 Supabase URL·공개키·테스트 모드를 실제 작업 환경에 맞게 설정
-npm run dev
-```
+외부 백엔드 설계안은 `/Users/b/Downloads/PLAN.md`에 있으며 원본을 유지했습니다. 그 문서의 기존 프론트 연결·테스트 유지 설명은 위 최신 결정에 맞춰 수정할 대상입니다. 에이전트 설계 파일은 아직 없습니다.
 
-기본 주소는 `http://localhost:3000`입니다. `?demo=1`은 별도 로컬 체험 모드입니다.
-일반 모드는 실제 Supabase를 사용하므로 계정 생성·공고 작성 등은 원격 데이터에 영향을 줍니다.
-
-```bash
-npm test
-npm run build
-```
-
-`npm run build`는 TypeScript 검사(`npm run lint`)와 Vite 빌드를 포함합니다.
-`test:harness`와 원격 브라우저 테스트는 실제 서비스를 사용할 수 있으므로 [운영 절차](docs/development/backend-implementation/RUNBOOK.md)를 먼저 읽습니다.
-
-## 폴더 구조
-
-| 경로 | 용도 |
-|---|---|
-| `frontend/` | React 화면·브라우저 로직·이미지·Vite 설정 |
-| `backend/supabase/` | DB 변경 이력·접근 정책·서버 함수 |
-| `tests/frontend/`, `tests/backend/` | 영역별 로컬 테스트 |
-| `tests/browser/`, `tests/harness/`, `tests/*.mjs` | 브라우저·통합·원격 검증 도구 |
-| `docs/planning/` | [기획 문서](docs/planning/README.md): PRD·MVP·기능명세·정책·화면 설계 |
-| `docs/development/` | 백엔드 기술 설계·운영 절차·검증 |
-| `docs/collaboration/` | 작업 분담·인수인계·작업 프롬프트 |
-| `docs/archive/` | 과거 설계·구현 기록·스크린샷·보관 사본 |
-| `scripts/` | 과거 프로토타입 자동화 도구. [사용 범위](scripts/README.md) 확인 |
-| `node_modules/`, `dist/`, `.vercel/` | 로컬 설치·빌드·배포 연결 파일. Git 추적 제외 |
-
-전체 파일의 분류 기준과 이전→현재 경로는 [파일 분류 안내](docs/FILE_STRUCTURE.md)를 참고합니다. 실행 명령과 `.env.local`은 프로젝트 루트 기준이며, 빌드 결과도 루트 `dist/`에 생성됩니다.
-
-`package-lock.json`은 재현 가능한 설치를 위해 유지합니다. `.env.local`과 서버 비밀키는 Git에 넣지 않습니다.
-이전 커밋에 들어 있던 설치 파일은 과거 이력에 남습니다. 이번 정리는 이력을 다시 쓰지 않습니다.
-
-## 고정 연결 대상
-
-- Git: [jjackbb/yumidang](https://github.com/jjackbb/yumidang), `main`
-- Supabase: `bndguguarijmghnkenvt`
-- Vercel: `jjackbb-projects/yumidang`, [운영 사이트](https://yumidang.vercel.app)
-- `main` push는 GitHub 연동 운영 배포를 시작합니다. `.vercel/project.json`은 로컬에 유지합니다.
-
-[정리 전 README·인수인계·로드맵](docs/archive/project-history/2026-09-20/README.md)은 역사 자료이며 현재 작업 지시가 아닙니다.
+이번 정리에서는 원격 Supabase와 Vercel을 변경하지 않았으며, 커밋·푸시·배포도 실행하지 않았습니다.

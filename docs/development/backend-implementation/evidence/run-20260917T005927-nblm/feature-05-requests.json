@@ -1,9 +1,0 @@
-{
-  "key": "feature-05-requests",
-  "status": "fail",
-  "steps": [],
-  "startedAt": "2026-09-17T00:59:27.378Z",
-  "finishedAt": "2026-09-17T00:59:27.416Z",
-  "failure": "fetch failed — 재실행: npm run harness:05",
-  "lastPassedStep": null
-}

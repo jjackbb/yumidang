@@ -1,9 +1,4 @@
-/**
- * 상태: 미구현 스캐폴드 — 실제 동작은 아직 없습니다.
- * 담당: 민규담당
- * 역할: 신청·조건 버전·양측 동의의 타입·실행 검증
- * TODO: 문서 계약에 맞는 입출력 스키마를 정의하고 검증; DB 접근이나 모델 호출을 포함하지 않음
- * 기준: PLAN_상세설계.md 3~5장, 11장 / backend/README.md
- * 구현 시 이 파일을 채우고 관련 계약·검증을 함께 갱신합니다.
- */
-export {};
+/** 민규담당. 작성자 제안과 신청자 수락을 구분하고 같은 조건 버전을 확인한다. */
+export interface JoinRequestInput { message: string }
+export interface MatchAcceptance { conditionVersion: string }
+export interface ConversationMessage { messageId: string; content: string }

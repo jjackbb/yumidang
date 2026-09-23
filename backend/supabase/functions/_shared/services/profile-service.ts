@@ -1,9 +1,2 @@
-/**
- * 상태: 미구현 스캐폴드 — 실제 동작은 아직 없습니다.
- * 담당: 민규담당
- * 역할: 프로필·사진·가입 완료 처리
- * TODO: 본인 수정 권한과 공개 필드 범위를 적용
- * 기준: PLAN_상세설계.md 3~5장, 11장 / backend/README.md
- * 구현 시 이 파일을 채우고 관련 계약·검증을 함께 갱신합니다.
- */
-export {};
+/** 민규담당. 검증된 입력과 호출자별 DB 클라이언트를 전달한다. 상태·관계·시간 규칙은 RPC를 단일 기준으로 사용한다. */
+export { getOwnProfile, setProfileAvatar } from "../db/repositories/profiles.ts";

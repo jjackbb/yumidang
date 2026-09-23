@@ -1,5 +1,77 @@
-# 상태: 미구성 설정 골격
-# 담당: 민규담당
-# TODO: 로컬 Supabase 설정을 검증한 뒤 이 파일에 작성합니다.
-# 프로젝트 ID·포트·인증·함수·seed 경로를 아직 확정하지 않았습니다.
-# 현재 파일만으로 로컬 실행이 준비된 상태가 아닙니다.
+# 민규 로컬 DB 검증 전용. 운영 환경·PASS/문자 인증 설정이 아닙니다.
+# Supabase CLI 2.116.0 / PostgreSQL 17. 실행 방법: tools/local/README.md
+project_id = "yumidang-minkyu-db"
+
+[api]
+enabled = true
+port = 55421
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 55422
+shadow_port = 55420
+major_version = 17
+health_timeout = "2m"
+
+[db.pooler]
+enabled = false
+port = 55429
+
+[db.migrations]
+enabled = true
+schema_paths = []
+
+[db.seed]
+enabled = false
+sql_paths = []
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = false
+port = 55423
+
+[local_smtp]
+# 실제 Auth 세션 통합 검사용 로컬 메일 수집기. 외부 SMTP 제공사가 아니다.
+enabled = true
+port = 55424
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[storage.vector]
+enabled = false
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:5173"
+additional_redirect_urls = []
+# 테스트 사용자는 로컬 Auth admin API로 생성. 임의 가입은 비활성.
+enable_signup = false
+enable_anonymous_sign_ins = false
+
+[auth.email]
+# CLI는 이 값을 이메일 provider 활성화에도 사용한다. 로컬 가상 계정
+# 로그인 검사용이며 상위 auth.enable_signup=false로 신규 가입은 차단한다.
+enable_signup = true
+
+[auth.sms]
+enable_signup = false
+enable_confirmations = false
+
+[edge_runtime]
+enabled = false
+
+[functions.service-api]
+# 사용자 JWT는 handler에서 Auth /user로 검증하고 내부 작업은 별도 secret을 검증한다.
+# gateway JWT 검사는 custom 내부 secret을 거절하므로 이 함수에서만 해제한다.
+# Supabase Edge 호스팅 실행 검증은 별도 필요하며 로컬 기본 실행은 비활성이다.
+verify_jwt = false
+
+[analytics]
+enabled = false
+port = 55427

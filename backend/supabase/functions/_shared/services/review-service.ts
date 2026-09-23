@@ -1,9 +1,2 @@
-/**
- * 상태: 미구현 스캐폴드 — 실제 동작은 아직 없습니다.
- * 담당: 민규담당
- * 역할: 평가 제출·공개 원문·칭찬·요약 조회
- * TODO: 중복·수정 금지와 공개 의미를 지키고 최신 revision 요약만 반환
- * 기준: PLAN_상세설계.md 3~5장, 11장 / backend/README.md
- * 구현 시 이 파일을 채우고 관련 계약·검증을 함께 갱신합니다.
- */
-export {};
+/** 민규담당. 검증된 입력과 호출자별 DB 클라이언트를 전달한다. 상태·관계·시간 규칙은 RPC를 단일 기준으로 사용한다. */
+export { getReviewState, submitReview, getPublicReviews, processReviewAutomation } from "../db/repositories/reviews.ts";

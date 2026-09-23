@@ -1,0 +1,121 @@
+# 로컬 검증 준비 도구
+
+담당: 민규. Python 3.11 이상 표준 라이브러리와 Git을 사용한다. 명령은 현재 작업 중인 worktree의 최상위에서 실행한다. 환경/복사 도구는 실행 환경을 변경하지 않는다. 아래 실제 실행 절차는 전용 로컬 DB를 시작하고 SQL을 실행한다. 원격 DB 연결은 없다.
+
+## 환경 점검
+
+```sh
+python3 -B tools/local/check_environment.py
+```
+
+PATH의 `python3`, `node`, `deno`, `supabase`, `docker` 경로와 `--version` 결과의 버전 숫자만 보고한다. 프로세스마다 5초 제한을 두며 환경 변수나 도구의 원문 stdout/stderr를 출력하지 않는다. 도구 누락·실행 실패·설정 골격은 `NOT_READY`와 종료 코드 1이다. 필요한 도구와 설정 항목이 있으면 `READY`지만 실제 설정 유효성이나 실행 성공을 의미하지 않는다. 설정은 `PRESENT_UNVERIFIED`로 구분한다.
+
+`config.toml`은 2차에서 실행 가능한 로컬 설정으로 작성했다. Docker daemon, Supabase 시작, 실제 마이그레이션 재생, Deno 타입 검사는 **이 점검 명령**에서 실행하지 않아 `NOT_RUN`으로 표시한다. 별도 실행 결과는 민규 현황에 기록한다. Supabase CLI를 `npx`로만 실행하면 PATH 점검은 MISSING일 수 있으며 설치 실패와 혼동하지 않는다.
+
+## 정식 마이그레이션 검사
+
+```sh
+python3 -B tools/local/prepare_migrations.py
+```
+
+기본 동작은 읽기 전용 목록·순서·SHA-256 검사다. 현재 Git에 등록된 `backend/supabase/migrations/YYYYMMDDHHMMSS_name.sql`만 선택하며 HEAD와 작업 파일이 동일해야 한다. 버전 중복, 내용 중복, 빈 SQL, 비정상 파일명, 심볼릭 링크, 변경·추가된 미커밋 SQL, 빈 이력은 거절한다. ` 2.sql` 등 숫자 사본과 미추적 파일은 제외 목록에만 표시하고 삭제하지 않는다. SQL 문법·DB 재생 검증을 뜻하지 않는다.
+
+원래 작업 폴더의 미추적 사본은 별도 worktree로 복사되지 않는다. 따라서 두 작업 폴더의 제외 목록은 다를 수 있으며, 이 도구가 다른 worktree의 미추적 파일을 조사하거나 옮기지는 않는다.
+
+선택적으로 복사하려면 시스템 임시 폴더 아래의 비어 있는 외부 실행 루트를 명시한다. 아래 명령은 임시 폴더 생성과 정식 SQL 복사만 수행한다.
+
+```sh
+foundation_output="$(mktemp -d)"
+python3 -B tools/local/prepare_migrations.py --output "$foundation_output"
+```
+
+결과 구조:
+
+```text
+<임시 실행 루트>/
+├── migration-manifest.json
+└── supabase/
+    └── migrations/       # 정식 SQL만 포함
+```
+
+출력은 절대 경로여야 하며 저장소 내부·임시 폴더 외부·비어 있지 않은 대상은 거절한다. 기존 파일을 덮어쓰거나 원본을 수정하지 않는다. 복사 도중 오류가 나면 부분 결과가 남을 수 있으므로 새 임시 루트에서 재시도한다. manifest의 `sql_execution: NOT_RUN`은 복사 후에도 유지한다. 이 폴더에는 실행 설정·seed가 없으며, 바로 실행 가능한 Supabase 환경을 제공하는 것이 아니다.
+
+## 검증 명령
+
+```sh
+python3 -B tests/database/minkyu/test_local_tools.py
+node --test tests/functions/minkyu/http.test.ts
+python3 -B tests/contracts/minkyu/test_db_foundation.py
+python3 -B tests/functions/minkyu/test_harness.py
+```
+
+Python 검증은 임시 Git 저장소에만 테스트 이력을 만들어 SQL 보존·사본 제외·중복·변경 이력 거절·출력 보호를 확인한다. 환경 검증은 가상 프로세스로 누락·타임아웃·출력 제한·미구성 상태를 확인한다. 프로젝트 Git 이력은 변경하지 않는다.
+
+Deno가 준비된 후 공통 코드의 정적 타입 검사를 별도로 실행할 수 있다. 외부 import 의존성을 추가하지 않은 태스크다.
+
+```sh
+cd backend/supabase/functions
+deno task check:common
+```
+
+Node 단위 검증 성공은 Deno 타입 검사나 Supabase 런타임 검증을 대신하지 않는다.
+
+## 전용 로컬 Supabase에서 실제 검증
+
+실제 검증 환경: macOS arm64, Deno 2.9.6, Colima 0.10.3, Docker CLI 29.8.0, Supabase CLI 2.116.0, PostgreSQL 17.6. Homebrew Supabase 설치는 Command Line Tools 버전 요구로 실패했으므로 공식 npm 배포를 `npx --yes supabase@2.116.0`으로 실행했다. 시스템 Command Line Tools를 삭제하거나 교체하지 않았다. 설치 명령을 반복 실행할 필요는 없다.
+
+Colima 전용 프로필은 기본 Docker context나 SSH 설정을 바꾸지 않는다. 저장소 worktree와 `/private/tmp`만 mount한다. VM의 2 CPU/4 GiB/20 GiB는 이번 로컬 검증 자원이며 운영 사양이 아니다.
+
+```sh
+colima start --profile yumidang-minkyu --activate=false --ssh-config=false \
+  --cpus 2 --memory 4 --disk 20 --runtime docker \
+  --mount "$PWD:w" --mount /private/tmp:w
+db_output="$(TMPDIR=/private/tmp mktemp -d /private/tmp/yumidang-minkyu-db.XXXXXX)"
+TMPDIR=/private/tmp python3 -B tools/local/prepare_database.py --output "$db_output"
+SUPABASE_TELEMETRY_DISABLED=1 DO_NOT_TRACK=1 \
+  DOCKER_HOST="unix://$HOME/.colima/yumidang-minkyu/docker.sock" \
+  npx --yes supabase@2.116.0 start --workdir "$db_output"
+python3 -B tools/local/run_database_tests.py --run
+```
+
+CLI 시작 출력에는 로컬 키가 포함될 수 있으므로 공유 로그·커밋에 넣지 않는다. 준비 도구는 원본 SQL이나 `.env`를 수정하지 않는다. 출력 폴더는 system temporary root 아래의 빈 경로여야 한다. 준비 결과 `sql_execution: NOT_RUN`은 복사만 했다는 뜻이며 이후 DB 실행 성공을 자동 기록하지 않는다.
+
+`prepare_database.py`는 정식 Git 이력 검사에 더해 **이번 단계의 정확한 신규 파일 6개**만 복사한다. 다른 미추적 SQL·사본은 실행하지 않는다. `database-manifest.json`에 각 신규 파일과 설정 해시를 기록한다. 신규 SQL이 기준 커밋에 들어간 뒤에는 이 단계 목록을 새 기준으로 갱신해야 하며 자동 중복 재생하지 않는다. 수정 후에는 새 임시 루트를 준비한다.
+
+같은 project_id의 로컬 DB가 이미 있으면 `start`는 기존 volume을 재사용하므로 신규 SQL 재생을 보장하지 않는다. **테스트만 든 전용 DB임을 확인한 뒤** 새 임시 루트에서 위와 같은 환경 변수로 `npx --yes supabase@2.116.0 db reset --local --workdir "$db_output"`을 실행해 재검증한다. 공유 DB에서 사용하지 않는다.
+
+`run_database_tests.py`는 기본 호출 시 실행 목록과 `NOT_RUN`만 출력한다. `--run`은 지정된 Colima Unix socket·Supabase project label·실행 상태·빈 users/profiles/jobs를 확인한다. DB advisory lock으로 runner 중복 실행을 거절한다. 컨테이너 내부 Unix socket만 사용하며 DB URL·키 입력을 받지 않는다.
+
+- 6개 SQL 파일은 각각 트랜잭션을 rollback한다. 작업 큐 테스트의 임시 TRUNCATE도 rollback된다.
+- 경쟁 검증은 서로 다른 실제 연결을 사용한다. 명시적 advisory barrier와 대기 관찰로 중복 enqueue, SKIP LOCKED claim, 게시→비공개, 비공개→오래된 게시, 겹치는 일정의 양측 매칭, 수동/자동 완료 경합을 검사한다.
+- 경쟁용 무작위 fixture는 finally에서 이번 ID만 정리하고 잔존 데이터가 없는지 확인한다. 프로세스 강제 종료 시 fixture가 남을 수 있으며 다음 실행은 빈 DB 검사에서 멈춘다. 자동 초기화로 지우지 않는다.
+- SQL 결과·환경 비밀 대신 테스트 이름과 PASS/FAIL만 출력한다. 이 결과는 HTTP/Edge/외부 모델/원격 DB/부하 검증을 의미하지 않는다.
+
+검증 종료 후 자원을 정리한다. `stop`은 로컬 volume을 보존하며 자동 기동 서비스를 등록하지 않는다.
+
+```sh
+SUPABASE_TELEMETRY_DISABLED=1 DO_NOT_TRACK=1 \
+  DOCKER_HOST="unix://$HOME/.colima/yumidang-minkyu/docker.sock" \
+  npx --yes supabase@2.116.0 stop --workdir "$db_output"
+colima stop --profile yumidang-minkyu
+```
+
+2차 도구 단위 검증: `python3 -B tests/database/minkyu/test_database_runner.py`.
+
+공식 설치·실행 근거: [Supabase 로컬 개발](https://supabase.com/docs/guides/local-development/cli/getting-started), [Colima](https://github.com/abiosoft/colima#installation).
+
+## 3차: 실제 Auth/JWT와 업무 HTTP 연결
+
+```sh
+node --test tests/functions/minkyu/http.test.ts tests/functions/minkyu/auth_db.test.ts tests/functions/minkyu/service_api.test.ts
+(cd backend/supabase/functions && deno task check:service)
+python3 -B tests/integration/minkyu/runtime_e2e.py --workdir "$db_output"
+```
+
+빈 전용 DB와 같은 Docker socket을 사용한다. 통합 검사는 로컬 Auth admin API로 가상 사용자 3명을 만들고 실제 비밀번호 로그인 토큰을 발급받는다. 동일한 `createRuntimeHandler`를 127.0.0.1의 임시 Deno 서버에서 실행하고 실제 Auth/PostgREST/RPC로 무료 공고→신청→양측 매칭→완료→후기 공개→중복 없는 요약 큐를 검증한다. SQL 보조 fixture로 시간과 후기 개수 조건을 준비하므로 실제 24시간 대기나 모델 생성 검사가 아니다. 서버·가상 사용자는 finally에서 정리한다. 자격 증명·본문을 로그로 출력하지 않는다.
+
+로컬 `auth.enable_signup=false`는 일반 가입을 차단한다. `auth.email.enable_signup=true`는 CLI의 이메일/비밀번호 provider를 켜기 위한 설정이다. Mailpit은 로컬 수집기이며 외부 SMTP가 아니다. PASS/문자 로그인 경로를 구현하거나 승인한 것으로 해석하지 않는다.
+
+`functions.service-api.verify_jwt=false`는 handler의 사용자 Auth 검증과 별도 내부 비밀 검증을 사용하기 위한 설정이다. gateway가 내부 비밀을 사용자 JWT로 거절하지 않게 한다. 인증을 생략하는 공개 업무 경로는 추가하지 않았다. [Supabase custom 인증 안내](https://supabase.com/docs/guides/functions/auth)를 따른다. Supabase Edge 호스팅 자체는 NOT_RUN이고 로컬 기본 edge_runtime도 비활성이다. 배포 전에 Edge 기동·gateway 경로 검증이 필요하다.
+
+이번 실제 실행 루트는 `/private/tmp/yumidang-minkyu-runtime-20260923-v5`다. 마지막 gateway 설정은 실행 후 보완했으며, 새 복사본에서는 해당 설정도 포함된다. 임시 루트의 보존을 기대하지 말고 준비 도구로 재생성한다. 26개 SQL 재생, rollback 스위트 6개, 경쟁 시나리오 6개, HTTP 시나리오 8개가 각각 PASS이며 외부 공급사·모델·배포는 NOT_RUN이다.

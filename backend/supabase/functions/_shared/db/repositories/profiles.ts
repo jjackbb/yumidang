@@ -1,9 +1,4 @@
-/**
- * 상태: 미구현 스캐폴드 — 실제 동작은 아직 없습니다.
- * 담당: 민규담당
- * 역할: 프로필·가입 상태 DB 접근
- * TODO: 합의된 조회·RPC를 호출하고 결과를 변환; 권한·트랜잭션 조건은 DB가 보장하며 SQL 변경은 민규가 통합
- * 기준: PLAN_상세설계.md 3~5장, 11장 / backend/README.md
- * 구현 시 이 파일을 채우고 관련 계약·검증을 함께 갱신합니다.
- */
-export {};
+/** 민규담당. 고정 RPC만 호출하며 사용자 ID·권한 판정은 DB에서 수행한다. */
+import type { RpcClient } from "../transport.ts";
+export const getOwnProfile = (db: RpcClient) => db.rpc("get_my_profile", {});
+export const setProfileAvatar = (db: RpcClient, path: string) => db.rpc("set_my_profile_avatar", { p_avatar_path: path });

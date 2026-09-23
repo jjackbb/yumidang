@@ -1,9 +1,37 @@
-/**
- * 상태: 미구현 스캐폴드 — 실제 동작은 아직 없습니다.
- * 담당: 민규담당
- * 역할: 공고·신청·매칭·채팅·완료·평가·알림의 일반 API의 런타임 진입점
- * TODO: 설정과 의존성을 구성하고 handler를 런타임에 연결; 검증된 사용자 문맥을 기능 서비스로 전달하고 DB의 상태 전이·권한 검사를 유지
- * 기준: PLAN_상세설계.md 3~5장, 11장 / backend/README.md
- * 구현 시 이 파일을 채우고 관련 계약·검증을 함께 갱신합니다.
- */
-export {};
+/** 민규담당. Deno/Supabase 런타임 진입점. 설정·원문·자격 증명을 출력하지 않는다. */
+import { loadRuntimeConfig, type EnvReader } from "../_shared/config/env.ts";
+import { requirePrincipal } from "../_shared/auth/principal.ts";
+import { requireInternalCaller } from "../_shared/auth/internal-caller.ts";
+import { createUserClient } from "../_shared/db/user-client.ts";
+import { createInternalClient } from "../_shared/db/internal-client.ts";
+import { createServiceApi } from "./handler.ts";
+
+/** 실제 실행과 통합 검증이 같은 설정·인증·DB 의존성 조립을 사용한다. */
+export function createRuntimeHandler(read: EnvReader): (request: Request) => Promise<Response> {
+  const config = loadRuntimeConfig(read);
+  return createServiceApi({
+    allowedOrigins: config.allowedOrigins,
+    maxBodyBytes: config.maxRequestBytes,
+    authenticateUser: async (request) => createUserClient(config, await requirePrincipal(request, config)),
+    authenticateInternal: async (request) => {
+      await requireInternalCaller(request, config);
+      return createInternalClient(config);
+    },
+    maintenance: config.reviewSummaryModelVersion && config.reviewSummaryPromptVersion
+      ? { modelVersion: config.reviewSummaryModelVersion, promptVersion: config.reviewSummaryPromptVersion }
+      : undefined,
+  });
+}
+
+// 호스팅 런타임이 모듈을 import해도 fetch 진입점이 존재한다.
+// import 자체는 환경을 읽거나 서버를 시작하지 않아 factory 기반 검증과 분리된다.
+let runtimeHandler: ((request: Request) => Promise<Response>) | undefined;
+const entrypoint = {
+  fetch(request: Request): Promise<Response> {
+    runtimeHandler ??= createRuntimeHandler((key) => Deno.env.get(key));
+    return runtimeHandler(request);
+  },
+};
+export default entrypoint;
+
+if (import.meta.main) Deno.serve(entrypoint.fetch);

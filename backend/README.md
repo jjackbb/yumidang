@@ -1,6 +1,6 @@
 # 유미당 백엔드 작업 안내
 
-상태: 폴더와 구현용 파일의 골격 생성 완료. 신규 API·AI·외부 연동 기능은 미구현이다.
+상태: 민규의 공통 HTTP·인증/DB 클라이언트·무료 공고/양측 매칭·완료·후기 공개/재요약 큐·채팅/알림 API를 구현하고 실제 로컬 Auth/JWT/DB로 검증했다. 외부 인증/계좌 공급사, 종현의 검색·AI·예약 실행 연결과 운영 배포는 남아 있다.
 
 기준 문서는 [최신 계획](../PLAN.md), [상세 설계](../PLAN_상세설계.md), [프로젝트 지침](../AGENTS.md)이다. 담당 업무와 연결 계약은 상세 설계 11장을 먼저 확인한다.
 
@@ -10,7 +10,14 @@
 
 기능을 구현할 때 아래 표와 각 파일의 역할·담당·TODO를 확인하고 자기 담당 파일에 작성한다. 같은 기능의 다른 이름 파일이나 별도 백엔드·AI 폴더를 중복 생성하지 않는다. 새 파일이 필요하면 기존 모듈과 책임을 구분한다. 이 안내와 상세 설계는 민규가 갱신하며, 종현은 변경 요청을 남긴다.
 
-현재 새 TypeScript 파일은 주석과 `export {};`만 가진 모듈이다. 요청을 수신하거나 성공 응답을 반환하지 않으며, DB·외부 모델을 호출하지 않는다. 주석의 TODO는 구현·검증 완료 후 실제 상태에 맞게 바꾼다. 파일이 존재한다는 이유만으로 구현 완료로 판단하지 않는다.
+공통 계약 `common.ts`와 `http/`에는 요청 ID·입력 검증·JSON 응답·공개 오류·CORS 처리가 구현돼 있다. `service-api/`와 해당 서비스·저장소에는 실제 HTTP→인증→RPC 처리가 연결돼 있다. 가입·공급사 및 일부 미정 정책 모듈은 골격으로 남아 있다. 주석의 TODO는 구현·검증 완료 후 실제 상태에 맞게 바꾼다. 파일이 존재한다는 이유만으로 기능 완료로 판단하지 않는다.
+
+## 민규 foundation 사용 순서
+
+1. [공통 연결 규칙](contracts/conventions.md)의 응답·오류·requestId 계약을 사용한다.
+2. 1차 [DB 연결 제안](contracts/db-foundation.md)의 실제 호출은 [검색 DB](contracts/public-post-search-db.md), [후기 DB](contracts/review-summary-db.md), [작업 큐 DB](contracts/worker-jobs.md)의 RPC 이름·필수 인수·반환값을 따른다. 가상 사례를 실제 함수 이름으로 간주하지 않는다.
+3. [로컬 도구 안내](../tools/local/README.md)에 따라 정식 이력과 이번 신규 SQL만 분리 복사한 후 전용 DB에서 검증한다. 준비 도구 자체는 SQL을 실행하지 않는다.
+4. [민규 작업 현황](../docs/collaboration/minkyu.md)과 [3차 업무 연결 전달 사항](../docs/collaboration/requests/minkyu/2026-09-23-runtime-handoff.md)에서 검증 결과와 남은 연결 범위를 확인한다.
 
 아래 경로에서 `functions/`는 `supabase/functions/`를, `_shared/`는 그 아래 공통 폴더를 뜻한다.
 
@@ -50,12 +57,12 @@
 
 ## 설정과 기존 자료
 
-- `supabase/config.toml`은 주석만 있는 미구성 파일이다. 실행 가능한 로컬 설정은 민규가 검증해 작성한다.
-- `supabase/functions/deno.json`은 빈 JSON 객체다. 의존성·명령·버전은 아직 설정하지 않았다.
+- `supabase/config.toml`은 민규 전용 로컬 설정이다. 55421/55422 포트와 격리된 project_id를 사용한다. 일반 가입은 차단하고 로컬 Auth admin이 만든 가상 계정만 비밀번호로 검사했다. 운영 PASS/문자 인증을 대신하지 않는다. service-api는 자체 인증을 사용하도록 gateway JWT 검사만 해제하며 Edge 호스팅 검증은 NOT_RUN이다.
+- `supabase/functions/deno.json`의 `check:common`, `check:service`는 Deno 2.9.6에서 PASS다. 실제 HTTP 검증은 같은 런타임 factory를 독립 Deno 서버에서 실행했다.
 - 기존 `test-phone-auth`, `test-institutional-email-auth`와 사본 파일은 보존한 자료이며 새 상용 인증으로 연결하지 않았다.
-- 기존 마이그레이션은 수정하지 않았다. 신규 스키마가 합의되기 전에는 빈 마이그레이션을 만들지 않는다.
+- 기존 마이그레이션 20개는 수정하지 않았고 신규 6개를 추가했다. 총 26개를 PostgreSQL 17.6에서 처음부터 재생했다.
 - 현재 `.gitkeep`은 기존 폴더 공유용 표시로 유지한다. 실제 코드 역할은 없다.
-- 테스트·로컬 실행 도구는 별도 구현 단계에서 새로 작성한다. 현재 실행·배포 명령이 준비된 상태는 아니다.
+- 단위 검사 81개, SQL 권한/상태 스위트 6개, 독립 DB 세션 경쟁 6개, 실제 JWT/HTTP 통합 시나리오 8개를 통과했다. 외부 공급사·모델·Edge 호스팅·운영 배포 검증은 NOT_RUN이다. 자세한 범위는 민규 현황을 확인한다.
 
 ## 구현 완료 확인
 

@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "actor": "minkyu",
+  "baseline": "b9acc4146640e45e9e9122c3c23fdf62ea3dbb19",
+  "branch": "minkyu/foundation-harness",
+  "lanes": {
+    "coordinator": [
+      "docs/collaboration/minkyu-foundation-harness.json",
+      "docs/collaboration/minkyu.md",
+      "docs/collaboration/requests/minkyu/2026-09-23-foundation-handoff.md",
+      "backend/README.md",
+      "AGENTS.md",
+      "tools/collaboration/check_harness.py",
+      "tests/functions/minkyu/test_harness.py",
+      ".gitignore"
+    ],
+    "A": [
+      "backend/contracts/conventions.md",
+      "backend/supabase/functions/_shared/contracts/common.ts",
+      "backend/supabase/functions/_shared/http/request.ts",
+      "backend/supabase/functions/_shared/http/response.ts",
+      "backend/supabase/functions/_shared/http/errors.ts",
+      "backend/supabase/functions/_shared/http/cors.ts",
+      "tests/functions/minkyu/http.test.ts"
+    ],
+    "B": [
+      "backend/contracts/db-foundation.md",
+      "tests/fixtures/minkyu/db-foundation.json",
+      "tests/contracts/minkyu/test_db_foundation.py"
+    ],
+    "C": [
+      "tools/local/check_environment.py",
+      "tools/local/prepare_migrations.py",
+      "tools/local/README.md",
+      "backend/supabase/functions/deno.json",
+      "tests/database/minkyu/test_local_tools.py"
+    ]
+  },
+  "excluded": [
+    "종현 소유 파일",
+    "기존 migrations",
+    "실제 인증·DB·외부 모델 연결",
+    "설치·커밋·푸시"
+  ],
+  "integration_order": [
+    "A/B/C independently",
+    "coordinator verifies contracts and lane boundaries",
+    "coordinator records handoff and NOT_RUN checks"
+  ]
+}

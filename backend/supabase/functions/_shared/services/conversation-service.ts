@@ -1,9 +1,2 @@
-/**
- * 상태: 미구현 스캐폴드 — 실제 동작은 아직 없습니다.
- * 담당: 민규담당
- * 역할: 사용자 간 채팅
- * TODO: 당사자·현재 상태별 권한을 적용; AI 탐색 대화와 분리
- * 기준: PLAN_상세설계.md 3~5장, 11장 / backend/README.md
- * 구현 시 이 파일을 채우고 관련 계약·검증을 함께 갱신합니다.
- */
-export {};
+/** 민규담당. 검증된 입력과 호출자별 DB 클라이언트를 전달한다. 상태·관계·시간 규칙은 RPC를 단일 기준으로 사용한다. */
+export { listConversations, getConversation, listMessages, sendMessage } from "../db/repositories/conversations.ts";

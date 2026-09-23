@@ -1,0 +1,59 @@
+# 인증·DB 실행 계약 — 민규담당
+
+상태: 기존 Supabase 사용자 세션 검증과 제한된 RPC 전송을 구현했다. PASS 신규 가입·문자 코드 발급·번호 변경·복구·은행 제공사 연결은 포함하지 않는다. 가입 공급사와 세션 연결 방식은 미정이다.
+
+## 호출자와 권한
+
+`requirePrincipal(request, config, fetchImpl?)`는 Authorization의 Bearer JWT를 Supabase Auth `/auth/v1/user`로 보내 매 요청 검증한다. JWT의 로컬 payload 디코딩, `x-user-id`, `x-role`, `user_metadata`를 인증 근거로 사용하지 않는다. Auth가 반환한 UUID와 `authenticated` 역할을 확인하고 익명 계정은 제외한다. 설정된 anon/service 역할 키·내부 비밀은 사용자 토큰으로 받지 않는다.
+
+반환 `Principal`의 공개 필드는 `userId`뿐이다. 원래 JWT는 모듈의 WeakMap에 보관하며 임의로 만든 같은 모양의 객체로 사용자 DB 클라이언트를 생성할 수 없다. 사용자 DB 요청은 anon key와 원래 JWT를 함께 보내므로 `auth.uid()`와 기존 RLS를 유지한다. 서비스 키로 사용자 권한을 대신하지 않는다.
+
+`requireInternalCaller(request, config)`는 별도 `INTERNAL_WORKER_SECRET`을 Bearer로 요구한다. SHA-256 고정 길이 digest를 전체 길이 XOR 비교한다. 사용자 JWT·서비스 키·클라이언트 역할 헤더로 내부 경로를 허용하지 않는다. HTTP 호출부는 이 함수의 성공 뒤에 내부 DB 클라이언트를 만든다. 내부 RPC 목록은 `internal-client.ts`에 고정되어 있으며 임의 테이블·SQL 호출 API를 제공하지 않는다.
+
+공식 근거: [Supabase getUser](https://supabase.com/docs/reference/javascript/auth-getuser)의 서버 검증 방식과 [Supabase Auth OpenAPI](https://github.com/supabase/auth/blob/master/openapi.yaml)의 사용자 조회 계약을 참고했다.
+
+## 설정
+
+`loadRuntimeConfig(read)`는 환경 조회 함수를 주입받는다. 공통 모듈은 Deno 전역이나 dotenv 패키지에 의존하지 않는다. 값 누락·잘못된 형식은 값과 변수 내용을 공개하지 않는 `EXTERNAL_UNAVAILABLE` 오류로 처리한다.
+
+| 변수 | 적용 범위 |
+|---|---|
+| `SUPABASE_URL` | 필수. HTTPS origin. 로컬 localhost/127.0.0.1/::1 및 Supabase 내부 kong만 HTTP 허용 |
+| `SUPABASE_ANON_KEY` | 사용자 인증·사용자 RPC 필수 |
+| `ALLOWED_ORIGINS` | 정확한 origin 문자열의 JSON 배열. `[]` 허용, wildcard·경로 불허 |
+| `MAX_REQUEST_BYTES` | 필수 양의 정수, 기본값 없음 |
+| `UPSTREAM_TIMEOUT_MS` | 필수 양의 정수, 최대 2147483647, 기본값 없음 |
+| `SUPABASE_SERVICE_ROLE_KEY` | 내부 RPC 필수. 사용자 API 시작에는 선택 |
+| `INTERNAL_WORKER_SECRET` | 내부 경로 필수. 키들과 별도인 32~4096자 영문/숫자/`_`/`-` 값. 운영자는 충분한 무작위성을 가진 비밀 생성 필요 |
+| `REVIEW_SUMMARY_MODEL_VERSION` | 후기 자동화 호출 시 필수, 공급사/모델을 임의 선택하지 않음 |
+| `REVIEW_SUMMARY_PROMPT_VERSION` | 후기 자동화 호출 시 필수 |
+
+내부 배치 한도는 HTTP 본문의 명시적인 `limit`를 사용한다. 별도 환경 기본값은 없다. 내부 비밀 미구성은 내부 기능을 닫지만 이미 인증 가능한 일반 사용자 API까지 막지 않는다. 설정 객체와 토큰을 로그로 출력하지 않는다. 설정의 JSON 직렬화는 비밀값 대신 구성 여부만 반환한다.
+
+## RPC와 오류
+
+공통 인터페이스는 `RpcClient.rpc(name: string, args: Record<string, JsonValue>): Promise<JsonValue>`다. 성공 JSON을 반환하며 204는 null이다. 사용자/내부 클라이언트 각각의 고정 목록 밖 이름은 요청 전 `ACCESS_DENIED`다. 가입 legacy RPC와 기존 `create_post`·`create_join_request`는 사용자 목록에 넣지 않는다. 새 `create_service_post`·`request_service_post` 경로를 사용한다.
+
+모든 요청은 timeout과 AbortController를 사용하며 redirect를 따라가지 않는다. 오류 원문·SQL·힌트·토큰·요청 본문을 로그나 공개 오류에 붙이지 않는다. 원문에 포함된 error code 문자열도 알려진 SQLSTATE만 매핑한다.
+
+| DB/상위 응답 | 공개 오류 |
+|---|---|
+| HTTP401 또는 SQLSTATE28000 | AUTH_REQUIRED401 |
+| HTTP403 또는42501 | ACCESS_DENIED403 |
+| 22023/22P02/23502/23514 | INVALID_REQUEST400 |
+| 23505/P0001/40001 | STATE_CONFLICT409 |
+| P0002/PT404 | RESOURCE_NOT_FOUND404 |
+| PT503/40P01/네트워크·timeout/미분류5xx·429 | EXTERNAL_UNAVAILABLE503 |
+| 그 외 미분류 DB 오류 | INTERNAL_ERROR500 |
+
+`40001`은 현재 요약 revision·업무 상태 충돌에 사용되므로 409다. 호출자는 최신 상태를 다시 조회하며 무조건 성공으로 변환하지 않는다. 요청 자동 재전송은 없다. 변경 RPC의 중복/재시도 안전성은 DB 계약이 보장한다.
+
+## 가입 자격 경계
+
+`evaluateTrustedEligibility(principal, proof)`는 신뢰된 미래 공급사 어댑터/비공개 DB 조회의 PASS 근거를 해석하는 순수 함수다. 검증된 동일 사용자·자격 확인·DI 중복 확인·필수 사진이 모두 충족되어야 eligible을 반환한다. 요청 본문이나 사용자 metadata를 proof로 넘겨서는 안 된다. 이 반환값은 DB 가입 허가 또는 실제 PASS 검증 결과가 아니다.
+
+현재 근거 조회 어댑터와 신규 가입 endpoint에는 연결하지 않았다. 근거 없음은 `verification_required`이며 기존 female_direct/referral/이메일 가입 기록은 PASS 검증 기록으로 승격하지 않는다. 사진이 없는 경우 photo_required, 선택 성향은 자격을 차단하지 않는다.
+
+## 검증
+
+`node --test tests/functions/minkyu/auth_db.test.ts`의 14개 테스트와 Deno 타입 검사를 통과했다. 원격 검증 모형, 위조 Principal 거절, 역할 혼동 거절, 토큰 전달, allowlist, 네트워크·timeout, SQLSTATE 매핑, 민감정보 제외를 포함한다. 실제 Supabase HTTP/JWT 통합 결과는 총괄의 [민규 현황](../../docs/collaboration/minkyu.md)에서 별도 기록한다. 모형 테스트 통과만으로 PASS/문자/은행 연동을 완료했다고 판단하지 않는다.

@@ -1,9 +1,2 @@
-/**
- * 상태: 미구현 스캐폴드 — 실제 동작은 아직 없습니다.
- * 담당: 민규담당
- * 역할: 신청·작성자 선택·신청자 최종 동의
- * TODO: 동일 조건 버전·양측 동의·계좌 상태를 원자적 RPC에서 검사
- * 기준: PLAN_상세설계.md 3~5장, 11장 / backend/README.md
- * 구현 시 이 파일을 채우고 관련 계약·검증을 함께 갱신합니다.
- */
-export {};
+/** 민규담당. 검증된 입력과 호출자별 DB 클라이언트를 전달한다. 상태·관계·시간 규칙은 RPC를 단일 기준으로 사용한다. */
+export { createRequest, listSentRequests, listReceivedRequests, withdrawRequest, declineRequest, proposeMatch, acceptMatch, getMatchConsent } from "../db/repositories/matching.ts";

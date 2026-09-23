@@ -15,6 +15,36 @@
 
 Always use harness agent team architecture for complex tasks.
 
+### 민규 작업 재개 — 2026-09-23 대화 기록
+
+- 현재 구현·검증 결과와 다음 작업은 [민규 현황의 재개 메모](docs/collaboration/minkyu.md#다음-대화에서-재개할-순서)를 먼저 읽는다. 이번 100%는 로컬 구현·검증·인계 범위이며 민규 전체 업무나 출시 완료율이 아니다.
+- 사용자가 이번까지의 변경을 커밋·푸시하도록 명시 요청했다. 아래 과거 단계의 커밋·푸시 제외보다 이 최신 요청이 우선한다. 대상은 민규 전용 `minkyu/foundation-harness` 브랜치이며 공유 `backend-work` 병합·원격 DB 변경·배포는 포함하지 않는다.
+- 커밋 후 기존 하네스의 baseline과 HEAD는 달라진다. 다음 구현 전에 새 작업 단위의 기준 커밋·정확한 담당별 허용 파일을 정의한다. 이전 하네스 검사를 통과시키려고 과거 검증 기록이나 소유권 정책을 덮어쓰지 않는다.
+- 신규 SQL 6개가 Git 정식 이력에 들어가면 `prepare_database.py`의 기존 PENDING 목록은 재사용할 수 없다. 다음 재현 작업의 첫 단계로 정식 26개/신규 0개를 지원하도록 준비 도구와 관련 테스트·문서를 갱신한다. 사본 제외·이력 보존 검사는 유지한다.
+
+### 민규 업무 연결 하네스 — 현재 작업
+
+- 3차는 사용자가 즉시 진행을 요청한 양측 완료·DB/인증 기반·업무 API·후기 공개/재요약·통합 검증이다. `docs/collaboration/minkyu-runtime-harness.json`이 정확한 파일 수정 범위를 정한다. 작업자는 모두 minkyu이며 진행 상황은 총괄만 `minkyu-progress.md`에 기록한다.
+- A는 완료·후기 자동화 SQL, B는 인증·DB 클라이언트, C는 업무 API와 서비스/저장소, 총괄은 핵심 서비스 SQL·실제 통합 검증·공통 문서를 맡는다. 앞 단계 파일은 수정 허용된 것 외에 해시 보존한다. `check_harness.py --manifest docs/collaboration/minkyu-runtime-harness.json`으로 범위를 확인한다.
+- **2026-09-23 추가 사용자 확정:** 자동 완료 실행이 지연되면 실제 자동 완료 처리 시각을 완료 시각으로 기록하고 그때부터 후기 작성 7일을 계산한다. 앱에서 완료 알림을 볼 수 있는 시각부터 공개 보류 24시간은 별도로 유지한다.
+- 공급사·모델이 필요한 부분은 명시적 설정 없이는 실행하지 않는다. 임의 PASS 성공·계좌 인증·모델 응답을 만들지 않는다. 원격 변경·커밋·푸시는 이 작업에 포함하지 않는다.
+
+### 민규 DB 구현 하네스 — 2차 기록
+
+- 사용자의 “내 담당 작업 이어서해” 요청에 따라 2차 DB 기반 작업을 진행한다. 실행 중인 수정 범위는 `docs/collaboration/minkyu-db-harness.json`이다. 아래 1차 설치 금지는 과거 단계의 제한이다.
+- 총괄은 로컬 설정·실행 도구·공통 안내, A는 작업 큐, B는 공개 검색 DB, C는 공개 후기·요약 DB의 명시된 파일만 수정한다. 기존 마이그레이션과 종현 파일은 보존한다.
+- `python3 -B tools/collaboration/check_harness.py --manifest docs/collaboration/minkyu-db-harness.json --lane A --paths 파일...`로 편집 범위를 확인하고 `--all-changes`로 통합 검사한다. 1차 산출물 17개는 해시로 보존한다.
+- 전용 Colima `yumidang-minkyu`와 Supabase `yumidang-minkyu-db`에서만 실제 DB 검증한다. 정식 이력 20개와 검토한 신규 SQL 3개를 임시 경로에 복사한다. 원래 작업 공간의 ` 2.sql` 사본은 제외하고 보존한다.
+- 원격 DB 변경·커밋·푸시·PASS 공급사/계좌 효력/분쟁 판단 정책 결정은 이 단계에 포함하지 않는다. SQL 구현 완료를 서비스 API·AI 연동·운영 준비 완료와 혼동하지 않는다.
+
+### 민규 foundation 하네스 — 1차 기록
+
+- 이번 기반 작업은 `minkyu/foundation-harness` 브랜치의 별도 worktree에서 수행한다. 정확한 수정 파일은 `docs/collaboration/minkyu-foundation-harness.json`이 지정한다.
+- 총괄은 공통 안내·민규 현황·인수인계를, A는 HTTP 공통 계약을, B는 DB 연결 명세·가상 예시를, C는 로컬 준비 도구를 단독 편집한다. 같은 민규 담당이어도 다른 에이전트의 파일을 직접 수정하지 않는다.
+- 편집 전에 `python3 -B tools/collaboration/check_harness.py --lane A --paths 파일...`처럼 작업 범위를 검사한다. 통합 전에는 `--all-changes`로 기준 커밋 이후 모든 변경·신규 파일을 확인한다. 허용 목록을 넓혀 작업을 통과시키지 말고 총괄에게 필요한 변경을 보고한다.
+- 이번 단계에서 도구 설치·실제 DB 재생·인증/모델 연동·커밋·푸시는 하지 않는다. 공통 HTTP의 Node 실행 검사와 Deno 타입 검사, DB 가상 예시 검증과 실제 DB 동작 검증을 구분한다.
+- 이 하네스는 지정된 기준 커밋의 한 작업 단위에만 적용한다. 다음 작업은 결과 검토 후 새 기준과 범위를 정의한다. 에이전트별 검사는 지침 준수와 허용 경로를 점검하며 OS 파일 잠금은 아니다.
+
 ## 동시 작업: 파일별 단독 수정
 
 - 수정 전에 [소유권 정책](backend/ownership.json)과 [협업 규칙](docs/collaboration/README.md)을 읽는다. 현재 대화에서 확인한 작업자를 유지한다. 민규는 `minkyu`, 종현은 `jonghyun`이다. 작업자를 모르면 읽기·계획을 먼저 진행하고 수정 전에 담당자를 확인한다.

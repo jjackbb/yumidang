@@ -1,9 +1,9 @@
-/**
- * 상태: 미구현 스캐폴드 — 실제 동작은 아직 없습니다.
- * 담당: 민규담당
- * 역할: 공고 공개 정보와 비공개 안내 분리의 타입·실행 검증
- * TODO: 문서 계약에 맞는 입출력 스키마를 정의하고 검증; DB 접근이나 모델 호출을 포함하지 않음
- * 기준: PLAN_상세설계.md 3~5장, 11장 / backend/README.md
- * 구현 시 이 파일을 채우고 관련 계약·검증을 함께 갱신합니다.
- */
-export {};
+/** 민규담당. 신규 무료 공고. 유료 쓰기는 계좌 공급사 연동 전 제공하지 않는다. */
+export interface FreePostInput {
+  title: string; description: string; category: string;
+  startsAt: string; endsAt: string; recruitmentEndsAt: string;
+  publicArea: string; registeredPlaceName: string | null;
+  registeredAddress: string; meetingDetail: string;
+  preferenceNote: string | null; tags: string[];
+  costType: "free"; amount: 0;
+}

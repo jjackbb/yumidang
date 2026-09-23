@@ -1,5 +1,6 @@
 # Installed dependencies and generated build output (recreate with npm ci/build)
 node_modules/
+.worktrees/
 dist/
 *.tsbuildinfo
 

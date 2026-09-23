@@ -1,0 +1,840 @@
+{
+  "status": "proposed-unimplemented",
+  "description": "개인정보 없는 가상 계약 예시. 실제 DB 실행 결과 아님.",
+  "cases": [
+    {
+      "id": "search_address_anon",
+      "operation": "searchPublicPosts",
+      "caller": "anonymous",
+      "request": {
+        "query": "가상 등록 주소"
+      },
+      "state": {
+        "matchField": "registeredAddress"
+      },
+      "response": {
+        "requestId": "d9198644-f439-438b-b4a2-5238c955eb1b",
+        "data": {
+          "items": [
+            {
+              "postId": "post-demo-1",
+              "title": "가상 전시 동행",
+              "publicArea": "테스트 공개 지역",
+              "authorDisplayName": "동행친구-01"
+            }
+          ],
+          "nextCursor": null
+        }
+      }
+    },
+    {
+      "id": "search_address_member",
+      "operation": "searchPublicPosts",
+      "caller": "member",
+      "request": {
+        "query": "가상 등록 주소"
+      },
+      "state": {
+        "matchField": "registeredAddress"
+      },
+      "response": {
+        "requestId": "40a881fb-bad6-436f-b57c-86455b99118b",
+        "data": {
+          "items": [
+            {
+              "postId": "post-demo-1",
+              "title": "가상 전시 동행",
+              "publicArea": "테스트 공개 지역",
+              "authorDisplayName": "가*회원"
+            }
+          ],
+          "nextCursor": null
+        }
+      }
+    },
+    {
+      "id": "search_empty",
+      "operation": "searchPublicPosts",
+      "caller": "anonymous",
+      "request": {
+        "query": "검색결과없음"
+      },
+      "state": {},
+      "response": {
+        "requestId": "c7e0e3a6-8e52-4f72-b758-869a24e1b54d",
+        "data": {
+          "items": [],
+          "nextCursor": null
+        }
+      }
+    },
+    {
+      "id": "snapshot_public",
+      "operation": "loadPublicReviewSnapshot",
+      "caller": "internal",
+      "request": {
+        "profileId": "profile-demo-1"
+      },
+      "state": {
+        "sourceRevision": "revision-demo-7",
+        "reviews": [
+          {
+            "reviewId": "review-demo-1",
+            "text": "약속 시간을 지켰습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-2",
+            "text": "전시를 함께 즐겼습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-3",
+            "text": "대화가 편안했습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-private",
+            "text": "비공개 가상 후기",
+            "public": false,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-empty",
+            "text": "  ",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-held",
+            "text": "공개 보류 가상 후기",
+            "public": true,
+            "releaseEligible": false
+          }
+        ]
+      },
+      "response": {
+        "requestId": "722a82d6-ff35-4f9e-a32f-382f5c349e56",
+        "data": {
+          "profileId": "profile-demo-1",
+          "sourceRevision": "revision-demo-7",
+          "reviews": [
+            {
+              "reviewId": "review-demo-1",
+              "text": "약속 시간을 지켰습니다."
+            },
+            {
+              "reviewId": "review-demo-2",
+              "text": "전시를 함께 즐겼습니다."
+            },
+            {
+              "reviewId": "review-demo-3",
+              "text": "대화가 편안했습니다."
+            }
+          ],
+          "eligibleCount": 3
+        }
+      }
+    },
+    {
+      "id": "snapshot_below_threshold",
+      "operation": "loadPublicReviewSnapshot",
+      "caller": "internal",
+      "request": {
+        "profileId": "profile-demo-1"
+      },
+      "state": {
+        "sourceRevision": "revision-demo-7",
+        "reviews": [
+          {
+            "reviewId": "review-demo-1",
+            "text": "약속 시간을 지켰습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-2",
+            "text": "전시를 함께 즐겼습니다.",
+            "public": true,
+            "releaseEligible": true
+          }
+        ]
+      },
+      "response": {
+        "requestId": "cc5c6b7d-f0bb-42a4-bbcd-af880c543555",
+        "data": {
+          "profileId": "profile-demo-1",
+          "sourceRevision": "revision-demo-7",
+          "reviews": [
+            {
+              "reviewId": "review-demo-1",
+              "text": "약속 시간을 지켰습니다."
+            },
+            {
+              "reviewId": "review-demo-2",
+              "text": "전시를 함께 즐겼습니다."
+            }
+          ],
+          "eligibleCount": 2
+        }
+      }
+    },
+    {
+      "id": "snapshot_denied",
+      "operation": "loadPublicReviewSnapshot",
+      "caller": "member",
+      "request": {
+        "profileId": "profile-demo-1"
+      },
+      "state": {},
+      "response": {
+        "requestId": "46a252a0-fd5d-4660-9cd7-f39592b52610",
+        "error": {
+          "code": "ACCESS_DENIED",
+          "message": "요청을 수행할 권한이 없습니다.",
+          "retryable": false
+        }
+      }
+    },
+    {
+      "id": "summary_publish",
+      "operation": "publishReviewSummary",
+      "caller": "internal",
+      "request": {
+        "profileId": "profile-demo-1",
+        "sourceRevision": "revision-demo-7",
+        "evidenceReviewIds": [
+          "review-demo-1",
+          "review-demo-2",
+          "review-demo-3"
+        ],
+        "summary": "시간을 지키고 함께 전시와 대화를 즐겼다는 후기가 있습니다.",
+        "modelVersion": "model-demo",
+        "promptVersion": "prompt-demo"
+      },
+      "state": {
+        "sourceRevision": "revision-demo-7",
+        "reviews": [
+          {
+            "reviewId": "review-demo-1",
+            "text": "약속 시간을 지켰습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-2",
+            "text": "전시를 함께 즐겼습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-3",
+            "text": "대화가 편안했습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-private",
+            "text": "비공개 가상 후기",
+            "public": false,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-empty",
+            "text": "  ",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-held",
+            "text": "공개 보류 가상 후기",
+            "public": true,
+            "releaseEligible": false
+          }
+        ]
+      },
+      "response": {
+        "requestId": "2129375e-3ca5-4370-a46b-2c9038ac4251",
+        "data": {
+          "summaryId": "summary-demo-1",
+          "sourceRevision": "revision-demo-7",
+          "sourceCount": 3,
+          "publishedAt": "2026-09-23T00:00:00Z"
+        }
+      }
+    },
+    {
+      "id": "summary_revision_conflict",
+      "operation": "publishReviewSummary",
+      "caller": "internal",
+      "request": {
+        "profileId": "profile-demo-1",
+        "sourceRevision": "revision-demo-7",
+        "evidenceReviewIds": [
+          "review-demo-1",
+          "review-demo-2",
+          "review-demo-3"
+        ],
+        "summary": "시간을 지키고 함께 전시와 대화를 즐겼다는 후기가 있습니다.",
+        "modelVersion": "model-demo",
+        "promptVersion": "prompt-demo"
+      },
+      "state": {
+        "sourceRevision": "revision-demo-8",
+        "reviews": [
+          {
+            "reviewId": "review-demo-1",
+            "text": "약속 시간을 지켰습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-2",
+            "text": "전시를 함께 즐겼습니다.",
+            "public": true,
+            "releaseEligible": true
+          }
+        ]
+      },
+      "response": {
+        "requestId": "611ddb1d-d12e-462e-bf47-ccb42b501776",
+        "error": {
+          "code": "STATE_CONFLICT",
+          "message": "현재 상태에서 요청을 처리할 수 없습니다.",
+          "retryable": false
+        }
+      }
+    },
+    {
+      "id": "summary_insufficient",
+      "operation": "publishReviewSummary",
+      "caller": "internal",
+      "request": {
+        "profileId": "profile-demo-1",
+        "sourceRevision": "revision-demo-7",
+        "evidenceReviewIds": [
+          "review-demo-1",
+          "review-demo-2"
+        ],
+        "summary": "시간을 지키고 함께 전시와 대화를 즐겼다는 후기가 있습니다.",
+        "modelVersion": "model-demo",
+        "promptVersion": "prompt-demo"
+      },
+      "state": {
+        "sourceRevision": "revision-demo-7",
+        "reviews": [
+          {
+            "reviewId": "review-demo-1",
+            "text": "약속 시간을 지켰습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-2",
+            "text": "전시를 함께 즐겼습니다.",
+            "public": true,
+            "releaseEligible": true
+          }
+        ]
+      },
+      "response": {
+        "requestId": "bb842f15-3bb7-465d-9bb4-4bb12bcad017",
+        "error": {
+          "code": "STATE_CONFLICT",
+          "message": "현재 상태에서 요청을 처리할 수 없습니다.",
+          "retryable": false
+        }
+      }
+    },
+    {
+      "id": "summary_evidence_conflict",
+      "operation": "publishReviewSummary",
+      "caller": "internal",
+      "request": {
+        "profileId": "profile-demo-1",
+        "sourceRevision": "revision-demo-7",
+        "evidenceReviewIds": [
+          "review-demo-1",
+          "review-demo-2",
+          "review-demo-private"
+        ],
+        "summary": "시간을 지키고 함께 전시와 대화를 즐겼다는 후기가 있습니다.",
+        "modelVersion": "model-demo",
+        "promptVersion": "prompt-demo"
+      },
+      "state": {
+        "sourceRevision": "revision-demo-7",
+        "reviews": [
+          {
+            "reviewId": "review-demo-1",
+            "text": "약속 시간을 지켰습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-2",
+            "text": "전시를 함께 즐겼습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-3",
+            "text": "대화가 편안했습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-private",
+            "text": "비공개 가상 후기",
+            "public": false,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-empty",
+            "text": "  ",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-held",
+            "text": "공개 보류 가상 후기",
+            "public": true,
+            "releaseEligible": false
+          }
+        ]
+      },
+      "response": {
+        "requestId": "5f15e304-32a6-4afa-bd5e-342a4ad69fcd",
+        "error": {
+          "code": "STATE_CONFLICT",
+          "message": "현재 상태에서 요청을 처리할 수 없습니다.",
+          "retryable": false
+        }
+      }
+    },
+    {
+      "id": "summary_visible",
+      "operation": "getVisibleReviewSummary",
+      "caller": "member",
+      "request": {
+        "profileId": "profile-demo-1"
+      },
+      "state": {
+        "sourceRevision": "revision-demo-7",
+        "reviews": [
+          {
+            "reviewId": "review-demo-1",
+            "text": "약속 시간을 지켰습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-2",
+            "text": "전시를 함께 즐겼습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-3",
+            "text": "대화가 편안했습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-private",
+            "text": "비공개 가상 후기",
+            "public": false,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-empty",
+            "text": "  ",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-held",
+            "text": "공개 보류 가상 후기",
+            "public": true,
+            "releaseEligible": false
+          }
+        ],
+        "storedRevision": "revision-demo-7"
+      },
+      "response": {
+        "requestId": "789007c3-10ca-4ec6-8251-1d65cf88c384",
+        "data": {
+          "summary": {
+            "summaryId": "summary-demo-1",
+            "text": "시간을 지키고 함께 전시와 대화를 즐겼다는 후기가 있습니다.",
+            "sourceCount": 3,
+            "updatedAt": "2026-09-23T00:00:00Z"
+          }
+        }
+      }
+    },
+    {
+      "id": "summary_hidden",
+      "operation": "getVisibleReviewSummary",
+      "caller": "member",
+      "request": {
+        "profileId": "profile-demo-1"
+      },
+      "state": {
+        "sourceRevision": "revision-demo-7",
+        "reviews": [
+          {
+            "reviewId": "review-demo-1",
+            "text": "약속 시간을 지켰습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-2",
+            "text": "전시를 함께 즐겼습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-3",
+            "text": "대화가 편안했습니다.",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-private",
+            "text": "비공개 가상 후기",
+            "public": false,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-empty",
+            "text": "  ",
+            "public": true,
+            "releaseEligible": true
+          },
+          {
+            "reviewId": "review-demo-held",
+            "text": "공개 보류 가상 후기",
+            "public": true,
+            "releaseEligible": false
+          }
+        ],
+        "storedRevision": "revision-demo-6"
+      },
+      "response": {
+        "requestId": "5feae07f-f658-4935-ba9e-60d15810865f",
+        "data": {
+          "summary": null
+        }
+      }
+    },
+    {
+      "id": "summary_auth_required",
+      "operation": "getVisibleReviewSummary",
+      "caller": "anonymous",
+      "request": {
+        "profileId": "profile-demo-1"
+      },
+      "state": {},
+      "response": {
+        "requestId": "7163c705-a897-4e59-9ea3-22be1ab3acd9",
+        "error": {
+          "code": "AUTH_REQUIRED",
+          "message": "로그인이 필요합니다.",
+          "retryable": false
+        }
+      }
+    },
+    {
+      "id": "job_enqueue",
+      "operation": "enqueueJob",
+      "caller": "internal",
+      "request": {
+        "kind": "review-summary",
+        "dedupeKey": "profile-demo-1:revision-demo-7:model-demo:prompt-demo",
+        "payload": {
+          "profileId": "profile-demo-1",
+          "sourceRevision": "revision-demo-7"
+        },
+        "availableAt": "2026-09-23T00:00:00Z"
+      },
+      "state": {},
+      "response": {
+        "requestId": "0b136a18-4a2d-4c22-9d87-0e8cf482bb3b",
+        "data": {
+          "jobId": "job-demo-1",
+          "deduplicated": false,
+          "status": "queued"
+        }
+      }
+    },
+    {
+      "id": "job_duplicate",
+      "operation": "enqueueJob",
+      "caller": "internal",
+      "request": {
+        "kind": "review-summary",
+        "dedupeKey": "profile-demo-1:revision-demo-7:model-demo:prompt-demo",
+        "payload": {
+          "profileId": "profile-demo-1",
+          "sourceRevision": "revision-demo-7"
+        },
+        "availableAt": "2026-09-23T00:00:00Z"
+      },
+      "state": {
+        "existing": {
+          "jobId": "job-demo-1",
+          "kind": "review-summary",
+          "dedupeKey": "profile-demo-1:revision-demo-7:model-demo:prompt-demo",
+          "payload": {
+            "profileId": "profile-demo-1",
+            "sourceRevision": "revision-demo-7"
+          },
+          "availableAt": "2026-09-23T00:00:00Z",
+          "status": "queued"
+        }
+      },
+      "response": {
+        "requestId": "02a7df9b-39a6-4569-8595-8defc25586e6",
+        "data": {
+          "jobId": "job-demo-1",
+          "deduplicated": true,
+          "status": "queued"
+        }
+      }
+    },
+    {
+      "id": "job_payload_conflict",
+      "operation": "enqueueJob",
+      "caller": "internal",
+      "request": {
+        "kind": "review-summary",
+        "dedupeKey": "profile-demo-1:revision-demo-7:model-demo:prompt-demo",
+        "payload": {
+          "profileId": "profile-demo-2",
+          "sourceRevision": "revision-demo-7"
+        },
+        "availableAt": "2026-09-23T00:00:00Z"
+      },
+      "state": {
+        "existing": {
+          "jobId": "job-demo-1",
+          "kind": "review-summary",
+          "dedupeKey": "profile-demo-1:revision-demo-7:model-demo:prompt-demo",
+          "payload": {
+            "profileId": "profile-demo-1",
+            "sourceRevision": "revision-demo-7"
+          },
+          "availableAt": "2026-09-23T00:00:00Z",
+          "status": "queued"
+        }
+      },
+      "response": {
+        "requestId": "48b8b8c1-de99-4e5c-8daf-acc529fe00ab",
+        "error": {
+          "code": "STATE_CONFLICT",
+          "message": "현재 상태에서 요청을 처리할 수 없습니다.",
+          "retryable": false
+        }
+      }
+    },
+    {
+      "id": "job_claim",
+      "operation": "claimJob",
+      "caller": "internal",
+      "request": {
+        "workerId": "worker-demo-1"
+      },
+      "state": {
+        "status": "queued",
+        "now": "2026-09-23T00:00:00Z",
+        "availableAt": "2026-09-23T00:00:00Z"
+      },
+      "response": {
+        "requestId": "4497c529-fa2f-402a-9d13-70397208f16d",
+        "data": {
+          "job": {
+            "jobId": "job-demo-1",
+            "kind": "review-summary",
+            "payload": {
+              "profileId": "profile-demo-1",
+              "sourceRevision": "revision-demo-7"
+            },
+            "leaseToken": "lease-demo-1",
+            "leaseExpiresAt": "2026-09-23T00:01:00Z",
+            "attempt": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "job_competing_claim",
+      "operation": "claimJob",
+      "caller": "internal",
+      "request": {
+        "workerId": "worker-demo-2"
+      },
+      "state": {
+        "status": "running",
+        "leaseToken": "lease-demo-1",
+        "leaseExpiresAt": "2026-09-23T00:01:00Z",
+        "now": "2026-09-23T00:00:30Z",
+        "attempt": 1
+      },
+      "response": {
+        "requestId": "c6f88516-5078-4268-afa5-3648514cd888",
+        "data": {
+          "job": null
+        }
+      }
+    },
+    {
+      "id": "job_reclaim",
+      "operation": "claimJob",
+      "caller": "internal",
+      "request": {
+        "workerId": "worker-demo-2"
+      },
+      "state": {
+        "status": "running",
+        "leaseToken": "lease-demo-1",
+        "leaseExpiresAt": "2026-09-23T00:01:00Z",
+        "now": "2026-09-23T00:01:00Z",
+        "attempt": 1
+      },
+      "response": {
+        "requestId": "93ec6863-4c0a-44a1-af56-f28a1e36c820",
+        "data": {
+          "job": {
+            "jobId": "job-demo-1",
+            "kind": "review-summary",
+            "payload": {
+              "profileId": "profile-demo-1",
+              "sourceRevision": "revision-demo-7"
+            },
+            "leaseToken": "lease-demo-2",
+            "leaseExpiresAt": "2026-09-23T00:02:00Z",
+            "attempt": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "job_complete",
+      "operation": "completeJob",
+      "caller": "internal",
+      "request": {
+        "jobId": "job-demo-1",
+        "leaseToken": "lease-demo-1"
+      },
+      "state": {
+        "status": "running",
+        "leaseToken": "lease-demo-1",
+        "leaseExpiresAt": "2026-09-23T00:01:00Z",
+        "now": "2026-09-23T00:00:30Z",
+        "attempt": 1
+      },
+      "response": {
+        "requestId": "ccf301c4-432a-490f-a875-0426297a9e69",
+        "data": {
+          "jobId": "job-demo-1",
+          "status": "succeeded"
+        }
+      }
+    },
+    {
+      "id": "job_stale_token",
+      "operation": "completeJob",
+      "caller": "internal",
+      "request": {
+        "jobId": "job-demo-1",
+        "leaseToken": "lease-demo-1"
+      },
+      "state": {
+        "status": "running",
+        "leaseToken": "lease-demo-2",
+        "leaseExpiresAt": "2026-09-23T00:01:00Z",
+        "now": "2026-09-23T00:00:30Z",
+        "attempt": 1
+      },
+      "response": {
+        "requestId": "153aff75-2ab7-4be6-8969-5dc08e508b32",
+        "error": {
+          "code": "STATE_CONFLICT",
+          "message": "현재 상태에서 요청을 처리할 수 없습니다.",
+          "retryable": false
+        }
+      }
+    },
+    {
+      "id": "job_expired",
+      "operation": "completeJob",
+      "caller": "internal",
+      "request": {
+        "jobId": "job-demo-1",
+        "leaseToken": "lease-demo-1"
+      },
+      "state": {
+        "status": "running",
+        "leaseToken": "lease-demo-1",
+        "leaseExpiresAt": "2026-09-23T00:01:00Z",
+        "now": "2026-09-23T00:01:00Z",
+        "attempt": 1
+      },
+      "response": {
+        "requestId": "746dc98b-5cc6-4c56-9e95-88a6d3d39487",
+        "error": {
+          "code": "STATE_CONFLICT",
+          "message": "현재 상태에서 요청을 처리할 수 없습니다.",
+          "retryable": false
+        }
+      }
+    },
+    {
+      "id": "job_retry",
+      "operation": "retryJob",
+      "caller": "internal",
+      "request": {
+        "jobId": "job-demo-1",
+        "leaseToken": "lease-demo-1",
+        "availableAt": "2026-09-23T00:02:00Z",
+        "errorCode": "EXTERNAL_UNAVAILABLE"
+      },
+      "state": {
+        "status": "running",
+        "leaseToken": "lease-demo-1",
+        "leaseExpiresAt": "2026-09-23T00:01:00Z",
+        "now": "2026-09-23T00:00:30Z",
+        "attempt": 1
+      },
+      "response": {
+        "requestId": "90660944-e8a9-4bf9-ba53-73d8ab8974e6",
+        "data": {
+          "jobId": "job-demo-1",
+          "status": "retry_wait"
+        }
+      }
+    },
+    {
+      "id": "job_denied",
+      "operation": "claimJob",
+      "caller": "member",
+      "request": {
+        "workerId": "worker-demo-1"
+      },
+      "state": {},
+      "response": {
+        "requestId": "84ef8d44-1bd7-449d-bf91-78ccdb2e496c",
+        "error": {
+          "code": "ACCESS_DENIED",
+          "message": "요청을 수행할 권한이 없습니다.",
+          "retryable": false
+        }
+      }
+    }
+  ]
+}

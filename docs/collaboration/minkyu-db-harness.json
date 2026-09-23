@@ -1,0 +1,64 @@
+{
+  "version": 2,
+  "actor": "minkyu",
+  "baseline": "b9acc4146640e45e9e9122c3c23fdf62ea3dbb19",
+  "branch": "minkyu/foundation-harness",
+  "phase": "DB RPC 구현과 실제 로컬 검증. 1차 미커밋 산출물은 아래 해시로 보존.",
+  "lanes": {
+    "coordinator": [
+      "docs/collaboration/minkyu-db-harness.json",
+      "docs/collaboration/minkyu.md",
+      "docs/collaboration/requests/minkyu/2026-09-23-db-rpc-handoff.md",
+      "backend/README.md",
+      "AGENTS.md",
+      "tools/collaboration/check_harness.py",
+      "tests/functions/minkyu/test_harness.py",
+      "backend/supabase/config.toml",
+      "tools/local/prepare_database.py",
+      "tools/local/run_database_tests.py",
+      "tools/local/README.md",
+      "tests/database/minkyu/test_database_runner.py"
+    ],
+    "A": [
+      "backend/supabase/migrations/20260923090000_worker_jobs.sql",
+      "tests/database/minkyu/worker_jobs.sql",
+      "backend/contracts/worker-jobs.md"
+    ],
+    "B": [
+      "backend/supabase/migrations/20260923091000_public_post_search.sql",
+      "tests/database/minkyu/public_post_search.sql",
+      "backend/contracts/public-post-search-db.md"
+    ],
+    "C": [
+      "backend/supabase/migrations/20260923092000_review_summary_storage.sql",
+      "tests/database/minkyu/review_summary_storage.sql",
+      "backend/contracts/review-summary-db.md"
+    ]
+  },
+  "preserved": {
+    "docs/collaboration/minkyu-foundation-harness.json": "70a02c4b96c0fe3933d3e74cf978fd38a394f58a73f0e55d0be304f5bd89644c",
+    "docs/collaboration/requests/minkyu/2026-09-23-foundation-handoff.md": "c2a2d24f4681275f91a9effa381716e3c0aa1a065f7b6e7012859b8590e61cf8",
+    ".gitignore": "f208b2b47c2384e538f74df1c5f22ae71b9405cbf6b2633c24a110cbfd16b0bb",
+    "backend/contracts/conventions.md": "ab5d49a0c62732eba362aee07947d9dbfa0e603bfb6bdee6f2ade10d5aceed10",
+    "backend/supabase/functions/_shared/contracts/common.ts": "eea4763f6e0c8931daf8dc09d613fc48ccb9e0d9c84552021067a1256e5ca7db",
+    "backend/supabase/functions/_shared/http/request.ts": "c2aefeb7d5e88fa03da4dd5e2ad438afd5318b31e735a870a69b403bd2fed630",
+    "backend/supabase/functions/_shared/http/response.ts": "924eab0b9d18580d6da8fc0ef5fb5c34264f29d3cc4d2dd8947e19e8bb959b08",
+    "backend/supabase/functions/_shared/http/errors.ts": "8239a09ce20bf7b9d8500cfdafc2ad905a673c210ead99f60dba6542e77df025",
+    "backend/supabase/functions/_shared/http/cors.ts": "3e5df751763eecaa1a3720f7913320895a194b89f15ebd23fce0ac5d3d8f1cde",
+    "tests/functions/minkyu/http.test.ts": "b804ec38401ca4bb959f94fc0d97ea79fc8e295f11905162ccfafbf4cbdfa199",
+    "backend/contracts/db-foundation.md": "8929411ef331c6f0aa93ddd33ee14f83d0f43da6f437c76a56b48d9ae2efd54f",
+    "tests/fixtures/minkyu/db-foundation.json": "88cb0571cb2cef89e5b6d726a7e2facb7b0f634e5c58a340a8577e9c6512a016",
+    "tests/contracts/minkyu/test_db_foundation.py": "79af7d3473c45634f588d367815ded3dff7bdbb1a805ff84a8bf51623a880fe0",
+    "tools/local/check_environment.py": "10f4fe57f62ca8c12f24e3307c484dd75c235db4121d5896d331b7a61126be75",
+    "tools/local/prepare_migrations.py": "be07feeff30eeb61e34b6741b1636cea675b43a368404c99c4d7205ec3d93fcc",
+    "backend/supabase/functions/deno.json": "42a2f84e65a83b5e7f70193066e17895d0ab90c570615eb032185716b00d77e1",
+    "tests/database/minkyu/test_local_tools.py": "516c5e8ff443b5f14f6c9e6b0a3b4de4e9ec980a86eb287704ee7067492f4f39"
+  },
+  "excluded": [
+    "종현 파일",
+    "기존 DB 이력",
+    "원격 DB",
+    "커밋·푸시",
+    "미정 서비스 정책 확정"
+  ]
+}

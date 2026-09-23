@@ -1,9 +1,17 @@
-/**
- * 상태: 미구현 스캐폴드 — 실제 동작은 아직 없습니다.
- * 담당: 민규담당
- * 역할: 내부 예약 작업·워커 호출자 검증
- * TODO: 일반 회원 세션을 내부 작업 실행 권한으로 취급하지 않음
- * 기준: PLAN_상세설계.md 3~5장, 11장 / backend/README.md
- * 구현 시 이 파일을 채우고 관련 계약·검증을 함께 갱신합니다.
- */
-export {};
+/** 민규담당: 사용자 JWT/서비스 키와 다른 내부 전용 비밀을 검증한다. */
+import { requireInternalConfig, type RuntimeConfig } from "../config/env.ts";
+import { HttpError } from "../http/errors.ts";
+import { readBearer } from "./principal.ts";
+export async function requireInternalCaller(request: Request, config: RuntimeConfig): Promise<void> {
+  const { workerSecret } = requireInternalConfig(config);
+  const presented = readBearer(request);
+  const encoder = new TextEncoder();
+  const [left, right] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(presented)),
+    crypto.subtle.digest("SHA-256", encoder.encode(workerSecret)),
+  ]);
+  const a = new Uint8Array(left), b = new Uint8Array(right);
+  let different = 0;
+  for (let i = 0; i < a.length; i++) different |= a[i] ^ b[i];
+  if (different !== 0) throw new HttpError("ACCESS_DENIED");
+}

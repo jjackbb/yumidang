@@ -1,9 +1,10 @@
-/**
- * 상태: 미구현 스캐폴드 — 실제 동작은 아직 없습니다.
- * 담당: 민규담당
- * 역할: 신청·조건·매칭 상태 DB 접근
- * TODO: 합의된 조회·RPC를 호출하고 결과를 변환; 권한·트랜잭션 조건은 DB가 보장하며 SQL 변경은 민규가 통합
- * 기준: PLAN_상세설계.md 3~5장, 11장 / backend/README.md
- * 구현 시 이 파일을 채우고 관련 계약·검증을 함께 갱신합니다.
- */
-export {};
+/** 민규담당. 고정 RPC만 호출하며 사용자 ID·권한 판정은 DB에서 수행한다. */
+import type { RpcClient } from "../transport.ts";
+export const createRequest = (db: RpcClient, postId: string, message: string) => db.rpc("request_service_post", { p_post_id: postId, p_message: message });
+export const listSentRequests = (db: RpcClient) => db.rpc("list_sent_join_requests", {});
+export const listReceivedRequests = (db: RpcClient) => db.rpc("list_received_join_requests", {});
+export const withdrawRequest = (db: RpcClient, id: string) => db.rpc("withdraw_join_request", { p_request_id: id });
+export const declineRequest = (db: RpcClient, id: string) => db.rpc("decline_join_request", { p_request_id: id });
+export const proposeMatch = (db: RpcClient, id: string) => db.rpc("propose_match", { p_request_id: id });
+export const acceptMatch = (db: RpcClient, id: string, version: string) => db.rpc("accept_match", { p_request_id: id, p_condition_version: version });
+export const getMatchConsent = (db: RpcClient, id: string) => db.rpc("get_match_consent", { p_request_id: id });

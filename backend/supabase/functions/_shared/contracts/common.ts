@@ -1,9 +1,23 @@
-/**
- * 상태: 미구현 스캐폴드 — 실제 동작은 아직 없습니다.
- * 담당: 민규담당
- * 역할: 공통 성공·오류·페이지·날짜 규칙의 타입·실행 검증
- * TODO: 문서 계약에 맞는 입출력 스키마를 정의하고 검증; DB 접근이나 모델 호출을 포함하지 않음
- * 기준: PLAN_상세설계.md 3~5장, 11장 / backend/README.md
- * 구현 시 이 파일을 채우고 관련 계약·검증을 함께 갱신합니다.
- */
-export {};
+/** 담당: 민규담당. HTTP 공통 계약만 구현; 인증·DB·업무별 스키마는 별도 계약. */
+export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
+
+export type PublicErrorCode =
+  | "AUTH_REQUIRED" | "ACCESS_DENIED" | "RESOURCE_NOT_FOUND"
+  | "INVALID_REQUEST" | "STATE_CONFLICT" | "EXTERNAL_UNAVAILABLE"
+  | "INTERNAL_ERROR" | "PAYLOAD_TOO_LARGE" | "UNSUPPORTED_MEDIA_TYPE"
+  | "METHOD_NOT_ALLOWED";
+
+export interface RequestContext { readonly requestId: string }
+export interface PublicError {
+  readonly code: PublicErrorCode;
+  readonly message: string;
+  readonly retryable: boolean;
+}
+export interface ApiSuccess<T extends JsonValue = JsonValue> {
+  readonly data: T;
+  readonly requestId: string;
+}
+export interface ApiFailure {
+  readonly error: PublicError;
+  readonly requestId: string;
+}

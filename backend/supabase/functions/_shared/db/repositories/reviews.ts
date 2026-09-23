@@ -1,9 +1,7 @@
-/**
- * 상태: 미구현 스캐폴드 — 실제 동작은 아직 없습니다.
- * 담당: 민규담당
- * 역할: 평가·공개 후기·revision DB 접근
- * TODO: 합의된 조회·RPC를 호출하고 결과를 변환; 권한·트랜잭션 조건은 DB가 보장하며 SQL 변경은 민규가 통합
- * 기준: PLAN_상세설계.md 3~5장, 11장 / backend/README.md
- * 구현 시 이 파일을 채우고 관련 계약·검증을 함께 갱신합니다.
- */
-export {};
+/** 민규담당. 고정 RPC만 호출하며 사용자 ID·권한 판정은 DB에서 수행한다. */
+import type { RpcClient } from "../transport.ts";
+import type { ReviewSubmission } from "../../contracts/reviews.ts";
+export const getReviewState = (db: RpcClient, id: string) => db.rpc("get_appointment_review_state", { p_appointment_id: id });
+export const submitReview = (db: RpcClient, id: string, review: ReviewSubmission) => db.rpc("submit_appointment_review", { p_appointment_id: id, p_rating: review.rating, p_comment: review.comment, p_experience: review.experience, p_praises: review.praises });
+export const getPublicReviews = (db: RpcClient, id: string, limit: number, before: string | null) => db.rpc("get_public_profile_reviews", { p_profile_id: id, p_limit: limit, p_before: before });
+export const processReviewAutomation = (db: RpcClient, limit: number, modelVersion: string, promptVersion: string) => db.rpc("process_review_automation", { p_limit: limit, p_model_version: modelVersion, p_prompt_version: promptVersion });

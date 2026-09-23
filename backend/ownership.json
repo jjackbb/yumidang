@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "protected_paths": [
+    "backend/",
+    "AGENTS.md",
+    "PLAN_상세설계.md",
+    "PLAN_원본.md",
+    "PLAN.md",
+    "README.md",
+    ".env.example",
+    ".gitignore",
+    ".githooks/",
+    "tools/collaboration/",
+    "tools/local/",
+    "docs/collaboration/",
+    "tests/"
+  ],
+  "rules": [
+    {
+      "path": "backend/",
+      "owner": "minkyu"
+    },
+    {
+      "path": "AGENTS.md",
+      "owner": "minkyu"
+    },
+    {
+      "path": "PLAN_상세설계.md",
+      "owner": "minkyu"
+    },
+    {
+      "path": "PLAN_원본.md",
+      "owner": "minkyu"
+    },
+    {
+      "path": "PLAN.md",
+      "owner": "minkyu"
+    },
+    {
+      "path": "README.md",
+      "owner": "minkyu"
+    },
+    {
+      "path": ".env.example",
+      "owner": "minkyu"
+    },
+    {
+      "path": ".gitignore",
+      "owner": "minkyu"
+    },
+    {
+      "path": ".githooks/",
+      "owner": "minkyu"
+    },
+    {
+      "path": "tools/collaboration/",
+      "owner": "minkyu"
+    },
+    {
+      "path": "tools/local/",
+      "owner": "minkyu"
+    },
+    {
+      "path": "docs/collaboration/",
+      "owner": "minkyu"
+    },
+    {
+      "path": "tests/",
+      "owner": "minkyu"
+    },
+    {
+      "path": "backend/supabase/functions/ai-chat/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/review-summary-worker/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/places/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/event-sync/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/scheduled-jobs/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/_shared/ai/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/_shared/jobs/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/_shared/integrations/places/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/_shared/integrations/events/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/_shared/contracts/search.ts",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/_shared/contracts/ai.ts",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/_shared/services/search-service.ts",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/_shared/services/event-service.ts",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/_shared/db/repositories/search.ts",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/_shared/db/repositories/events.ts",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/_shared/db/repositories/review-summaries.ts",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/_shared/db/repositories/jobs.ts",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/functions/_shared/observability/metrics.ts",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/contracts/ai-chat.md",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/contracts/review-summary.md",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/contracts/search.md",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "backend/supabase/seeds/jonghyun/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "docs/collaboration/jonghyun.md",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "docs/collaboration/requests/jonghyun/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "tests/database/jonghyun/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "tests/functions/jonghyun/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "tests/contracts/jonghyun/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "tests/integration/jonghyun/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "tests/ai/jonghyun/",
+      "owner": "jonghyun"
+    },
+    {
+      "path": "tests/fixtures/jonghyun/",
+      "owner": "jonghyun"
+    }
+  ]
+}
